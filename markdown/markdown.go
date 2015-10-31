@@ -43,14 +43,9 @@ func (md *markdown) ProcessSingle(ctx goldsmith.Context, file goldsmith.File) go
 		return file
 	}
 
-	if srcBuff := file.Data(); srcBuff != nil {
-		dstData := blackfriday.MarkdownCommon(srcBuff.Bytes())
-
-		srcBuff.Reset()
-		srcBuff.Write(dstData)
-
-		dstPath := strings.TrimSuffix(file.Path(), ext) + ".html"
-		file.SetPath(dstPath)
+	if data := file.Bytes(); data != nil {
+		file.SetBytes(blackfriday.MarkdownCommon(data))
+		file.SetPath(strings.TrimSuffix(file.Path(), ext) + ".html")
 	}
 
 	return file
