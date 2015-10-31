@@ -51,12 +51,12 @@ func (t *template) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsm
 		return file
 	}
 
-	name := file.Property("template", t.def)
+	name := file.Property("template", t.def).(string)
 	params := make(map[string]interface{})
 	params["Content"] = tmpl.HTML(file.Data())
 
 	var buff bytes.Buffer
-	if err := t.tmpl.ExecuteTemplate(&buff, name.(string), params); err != nil {
+	if err := t.tmpl.ExecuteTemplate(&buff, name, params); err != nil {
 		file.SetError(err)
 	} else {
 		file.SetData(buff.Bytes())
