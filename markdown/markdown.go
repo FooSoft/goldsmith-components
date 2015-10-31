@@ -27,6 +27,10 @@ import "github.com/FooSoft/goldsmith"
 type markdown struct {
 }
 
+func NewMarkdown() goldsmith.Processor {
+	return new(markdown)
+}
+
 func (md *markdown) Process(ctx goldsmith.Context, input, output chan goldsmith.File) {
 	for file := range input {
 		output <- file
