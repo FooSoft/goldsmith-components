@@ -22,7 +22,14 @@
 
 package markdown
 
-import "github.com/FooSoft/goldsmith"
+import (
+	"path"
+	"strings"
+	"sync"
+
+	"github.com/FooSoft/goldsmith"
+	"github.com/russross/blackfriday"
+)
 
 type markdown struct {
 }
@@ -32,9 +39,29 @@ func NewMarkdown() goldsmith.Processor {
 }
 
 func (md *markdown) Process(ctx goldsmith.Context, input, output chan goldsmith.File) {
+	var wg sync.WaitGroup
+
 	for file := range input {
-		output <- file
+		wg.Add(1)
+		go func(f goldsmith.File) {
+			ext := path.Ext(f.Path())
+
+			if ext == ".md" {
+				if srcBuff := f.Data(); srcBuff != nil {
+					dstData := blackfriday.MarkdownCommon(srcBuff.Bytes())
+
+					srcBuff.Reset()
+					srcBuff.Write(dstData)
+
+					f.SetPath(strings.TrimSuffix(f.Path(), ext) + ".html")
+				}
+			}
+
+			output <- f
+			wg.Done()
+		}(file)
 	}
 
+	wg.Wait()
 	close(output)
 }
