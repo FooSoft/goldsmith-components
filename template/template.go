@@ -20,34 +20,34 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package markdown
+package template
 
 import (
+	tmpl "html/template"
 	"path"
 	"strings"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/russross/blackfriday"
 )
 
-type markdown struct {
+type template struct {
+	tmpl *tmpl.Template
+	def  string
 }
 
-func New() *markdown {
-	return new(markdown)
+func New(glob, def string) *template {
+	t, _ := tmpl.ParseGlob(glob)
+	return &template{t, def}
 }
 
-func (*markdown) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
+func (t *template) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
 	ext := strings.ToLower(path.Ext(file.Path()))
-	if ext != ".md" && ext != ".markdown" {
+	if ext != ".html" {
 		return file
 	}
 
-	if data := file.Data(); data != nil {
-		file.SetData(blackfriday.MarkdownCommon(data))
-		file.SetPath(strings.TrimSuffix(file.Path(), ext) + ".html")
-		file.SetProperty("content", string(file.Data()))
-	}
+	// var buff bytes.Buffer
+	// t.tmpl.ExecuteTemplate(buff, "main.html")
 
 	return file
 }
