@@ -20,32 +20,44 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package markdown
+package frontmatter
 
 import (
+	"bytes"
 	"path"
 	"strings"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/russross/blackfriday"
+	"github.com/gernest/front"
 )
 
-type markdown struct {
+type frontMatter struct {
+	matter *front.Matter
 }
 
-func NewMarkdown() *markdown {
-	return new(markdown)
+func NewFrontMatter() *frontMatter {
+	fm := &frontMatter{front.NewMatter()}
+	fm.matter.Handle("---", front.YAMLHandler)
+	return fm
 }
 
-func (*markdown) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
+func (fm *frontMatter) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
 	ext := strings.ToLower(path.Ext(file.Path()))
 	if ext != ".md" && ext != ".markdown" {
 		return file
 	}
 
 	if data := file.Bytes(); data != nil {
-		file.SetBytes(blackfriday.MarkdownCommon(data))
-		file.SetPath(strings.TrimSuffix(file.Path(), ext) + ".html")
+		front, body, err := fm.matter.Parse(bytes.NewReader(data))
+		if err != nil {
+			file.SetError(err)
+		}
+
+		file.SetBytes([]byte(body))
+
+		for key, value := range front {
+			file.SetProperty(key, value)
+		}
 	}
 
 	return file
