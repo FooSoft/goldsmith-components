@@ -46,7 +46,6 @@ func (*markdown) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmit
 	if data := file.Data(); data != nil {
 		file.SetData(blackfriday.MarkdownCommon(data))
 		file.SetPath(strings.TrimSuffix(file.Path(), ext) + ".html")
-		file.SetProperty("content", string(file.Data()))
 	}
 
 	return file

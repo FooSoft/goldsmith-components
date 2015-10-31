@@ -23,6 +23,7 @@
 package template
 
 import (
+	"bytes"
 	tmpl "html/template"
 	"path"
 	"strings"
@@ -36,7 +37,11 @@ type template struct {
 }
 
 func New(glob, def string) *template {
-	t, _ := tmpl.ParseGlob(glob)
+	t, err := tmpl.ParseGlob(glob)
+	if err != nil {
+		panic(err)
+	}
+
 	return &template{t, def}
 }
 
@@ -46,8 +51,16 @@ func (t *template) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsm
 		return file
 	}
 
-	// var buff bytes.Buffer
-	// t.tmpl.ExecuteTemplate(buff, "main.html")
+	name := file.Property("template", t.def)
+	params := make(map[string]interface{})
+	params["Content"] = tmpl.HTML(file.Data())
+
+	var buff bytes.Buffer
+	if err := t.tmpl.ExecuteTemplate(&buff, name.(string), params); err != nil {
+		file.SetError(err)
+	} else {
+		file.SetData(buff.Bytes())
+	}
 
 	return file
 }
