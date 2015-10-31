@@ -25,7 +25,6 @@ package markdown
 import (
 	"path"
 	"strings"
-	"sync"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/russross/blackfriday"
@@ -34,34 +33,25 @@ import (
 type markdown struct {
 }
 
-func NewMarkdown() goldsmith.Processor {
+func NewMarkdown() *markdown {
 	return new(markdown)
 }
 
-func (md *markdown) Process(ctx goldsmith.Context, input, output chan goldsmith.File) {
-	var wg sync.WaitGroup
-
-	for file := range input {
-		wg.Add(1)
-		go func(f goldsmith.File) {
-			ext := path.Ext(f.Path())
-
-			if ext == ".md" {
-				if srcBuff := f.Data(); srcBuff != nil {
-					dstData := blackfriday.MarkdownCommon(srcBuff.Bytes())
-
-					srcBuff.Reset()
-					srcBuff.Write(dstData)
-
-					f.SetPath(strings.TrimSuffix(f.Path(), ext) + ".html")
-				}
-			}
-
-			output <- f
-			wg.Done()
-		}(file)
+func (md *markdown) ProcessSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
+	ext := strings.ToLower(path.Ext(file.Path()))
+	if ext != ".md" && ext != ".markdown" {
+		return file
 	}
 
-	wg.Wait()
-	close(output)
+	if srcBuff := file.Data(); srcBuff != nil {
+		dstData := blackfriday.MarkdownCommon(srcBuff.Bytes())
+
+		srcBuff.Reset()
+		srcBuff.Write(dstData)
+
+		dstPath := strings.TrimSuffix(file.Path(), ext) + ".html"
+		file.SetPath(dstPath)
+	}
+
+	return file
 }
