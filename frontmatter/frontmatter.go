@@ -35,7 +35,7 @@ type frontMatter struct {
 	matter *front.Matter
 }
 
-func NewFrontMatter() *frontMatter {
+func New() *frontMatter {
 	fm := &frontMatter{front.NewMatter()}
 	fm.matter.Handle("---", front.YAMLHandler)
 	return fm
@@ -47,13 +47,13 @@ func (fm *frontMatter) TaskSingle(ctx goldsmith.Context, file goldsmith.File) go
 		return file
 	}
 
-	if data := file.Bytes(); data != nil {
+	if data := file.Data(); data != nil {
 		front, body, err := fm.matter.Parse(bytes.NewReader(data))
 		if err != nil {
 			file.SetError(err)
 		}
 
-		file.SetBytes([]byte(body))
+		file.SetData([]byte(body))
 
 		for key, value := range front {
 			file.SetProperty(key, value)
