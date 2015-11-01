@@ -35,18 +35,14 @@ type markdown struct {
 }
 
 func New() goldsmith.Context {
-	return goldsmith.Context{Chainer: new(markdown)}
+	return goldsmith.Context{
+		Chainer: new(markdown),
+		Globs:   []string{"*.md", "*.markdown"},
+	}
 }
 
 func (*markdown) ChainSingle(file goldsmith.File) goldsmith.File {
-	ext := strings.ToLower(path.Ext(file.Path))
-	if ext != ".md" && ext != ".markdown" {
-		return file
-	}
-
-	html := blackfriday.MarkdownCommon(file.Buff.Bytes())
-	file.Buff = bytes.NewBuffer(html)
-	file.Path = strings.TrimSuffix(file.Path, ext) + ".html"
-
+	file.Buff = bytes.NewBuffer(blackfriday.MarkdownCommon(file.Buff.Bytes()))
+	file.Path = strings.TrimSuffix(file.Path, path.Ext(file.Path)) + ".html"
 	return file
 }

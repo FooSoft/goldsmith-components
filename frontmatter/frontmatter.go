@@ -23,8 +23,7 @@
 package frontmatter
 
 import (
-	"path"
-	"strings"
+	"bytes"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/gernest/front"
@@ -37,24 +36,21 @@ type frontMatter struct {
 func New() goldsmith.Context {
 	fm := &frontMatter{front.NewMatter()}
 	fm.matter.Handle("---", front.YAMLHandler)
-	return goldsmith.Context{Chainer: fm}
+
+	return goldsmith.Context{
+		Chainer: fm,
+		Globs:   []string{"*.md", "*.markdown"},
+	}
 }
 
 func (fm *frontMatter) ChainSingle(file goldsmith.File) goldsmith.File {
-	ext := strings.ToLower(path.Ext(file.Path))
-	if ext != ".md" && ext != ".markdown" {
-		return file
-	}
-
 	front, body, err := fm.matter.Parse(file.Buff)
 	if err != nil {
 		file.Err = err
 		return file
 	}
 
-	file.Buff.Reset()
-	file.Buff.Write([]byte(body))
-
+	file.Buff = bytes.NewBuffer([]byte(body))
 	for key, value := range front {
 		file.Meta[key] = value
 	}

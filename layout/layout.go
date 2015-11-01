@@ -25,8 +25,6 @@ package layout
 import (
 	"bytes"
 	"html/template"
-	"path"
-	"strings"
 
 	"github.com/FooSoft/goldsmith"
 )
@@ -37,20 +35,18 @@ type layout struct {
 }
 
 func New(glob, def string) goldsmith.Context {
-	t, err := template.ParseGlob(glob)
+	tmpl, err := template.ParseGlob(glob)
 	if err != nil {
 		return goldsmith.Context{Err: err}
 	}
 
-	return goldsmith.Context{Chainer: &layout{t, def}}
+	return goldsmith.Context{
+		Chainer: &layout{tmpl, def},
+		Globs:   []string{"*.html", "*.html"},
+	}
 }
 
 func (t *layout) ChainSingle(file goldsmith.File) goldsmith.File {
-	ext := strings.ToLower(path.Ext(file.Path))
-	if ext != ".html" {
-		return file
-	}
-
 	name, ok := file.Meta["layout"]
 	if !ok {
 		name = t.def
