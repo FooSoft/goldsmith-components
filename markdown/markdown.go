@@ -33,20 +33,20 @@ import (
 type markdown struct {
 }
 
-func New() (*markdown, error) {
-	return new(markdown), nil
+func New() goldsmith.Context {
+	return goldsmith.Context{new(markdown), nil}
 }
 
 func (*markdown) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
-	ext := strings.ToLower(path.Ext(file.Path()))
+	ext := strings.ToLower(path.Ext(file.Path))
 	if ext != ".md" && ext != ".markdown" {
 		return file
 	}
 
-	if data := file.Data(); data != nil {
-		file.SetData(blackfriday.MarkdownCommon(data))
-		file.SetPath(strings.TrimSuffix(file.Path(), ext) + ".html")
-	}
+	html := blackfriday.MarkdownCommon(file.Buff.Bytes())
+	file.Buff.Reset()
+	file.Buff.Write(html)
+	file.Path = strings.TrimSuffix(file.Path, ext) + ".html"
 
 	return file
 }

@@ -36,30 +36,31 @@ type layout struct {
 	def  string
 }
 
-func New(glob, def string) (*layout, error) {
+func New(glob, def string) goldsmith.Context {
 	t, err := template.ParseGlob(glob)
 	if err != nil {
-		return nil, err
+		return goldsmith.Context{nil, err}
 	}
 
-	return &layout{t, def}, nil
+	return goldsmith.Context{&layout{t, def}, nil}
 }
 
 func (t *layout) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
-	ext := strings.ToLower(path.Ext(file.Path()))
+	ext := strings.ToLower(path.Ext(file.Path))
 	if ext != ".html" {
 		return file
 	}
 
-	name := file.Property("template", t.def).(string)
-	params := make(map[string]interface{})
-	params["Content"] = template.HTML(file.Data())
+	name, ok := file.Meta["Template"]
+	if !ok {
+		name = t.def
+	}
+
+	file.Meta["Content"] = template.HTML(file.Buff.Bytes())
 
 	var buff bytes.Buffer
-	if err := t.tmpl.ExecuteTemplate(&buff, name, params); err != nil {
-		file.SetError(err)
-	} else {
-		file.SetData(buff.Bytes())
+	if file.Err = t.tmpl.ExecuteTemplate(&buff, name.(string), file.Meta); file.Err == nil {
+		file.Buff = buff
 	}
 
 	return file
