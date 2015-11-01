@@ -23,6 +23,7 @@
 package markdown
 
 import (
+	"bytes"
 	"path"
 	"strings"
 
@@ -37,15 +38,14 @@ func New() goldsmith.Context {
 	return goldsmith.Context{new(markdown), nil}
 }
 
-func (*markdown) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
+func (*markdown) ChainSingle(file goldsmith.File) goldsmith.File {
 	ext := strings.ToLower(path.Ext(file.Path))
 	if ext != ".md" && ext != ".markdown" {
 		return file
 	}
 
 	html := blackfriday.MarkdownCommon(file.Buff.Bytes())
-	file.Buff.Reset()
-	file.Buff.Write(html)
+	file.Buff = bytes.NewBuffer(html)
 	file.Path = strings.TrimSuffix(file.Path, ext) + ".html"
 
 	return file

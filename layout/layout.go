@@ -45,22 +45,22 @@ func New(glob, def string) goldsmith.Context {
 	return goldsmith.Context{&layout{t, def}, nil}
 }
 
-func (t *layout) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
+func (t *layout) ChainSingle(file goldsmith.File) goldsmith.File {
 	ext := strings.ToLower(path.Ext(file.Path))
 	if ext != ".html" {
 		return file
 	}
 
-	name, ok := file.Meta["Template"]
+	name, ok := file.Meta["layout"]
 	if !ok {
 		name = t.def
 	}
 
-	file.Meta["Content"] = template.HTML(file.Buff.Bytes())
+	file.Meta["content"] = template.HTML(file.Buff.Bytes())
 
 	var buff bytes.Buffer
 	if file.Err = t.tmpl.ExecuteTemplate(&buff, name.(string), file.Meta); file.Err == nil {
-		file.Buff = buff
+		file.Buff = &buff
 	}
 
 	return file

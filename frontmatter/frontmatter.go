@@ -40,13 +40,13 @@ func New() goldsmith.Context {
 	return goldsmith.Context{fm, nil}
 }
 
-func (fm *frontMatter) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
+func (fm *frontMatter) ChainSingle(file goldsmith.File) goldsmith.File {
 	ext := strings.ToLower(path.Ext(file.Path))
 	if ext != ".md" && ext != ".markdown" {
 		return file
 	}
 
-	front, body, err := fm.matter.Parse(&file.Buff)
+	front, body, err := fm.matter.Parse(file.Buff)
 	if err != nil {
 		file.Err = err
 		return file
