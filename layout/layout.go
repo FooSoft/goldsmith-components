@@ -20,32 +20,32 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package template
+package layout
 
 import (
 	"bytes"
-	tmpl "html/template"
+	"html/template"
 	"path"
 	"strings"
 
 	"github.com/FooSoft/goldsmith"
 )
 
-type template struct {
-	tmpl *tmpl.Template
+type layout struct {
+	tmpl *template.Template
 	def  string
 }
 
-func New(glob, def string) *template {
-	t, err := tmpl.ParseGlob(glob)
+func New(glob, def string) *layout {
+	t, err := template.ParseGlob(glob)
 	if err != nil {
-		panic(err)
+		return nil
 	}
 
-	return &template{t, def}
+	return &layout{t, def}
 }
 
-func (t *template) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
+func (t *layout) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
 	ext := strings.ToLower(path.Ext(file.Path()))
 	if ext != ".html" {
 		return file
@@ -53,7 +53,7 @@ func (t *template) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsm
 
 	name := file.Property("template", t.def).(string)
 	params := make(map[string]interface{})
-	params["Content"] = tmpl.HTML(file.Data())
+	params["Content"] = template.HTML(file.Data())
 
 	var buff bytes.Buffer
 	if err := t.tmpl.ExecuteTemplate(&buff, name, params); err != nil {
