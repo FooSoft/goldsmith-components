@@ -35,10 +35,10 @@ type frontMatter struct {
 	matter *front.Matter
 }
 
-func New() *frontMatter {
+func New() (*frontMatter, error) {
 	fm := &frontMatter{front.NewMatter()}
 	fm.matter.Handle("---", front.YAMLHandler)
-	return fm
+	return fm, nil
 }
 
 func (fm *frontMatter) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {

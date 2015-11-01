@@ -33,8 +33,8 @@ import (
 type markdown struct {
 }
 
-func New() *markdown {
-	return new(markdown)
+func New() (*markdown, error) {
+	return new(markdown), nil
 }
 
 func (*markdown) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {

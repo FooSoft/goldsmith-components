@@ -36,13 +36,13 @@ type layout struct {
 	def  string
 }
 
-func New(glob, def string) *layout {
+func New(glob, def string) (*layout, error) {
 	t, err := template.ParseGlob(glob)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	return &layout{t, def}
+	return &layout{t, def}, nil
 }
 
 func (t *layout) TaskSingle(ctx goldsmith.Context, file goldsmith.File) goldsmith.File {
