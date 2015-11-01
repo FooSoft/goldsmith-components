@@ -39,10 +39,10 @@ type layout struct {
 func New(glob, def string) goldsmith.Context {
 	t, err := template.ParseGlob(glob)
 	if err != nil {
-		return goldsmith.Context{nil, err}
+		return goldsmith.Context{Err: err}
 	}
 
-	return goldsmith.Context{&layout{t, def}, nil}
+	return goldsmith.Context{Chainer: &layout{t, def}}
 }
 
 func (t *layout) ChainSingle(file goldsmith.File) goldsmith.File {

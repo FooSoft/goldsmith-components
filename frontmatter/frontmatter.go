@@ -37,7 +37,7 @@ type frontMatter struct {
 func New() goldsmith.Context {
 	fm := &frontMatter{front.NewMatter()}
 	fm.matter.Handle("---", front.YAMLHandler)
-	return goldsmith.Context{fm, nil}
+	return goldsmith.Context{Chainer: fm}
 }
 
 func (fm *frontMatter) ChainSingle(file goldsmith.File) goldsmith.File {

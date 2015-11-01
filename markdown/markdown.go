@@ -35,7 +35,7 @@ type markdown struct {
 }
 
 func New() goldsmith.Context {
-	return goldsmith.Context{new(markdown), nil}
+	return goldsmith.Context{Chainer: new(markdown)}
 }
 
 func (*markdown) ChainSingle(file goldsmith.File) goldsmith.File {
