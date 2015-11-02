@@ -33,17 +33,17 @@ type frontMatter struct {
 	matter *front.Matter
 }
 
-func New() goldsmith.Context {
+func New() goldsmith.Config {
 	fm := &frontMatter{front.NewMatter()}
 	fm.matter.Handle("---", front.YAMLHandler)
 
-	return goldsmith.Context{
+	return goldsmith.Config{
 		Chainer: fm,
 		Globs:   []string{"*.md", "*.markdown"},
 	}
 }
 
-func (fm *frontMatter) ChainSingle(file goldsmith.File) goldsmith.File {
+func (fm *frontMatter) ChainSingle(ctx goldsmith.Context, file *goldsmith.File) *goldsmith.File {
 	front, body, err := fm.matter.Parse(file.Buff)
 	if err != nil {
 		file.Err = err

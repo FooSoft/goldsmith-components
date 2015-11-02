@@ -34,14 +34,14 @@ import (
 type markdown struct {
 }
 
-func New() goldsmith.Context {
-	return goldsmith.Context{
+func New() goldsmith.Config {
+	return goldsmith.Config{
 		Chainer: new(markdown),
 		Globs:   []string{"*.md", "*.markdown"},
 	}
 }
 
-func (*markdown) ChainSingle(file goldsmith.File) goldsmith.File {
+func (*markdown) ChainSingle(ctx goldsmith.Context, file *goldsmith.File) *goldsmith.File {
 	file.Buff = bytes.NewBuffer(blackfriday.MarkdownCommon(file.Buff.Bytes()))
 	file.Path = strings.TrimSuffix(file.Path, path.Ext(file.Path)) + ".html"
 	return file

@@ -34,19 +34,19 @@ type layout struct {
 	def  string
 }
 
-func New(glob, def string) goldsmith.Context {
+func New(glob, def string) goldsmith.Config {
 	tmpl, err := template.ParseGlob(glob)
 	if err != nil {
-		return goldsmith.Context{Err: err}
+		return goldsmith.Config{Err: err}
 	}
 
-	return goldsmith.Context{
+	return goldsmith.Config{
 		Chainer: &layout{tmpl, def},
 		Globs:   []string{"*.html", "*.html"},
 	}
 }
 
-func (t *layout) ChainSingle(file goldsmith.File) goldsmith.File {
+func (t *layout) ChainSingle(ctx goldsmith.Context, file *goldsmith.File) *goldsmith.File {
 	name, ok := file.Meta["layout"]
 	if !ok {
 		name = t.def
