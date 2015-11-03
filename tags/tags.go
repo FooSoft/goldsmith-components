@@ -22,28 +22,42 @@
 
 package tags
 
-import "github.com/FooSoft/goldsmith"
+import (
+	"path/filepath"
+
+	"github.com/FooSoft/goldsmith"
+)
 
 type tags struct {
-	key, dir string
-	meta     map[string]interface{}
-	paths    map[string][]string
+	srcKey, dstKey string
+	outputDir      string
+	meta           map[string]interface{}
 }
 
-func New(key, dir string, meta map[string]interface{}) goldsmith.Config {
+type tagInfo struct {
+	name  string
+	paths []string
+}
+
+type tagMeta struct {
+	all     []tagInfo
+	current string
+}
+
+func New(srcKey, dstKey, outputDir string, meta map[string]interface{}) goldsmith.Config {
 	return goldsmith.Config{
-		Chainer: &tags{key, dir, meta, make(map[string][]string)},
+		Chainer: &tags{srcKey, dstKey, outputDir, meta},
 		Globs:   []string{"*.html", "*.html"},
 	}
 }
 
-func (t *tags) ChainMultiple(ctx goldsmith.Context, input chan *goldsmith.File, output chan *goldsmith.File) {
-	defer close(output)
+func (t *tags) buildLinks(input, output chan *goldsmith.File) map[string][]string {
+	links := make(map[string][]string)
 
 	for file := range input {
-		values, _ := file.Meta[t.key]
+		values, _ := file.Meta[t.srcKey]
 		for _, value := range values.([]string) {
-			paths, _ := t.paths[value]
+			paths, _ := links[value]
 
 			for _, path := range paths {
 				if path == file.Path {
@@ -52,9 +66,36 @@ func (t *tags) ChainMultiple(ctx goldsmith.Context, input chan *goldsmith.File, 
 			}
 
 			paths = append(paths, file.Path)
-			t.paths[value] = paths
+			links[value] = paths
 		}
 
 		output <- file
 	}
+
+	return links
+}
+
+func (t *tags) buildIndex(ctx goldsmith.Context, links map[string][]string, output chan *goldsmith.File) {
+	file, err := ctx.NewFile(filepath.Join(t.outputDir, "index.html"))
+	if err != nil {
+		file.Err = err
+	}
+
+	if t.meta != nil {
+		file.Meta = t.meta
+	}
+
+	output <- file
+}
+
+func (t *tags) buildPages(ctx goldsmith.Context, links map[string][]string, output chan *goldsmith.File) {
+
+}
+
+func (t *tags) ChainMultiple(ctx goldsmith.Context, input, output chan *goldsmith.File) {
+	defer close(output)
+
+	links := t.buildLinks(input, output)
+	t.buildIndex(ctx, links, output)
+	t.buildPages(ctx, links, output)
 }
