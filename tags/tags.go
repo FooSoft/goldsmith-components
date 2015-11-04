@@ -34,14 +34,9 @@ type tags struct {
 	meta           map[string]interface{}
 }
 
-type tagInfo struct {
-	name  string
-	paths []string
-}
-
 type tagMeta struct {
-	all     []tagInfo
-	current string
+	All     map[string][]string
+	Current string
 }
 
 func New(srcKey, dstKey, outputDir string, meta map[string]interface{}) goldsmith.Config {
@@ -51,13 +46,13 @@ func New(srcKey, dstKey, outputDir string, meta map[string]interface{}) goldsmit
 	}
 }
 
-func (t *tags) buildLinks(input, output chan *goldsmith.File) map[string][]string {
-	links := make(map[string][]string)
+func (t *tags) buildMeta(input, output chan *goldsmith.File) tagMeta {
+	meta := tagMeta{All: make(map[string][]string)}
 
 	for file := range input {
 		values, _ := file.Meta[t.srcKey]
 		for _, value := range values.([]string) {
-			paths, _ := links[value]
+			paths, _ := meta.All[value]
 
 			for _, path := range paths {
 				if path == file.Path {
@@ -66,16 +61,16 @@ func (t *tags) buildLinks(input, output chan *goldsmith.File) map[string][]strin
 			}
 
 			paths = append(paths, file.Path)
-			links[value] = paths
+			meta.All[value] = paths
 		}
 
 		output <- file
 	}
 
-	return links
+	return meta
 }
 
-func (t *tags) buildIndex(ctx goldsmith.Context, links map[string][]string, output chan *goldsmith.File) {
+func (t *tags) buildIndex(ctx goldsmith.Context, meta tagMeta, output chan *goldsmith.File) {
 	file, err := ctx.NewFile(filepath.Join(t.outputDir, "index.html"))
 	if err != nil {
 		file.Err = err
@@ -84,18 +79,20 @@ func (t *tags) buildIndex(ctx goldsmith.Context, links map[string][]string, outp
 	if t.meta != nil {
 		file.Meta = t.meta
 	}
+	file.Meta[t.dstKey] = tagMeta{All: meta.All}
 
 	output <- file
 }
 
-func (t *tags) buildPages(ctx goldsmith.Context, links map[string][]string, output chan *goldsmith.File) {
+func (t *tags) buildPages(ctx goldsmith.Context, meta tagMeta, output chan *goldsmith.File) {
 
 }
 
 func (t *tags) ChainMultiple(ctx goldsmith.Context, input, output chan *goldsmith.File) {
 	defer close(output)
 
-	links := t.buildLinks(input, output)
-	t.buildIndex(ctx, links, output)
-	t.buildPages(ctx, links, output)
+	meta := t.buildMeta(input, output)
+
+	t.buildIndex(ctx, meta, output)
+	t.buildPages(ctx, meta, output)
 }
