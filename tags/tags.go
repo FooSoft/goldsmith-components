@@ -51,8 +51,8 @@ func (t *tags) buildMeta(input, output chan *goldsmith.File) tagMeta {
 
 	for file := range input {
 		values, _ := file.Meta[t.srcKey]
-		for _, value := range values.([]string) {
-			paths, _ := meta.All[value]
+		for _, value := range values.([]interface{}) {
+			paths, _ := meta.All[value.(string)]
 
 			for _, path := range paths {
 				if path == file.Path {
@@ -61,7 +61,7 @@ func (t *tags) buildMeta(input, output chan *goldsmith.File) tagMeta {
 			}
 
 			paths = append(paths, file.Path)
-			meta.All[value] = paths
+			meta.All[value.(string)] = paths
 		}
 
 		output <- file
@@ -79,20 +79,31 @@ func (t *tags) buildIndex(ctx goldsmith.Context, meta tagMeta, output chan *gold
 	if t.meta != nil {
 		file.Meta = t.meta
 	}
-	file.Meta[t.dstKey] = tagMeta{All: meta.All}
 
+	file.Meta[t.dstKey] = tagMeta{All: meta.All}
 	output <- file
 }
 
 func (t *tags) buildPages(ctx goldsmith.Context, meta tagMeta, output chan *goldsmith.File) {
+	for tag := range meta.All {
+		file, err := ctx.NewFile(filepath.Join(t.outputDir, tag, "index.html"))
+		if err != nil {
+			file.Err = err
+		}
 
+		if t.meta != nil {
+			file.Meta = t.meta
+		}
+
+		file.Meta[t.dstKey] = tagMeta{meta.All, meta.Current}
+		output <- file
+	}
 }
 
 func (t *tags) ChainMultiple(ctx goldsmith.Context, input, output chan *goldsmith.File) {
 	defer close(output)
 
 	meta := t.buildMeta(input, output)
-
 	t.buildIndex(ctx, meta, output)
 	t.buildPages(ctx, meta, output)
 }
