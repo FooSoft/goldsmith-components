@@ -34,7 +34,7 @@ type tags struct {
 	meta           map[string]interface{}
 }
 
-type tagMeta struct {
+type meta struct {
 	All     map[string][]string
 	Current string
 }
@@ -46,13 +46,13 @@ func New(srcKey, dstKey, outputDir string, meta map[string]interface{}) goldsmit
 	}
 }
 
-func (t *tags) buildMeta(input, output chan *goldsmith.File) tagMeta {
-	meta := tagMeta{All: make(map[string][]string)}
+func (t *tags) buildMeta(input, output chan *goldsmith.File) meta {
+	m := meta{All: make(map[string][]string)}
 
 	for file := range input {
 		values, _ := file.Meta[t.srcKey]
 		for _, value := range values.([]interface{}) {
-			paths, _ := meta.All[value.(string)]
+			paths, _ := m.All[value.(string)]
 
 			for _, path := range paths {
 				if path == file.Path {
@@ -61,17 +61,19 @@ func (t *tags) buildMeta(input, output chan *goldsmith.File) tagMeta {
 			}
 
 			paths = append(paths, file.Path)
-			meta.All[value.(string)] = paths
+			m.All[value.(string)] = paths
 		}
 
 		output <- file
 	}
 
-	return meta
+	return m
 }
 
-func (t *tags) buildIndex(ctx goldsmith.Context, meta tagMeta, output chan *goldsmith.File) {
-	file, err := ctx.NewFile(filepath.Join(t.outputDir, "index.html"))
+func (t *tags) buildIndex(ctx goldsmith.Context, m meta, output chan *goldsmith.File) {
+	path := filepath.Join(t.outputDir, "index.html")
+
+	file, err := ctx.NewFile(path)
 	if err != nil {
 		file.Err = err
 	}
@@ -80,13 +82,15 @@ func (t *tags) buildIndex(ctx goldsmith.Context, meta tagMeta, output chan *gold
 		file.Meta = t.meta
 	}
 
-	file.Meta[t.dstKey] = tagMeta{All: meta.All}
+	file.Meta[t.dstKey] = meta{All: m.All}
 	output <- file
 }
 
-func (t *tags) buildPages(ctx goldsmith.Context, meta tagMeta, output chan *goldsmith.File) {
-	for tag := range meta.All {
-		file, err := ctx.NewFile(filepath.Join(t.outputDir, tag, "index.html"))
+func (t *tags) buildPages(ctx goldsmith.Context, m meta, output chan *goldsmith.File) {
+	for tag := range m.All {
+		path := filepath.Join(t.outputDir, tag, "index.html")
+
+		file, err := ctx.NewFile(path)
 		if err != nil {
 			file.Err = err
 		}
@@ -95,7 +99,7 @@ func (t *tags) buildPages(ctx goldsmith.Context, meta tagMeta, output chan *gold
 			file.Meta = t.meta
 		}
 
-		file.Meta[t.dstKey] = tagMeta{meta.All, meta.Current}
+		file.Meta[t.dstKey] = m
 		output <- file
 	}
 }
