@@ -42,7 +42,7 @@ func New(glob, def string) goldsmith.Config {
 
 	return goldsmith.Config{
 		Chainer: &layout{tmpl, def},
-		Globs:   []string{"*.html", "*.html"},
+		Globs:   []string{"*.html"},
 	}
 }
 

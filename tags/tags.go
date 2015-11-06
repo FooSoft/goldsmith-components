@@ -30,7 +30,6 @@ import (
 
 type tags struct {
 	srcKey, dstKey string
-	outputDir      string
 	meta           map[string]interface{}
 }
 
@@ -39,10 +38,10 @@ type meta struct {
 	Current string
 }
 
-func New(srcKey, dstKey, outputDir string, meta map[string]interface{}) goldsmith.Config {
+func New(srcKey, dstKey string, meta map[string]interface{}) goldsmith.Config {
 	return goldsmith.Config{
-		Chainer: &tags{srcKey, dstKey, outputDir, meta},
-		Globs:   []string{"*.html", "*.html"},
+		Chainer: &tags{srcKey, dstKey, meta},
+		Globs:   []string{"*.html"},
 	}
 }
 
@@ -50,18 +49,19 @@ func (t *tags) buildMeta(input, output chan *goldsmith.File) meta {
 	m := meta{All: make(map[string][]string)}
 
 	for file := range input {
-		values, _ := file.Meta[t.srcKey]
-		for _, value := range values.([]interface{}) {
-			paths, _ := m.All[value.(string)]
+		if values, ok := file.Meta[t.srcKey]; ok {
+			for _, value := range values.([]interface{}) {
+				paths, _ := m.All[value.(string)]
 
-			for _, path := range paths {
-				if path == file.Path {
-					continue
+				for _, path := range paths {
+					if path == file.Path {
+						continue
+					}
 				}
-			}
 
-			paths = append(paths, file.Path)
-			m.All[value.(string)] = paths
+				paths = append(paths, file.Path)
+				m.All[value.(string)] = paths
+			}
 		}
 
 		output <- file
@@ -71,7 +71,7 @@ func (t *tags) buildMeta(input, output chan *goldsmith.File) meta {
 }
 
 func (t *tags) buildIndex(ctx goldsmith.Context, m meta, output chan *goldsmith.File) {
-	path := filepath.Join(t.outputDir, "index.html")
+	path := filepath.Join(t.srcKey, "index.html")
 
 	file, err := ctx.NewFile(path)
 	if err != nil {
@@ -88,7 +88,7 @@ func (t *tags) buildIndex(ctx goldsmith.Context, m meta, output chan *goldsmith.
 
 func (t *tags) buildPages(ctx goldsmith.Context, m meta, output chan *goldsmith.File) {
 	for tag := range m.All {
-		path := filepath.Join(t.outputDir, tag, "index.html")
+		path := filepath.Join(t.srcKey, tag, "index.html")
 
 		file, err := ctx.NewFile(path)
 		if err != nil {
@@ -108,6 +108,7 @@ func (t *tags) ChainMultiple(ctx goldsmith.Context, input, output chan *goldsmit
 	defer close(output)
 
 	meta := t.buildMeta(input, output)
+
 	t.buildIndex(ctx, meta, output)
 	t.buildPages(ctx, meta, output)
 }
