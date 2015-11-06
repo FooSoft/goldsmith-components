@@ -34,8 +34,8 @@ type layout struct {
 	def  string
 }
 
-func New(glob, def string) goldsmith.Config {
-	tmpl, err := template.ParseGlob(glob)
+func New(glob, def string, funcs template.FuncMap) goldsmith.Config {
+	tmpl, err := template.New("").Funcs(funcs).ParseGlob(glob)
 	if err != nil {
 		return goldsmith.Config{Err: err}
 	}
@@ -55,7 +55,7 @@ func (t *layout) ChainSingle(ctx goldsmith.Context, file *goldsmith.File) *golds
 	file.Meta["content"] = template.HTML(file.Buff.Bytes())
 
 	var buff bytes.Buffer
-	if file.Err = t.tmpl.ExecuteTemplate(&buff, name.(string), file.Meta); file.Err == nil {
+	if file.Err = t.tmpl.ExecuteTemplate(&buff, name.(string), file); file.Err == nil {
 		file.Buff = &buff
 	}
 
