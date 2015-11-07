@@ -88,7 +88,7 @@ func (t *tags) buildIndex(ctx goldsmith.Context, m meta, output chan *goldsmith.
 
 	file, err := ctx.NewFile(path)
 	if err != nil {
-		file.Err = err
+		panic(err)
 	}
 
 	if t.meta != nil {
@@ -105,7 +105,7 @@ func (t *tags) buildPages(ctx goldsmith.Context, m meta, output chan *goldsmith.
 
 		file, err := ctx.NewFile(path)
 		if err != nil {
-			file.Err = err
+			panic(err)
 		}
 
 		if t.meta != nil {
