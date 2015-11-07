@@ -25,6 +25,8 @@ package layout
 import (
 	"bytes"
 	"html/template"
+	"path/filepath"
+	"sync"
 
 	"github.com/FooSoft/goldsmith"
 )
@@ -34,30 +36,47 @@ type layout struct {
 	def  string
 }
 
-func New(glob, def string, funcs template.FuncMap) goldsmith.Config {
+func New(glob, def string, funcs template.FuncMap) (goldsmith.Chainer, error) {
 	tmpl, err := template.New("").Funcs(funcs).ParseGlob(glob)
 	if err != nil {
-		return goldsmith.Config{Err: err}
+		return nil, err
 	}
 
-	return goldsmith.Config{
-		Chainer: &layout{tmpl, def},
-		Globs:   []string{"*.html"},
-	}
+	return &layout{tmpl, def}, nil
 }
 
-func (t *layout) ChainSingle(ctx goldsmith.Context, file *goldsmith.File) *goldsmith.File {
-	name, ok := file.Meta["layout"]
-	if !ok {
-		name = t.def
+func (*layout) Filter(path string) bool {
+	if ext := filepath.Ext(path); ext == ".html" {
+		return false
 	}
 
-	file.Meta["content"] = template.HTML(file.Buff.Bytes())
+	return true
+}
 
-	var buff bytes.Buffer
-	if file.Err = t.tmpl.ExecuteTemplate(&buff, name.(string), file); file.Err == nil {
-		file.Buff = &buff
+func (t *layout) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
+	defer close(output)
+
+	var wg sync.WaitGroup
+	for file := range input {
+		wg.Add(1)
+		go func(f *goldsmith.File) {
+			defer wg.Done()
+
+			name, ok := f.Meta["layout"]
+			if !ok {
+				name = t.def
+			}
+
+			f.Meta["content"] = template.HTML(f.Buff.Bytes())
+
+			var buff bytes.Buffer
+			if f.Err = t.tmpl.ExecuteTemplate(&buff, name.(string), f); f.Err == nil {
+				f.Buff = &buff
+			}
+
+			output <- f
+		}(file)
 	}
 
-	return file
+	wg.Wait()
 }

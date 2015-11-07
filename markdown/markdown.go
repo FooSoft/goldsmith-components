@@ -25,7 +25,9 @@ package markdown
 import (
 	"bytes"
 	"path"
+	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/russross/blackfriday"
@@ -34,15 +36,31 @@ import (
 type markdown struct {
 }
 
-func New() goldsmith.Config {
-	return goldsmith.Config{
-		Chainer: new(markdown),
-		Globs:   []string{"*.md", "*.markdown"},
-	}
+func New() (goldsmith.Chainer, error) {
+	return new(markdown), nil
 }
 
-func (*markdown) ChainSingle(ctx goldsmith.Context, file *goldsmith.File) *goldsmith.File {
-	file.Buff = bytes.NewBuffer(blackfriday.MarkdownCommon(file.Buff.Bytes()))
-	file.Path = strings.TrimSuffix(file.Path, path.Ext(file.Path)) + ".html"
-	return file
+func (*markdown) Filter(path string) bool {
+	if ext := filepath.Ext(path); ext == ".md" {
+		return false
+	}
+
+	return true
+}
+
+func (*markdown) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
+	defer close(output)
+
+	var wg sync.WaitGroup
+	for file := range input {
+		wg.Add(1)
+		go func(f *goldsmith.File) {
+			defer wg.Done()
+			f.Buff = bytes.NewBuffer(blackfriday.MarkdownCommon(f.Buff.Bytes()))
+			f.Path = strings.TrimSuffix(f.Path, path.Ext(f.Path)) + ".html"
+			output <- f
+		}(file)
+	}
+
+	wg.Wait()
 }

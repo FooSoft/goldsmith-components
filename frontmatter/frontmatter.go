@@ -24,6 +24,8 @@ package frontmatter
 
 import (
 	"bytes"
+	"path/filepath"
+	"sync"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/gernest/front"
@@ -33,27 +35,42 @@ type frontMatter struct {
 	matter *front.Matter
 }
 
-func New() goldsmith.Config {
+func New() (goldsmith.Chainer, error) {
 	fm := &frontMatter{front.NewMatter()}
 	fm.matter.Handle("---", front.YAMLHandler)
-
-	return goldsmith.Config{
-		Chainer: fm,
-		Globs:   []string{"*.md", "*.markdown"},
-	}
+	return fm, nil
 }
 
-func (fm *frontMatter) ChainSingle(ctx goldsmith.Context, file *goldsmith.File) *goldsmith.File {
-	front, body, err := fm.matter.Parse(file.Buff)
-	if err != nil {
-		file.Err = err
-		return file
+func (*frontMatter) Filter(path string) bool {
+	if path := filepath.Ext(path); path == ".md" {
+		return false
 	}
 
-	file.Buff = bytes.NewBuffer([]byte(body))
-	for key, value := range front {
-		file.Meta[key] = value
+	return true
+}
+
+func (fm *frontMatter) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
+	defer close(output)
+
+	var wg sync.WaitGroup
+	for file := range input {
+		wg.Add(1)
+		go func(f *goldsmith.File) {
+			defer wg.Done()
+
+			front, body, err := fm.matter.Parse(f.Buff)
+			if err == nil {
+				f.Buff = bytes.NewBuffer([]byte(body))
+				for key, value := range front {
+					f.Meta[key] = value
+				}
+			} else {
+				f.Err = err
+			}
+
+			output <- f
+		}(file)
 	}
 
-	return file
+	wg.Wait()
 }

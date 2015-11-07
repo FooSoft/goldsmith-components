@@ -38,11 +38,24 @@ type meta struct {
 	Current string
 }
 
-func New(srcKey, dstKey string, meta map[string]interface{}) goldsmith.Config {
-	return goldsmith.Config{
-		Chainer: &tags{srcKey, dstKey, meta},
-		Globs:   []string{"*.html"},
+func New(srcKey, dstKey string, meta map[string]interface{}) (goldsmith.Chainer, error) {
+	return &tags{srcKey, dstKey, meta}, nil
+}
+
+func (*tags) Filter(path string) bool {
+	if ext := filepath.Ext(path); ext == ".html" {
+		return true
 	}
+
+	return false
+}
+
+func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
+	defer close(output)
+
+	meta := t.buildMeta(input, output)
+	t.buildIndex(ctx, meta, output)
+	t.buildPages(ctx, meta, output)
 }
 
 func (t *tags) buildMeta(input, output chan *goldsmith.File) meta {
@@ -102,13 +115,4 @@ func (t *tags) buildPages(ctx goldsmith.Context, m meta, output chan *goldsmith.
 		file.Meta[t.dstKey] = m
 		output <- file
 	}
-}
-
-func (t *tags) ChainMultiple(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	defer close(output)
-
-	meta := t.buildMeta(input, output)
-
-	t.buildIndex(ctx, meta, output)
-	t.buildPages(ctx, meta, output)
 }
