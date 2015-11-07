@@ -55,12 +55,12 @@ func New(src, dst string) (goldsmith.Chainer, error) {
 	return &static{src, dst, paths}, nil
 }
 
+func (*static) Filter(path string) bool {
+	return true
+}
+
 func (s *static) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
 	defer close(output)
-
-	for file := range input {
-		output <- file
-	}
 
 	for _, path := range s.paths {
 		relPath, err := filepath.Rel(s.src, path)
