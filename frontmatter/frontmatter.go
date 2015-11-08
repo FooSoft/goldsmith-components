@@ -23,22 +23,26 @@
 package frontmatter
 
 import (
+	"bufio"
 	"bytes"
+	"encoding/json"
+	"errors"
+	"io"
 	"path/filepath"
+	"strings"
 	"sync"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/FooSoft/goldsmith"
-	"github.com/gernest/front"
+	"github.com/naoina/toml"
 )
 
 type frontMatter struct {
-	matter *front.Matter
 }
 
 func New() (goldsmith.Chainer, error) {
-	fm := &frontMatter{front.NewMatter()}
-	fm.matter.Handle("---", front.YAMLHandler)
-	return fm, nil
+	return &frontMatter{}, nil
 }
 
 func (*frontMatter) Filter(path string) bool {
@@ -58,10 +62,10 @@ func (fm *frontMatter) Chain(ctx goldsmith.Context, input, output chan *goldsmit
 		go func(f *goldsmith.File) {
 			defer wg.Done()
 
-			front, body, err := fm.matter.Parse(f.Buff)
+			meta, body, err := parse(f.Buff)
 			if err == nil {
-				f.Buff = bytes.NewBuffer([]byte(body))
-				for key, value := range front {
+				f.Buff = body
+				for key, value := range meta {
 					f.Meta[key] = value
 				}
 			} else {
@@ -73,4 +77,76 @@ func (fm *frontMatter) Chain(ctx goldsmith.Context, input, output chan *goldsmit
 	}
 
 	wg.Wait()
+}
+
+func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
+	const (
+		yamlOpener = "---"
+		yamlCloser = "---"
+		tomlOpener = "+++"
+		tomlCloser = "+++"
+		jsonOpener = "{"
+		jsonCloser = "}"
+	)
+
+	var (
+		body, front bytes.Buffer
+		closer      string
+		meta        = make(map[string]interface{})
+		scanner     = bufio.NewScanner(input)
+		header      = true
+	)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if header {
+			if len(closer) == 0 {
+				switch strings.TrimSpace(line) {
+				case tomlOpener:
+					closer = tomlCloser
+				case yamlOpener:
+					closer = yamlCloser
+				case jsonOpener:
+					closer = jsonCloser
+				default:
+					header = false
+				}
+			} else {
+				switch strings.TrimSpace(line) {
+				case closer:
+					header = false
+				default:
+					front.Write([]byte(line + "\n"))
+				}
+			}
+		} else {
+			body.Write([]byte(line + "\n"))
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, nil, err
+	}
+
+	if header {
+		return nil, nil, errors.New("unterminated front matter block")
+	}
+
+	switch closer {
+	case tomlCloser:
+		if err := toml.Unmarshal(front.Bytes(), meta); err != nil {
+			return nil, nil, err
+		}
+	case yamlCloser:
+		if err := yaml.Unmarshal(front.Bytes(), meta); err != nil {
+			return nil, nil, err
+		}
+	case jsonCloser:
+		if err := json.Unmarshal(front.Bytes(), meta); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	return meta, &body, nil
 }
