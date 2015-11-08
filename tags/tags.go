@@ -24,18 +24,22 @@ package tags
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/FooSoft/goldsmith"
 )
 
+type tagInfo struct {
+	Files    []*goldsmith.File
+	safeName string
+	path     string
+}
+
+type tagInfoMap map[string]tagInfo
+
 type tags struct {
 	srcKey, dstKey string
 	meta           map[string]interface{}
-}
-
-type meta struct {
-	All     map[string][]string
-	Current string
 }
 
 func New(srcKey, dstKey string, meta map[string]interface{}) (goldsmith.Chainer, error) {
@@ -50,43 +54,52 @@ func (*tags) Filter(path string) bool {
 	return false
 }
 
-func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	defer close(output)
-
-	meta := t.buildMeta(input, output)
-	t.buildIndex(ctx, meta, output)
-	t.buildPages(ctx, meta, output)
-}
-
-func (t *tags) buildMeta(input, output chan *goldsmith.File) meta {
-	m := meta{All: make(map[string][]string)}
+func (t *tags) buildTagData(input, output chan *goldsmith.File) tagInfoMap {
+	tf := make(tagInfoMap)
 
 	for file := range input {
-		if values, ok := file.Meta[t.srcKey]; ok {
-			for _, value := range values.([]interface{}) {
-				paths, _ := m.All[value.(string)]
+		if data, ok := file.Meta[t.srcKey]; ok {
+			tags, ok := data.([]interface{})
+			if !ok {
+				continue
+			}
 
-				for _, path := range paths {
-					if path == file.Path {
-						continue
+		tagLoop:
+			for _, tag := range tags {
+				tagStr, ok := tag.(string)
+				if !ok {
+					continue
+				}
+
+				tagInfo, ok := tf[tagStr]
+				if !ok {
+					tagInfo.safeName = safeTag(tagStr)
+					tagInfo.path = t.buildTagPagePath(tagStr)
+				}
+
+				for _, taggedFile := range tagInfo.Files {
+					if taggedFile == file {
+						continue tagLoop
 					}
 				}
 
-				paths = append(paths, file.Path)
-				m.All[value.(string)] = paths
+				tagInfo.Files = append(tagInfo.Files, file)
+				tf[tagStr] = tagInfo
+			}
+
+			file.Meta[t.dstKey] = map[string]interface{}{
+				"all": tf,
 			}
 		}
 
 		output <- file
 	}
 
-	return m
+	return tf
 }
 
-func (t *tags) buildIndex(ctx goldsmith.Context, m meta, output chan *goldsmith.File) {
-	path := filepath.Join(t.srcKey, "index.html")
-
-	file, err := ctx.NewFile(path)
+func (t *tags) buildIndexPage(ctx goldsmith.Context, tf tagInfoMap, output chan *goldsmith.File) {
+	file, err := ctx.NewFile(t.buildTagIndexPagePath())
 	if err != nil {
 		panic(err)
 	}
@@ -95,15 +108,16 @@ func (t *tags) buildIndex(ctx goldsmith.Context, m meta, output chan *goldsmith.
 		file.Meta = t.meta
 	}
 
-	file.Meta[t.dstKey] = meta{All: m.All}
+	file.Meta[t.dstKey] = map[string]interface{}{
+		"all": tf,
+	}
+
 	output <- file
 }
 
-func (t *tags) buildPages(ctx goldsmith.Context, m meta, output chan *goldsmith.File) {
-	for tag := range m.All {
-		path := filepath.Join(t.srcKey, tag, "index.html")
-
-		file, err := ctx.NewFile(path)
+func (t *tags) buildTagPages(ctx goldsmith.Context, tf tagInfoMap, output chan *goldsmith.File) {
+	for tag := range tf {
+		file, err := ctx.NewFile(t.buildTagPagePath(tag))
 		if err != nil {
 			panic(err)
 		}
@@ -112,7 +126,30 @@ func (t *tags) buildPages(ctx goldsmith.Context, m meta, output chan *goldsmith.
 			file.Meta = t.meta
 		}
 
-		file.Meta[t.dstKey] = m
+		file.Meta[t.dstKey] = map[string]interface{}{
+			"all": tf,
+			"tag": tag,
+		}
+
 		output <- file
 	}
+}
+
+func (t *tags) buildTagPagePath(tag string) string {
+	return filepath.Join(t.srcKey, safeTag(tag), "index.html")
+}
+
+func (t *tags) buildTagIndexPagePath() string {
+	return filepath.Join(t.srcKey, "index.html")
+}
+
+func safeTag(tag string) string {
+	return strings.Replace(tag, " ", "-", -1)
+}
+
+func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
+	defer close(output)
+	tf := t.buildTagData(input, output)
+	t.buildIndexPage(ctx, tf, output)
+	t.buildTagPages(ctx, tf, output)
 }
