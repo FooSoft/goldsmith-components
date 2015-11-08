@@ -31,8 +31,8 @@ import (
 
 type tagInfo struct {
 	Files    []*goldsmith.File
-	safeName string
-	path     string
+	SafeName string
+	Path     string
 }
 
 type tagInfoMap map[string]tagInfo
@@ -73,8 +73,8 @@ func (t *tags) buildTagData(input, output chan *goldsmith.File) tagInfoMap {
 
 				tagInfo, ok := tf[tagStr]
 				if !ok {
-					tagInfo.safeName = safeTag(tagStr)
-					tagInfo.path = t.buildTagPagePath(tagStr)
+					tagInfo.SafeName = safeTag(tagStr)
+					tagInfo.Path = t.buildTagPagePath(tagStr)
 				}
 
 				for _, taggedFile := range tagInfo.Files {
@@ -104,8 +104,8 @@ func (t *tags) buildIndexPage(ctx goldsmith.Context, tf tagInfoMap, output chan 
 		panic(err)
 	}
 
-	if t.meta != nil {
-		file.Meta = t.meta
+	for key, value := range t.meta {
+		file.Meta[key] = value
 	}
 
 	file.Meta[t.dstKey] = map[string]interface{}{
@@ -122,8 +122,8 @@ func (t *tags) buildTagPages(ctx goldsmith.Context, tf tagInfoMap, output chan *
 			panic(err)
 		}
 
-		if t.meta != nil {
-			file.Meta = t.meta
+		for key, value := range t.meta {
+			file.Meta[key] = value
 		}
 
 		file.Meta[t.dstKey] = map[string]interface{}{
