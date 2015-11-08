@@ -100,11 +100,7 @@ func (t *tags) buildTagInfo(input, output chan *goldsmith.File) tagInfoMap {
 
 func (t *tags) buildPages(ctx goldsmith.Context, info tagInfoMap, output chan *goldsmith.File) {
 	for tag := range info {
-		file, err := ctx.NewFile(t.tagPagePath(tag))
-		if err != nil {
-			panic(err)
-		}
-
+		file := ctx.NewFile(t.tagPagePath(tag))
 		for key, value := range t.meta {
 			file.Meta[key] = value
 		}

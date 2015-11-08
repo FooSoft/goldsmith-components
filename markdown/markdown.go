@@ -23,7 +23,6 @@
 package markdown
 
 import (
-	"bytes"
 	"path"
 	"path/filepath"
 	"strings"
@@ -56,7 +55,8 @@ func (*markdown) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File
 		wg.Add(1)
 		go func(f *goldsmith.File) {
 			defer wg.Done()
-			f.Buff = bytes.NewBuffer(blackfriday.MarkdownCommon(f.Buff.Bytes()))
+			f.Buff.Reset()
+			f.Buff.Write(blackfriday.MarkdownCommon(f.Buff.Bytes()))
 			f.Path = strings.TrimSuffix(f.Path, path.Ext(f.Path)) + ".html"
 			output <- f
 		}(file)

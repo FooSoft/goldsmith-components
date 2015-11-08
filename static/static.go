@@ -68,10 +68,7 @@ func (s *static) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File
 			panic(err)
 		}
 
-		file, err := ctx.NewFileStatic(filepath.Join(s.dst, relPath))
-		if err != nil {
-			panic(err)
-		}
+		file := ctx.NewFileStatic(filepath.Join(s.dst, relPath))
 
 		var f *os.File
 		if f, file.Err = os.Open(path); file.Err == nil {

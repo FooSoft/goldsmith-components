@@ -62,9 +62,9 @@ func (fm *frontMatter) Chain(ctx goldsmith.Context, input, output chan *goldsmit
 		go func(f *goldsmith.File) {
 			defer wg.Done()
 
-			meta, body, err := parse(f.Buff)
+			meta, body, err := parse(&f.Buff)
 			if err == nil {
-				f.Buff = body
+				f.Buff = *body
 				for key, value := range meta {
 					f.Meta[key] = value
 				}

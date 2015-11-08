@@ -71,7 +71,7 @@ func (t *layout) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File
 
 			var buff bytes.Buffer
 			if f.Err = t.tmpl.ExecuteTemplate(&buff, name.(string), f); f.Err == nil {
-				f.Buff = &buff
+				f.Buff = buff
 			}
 
 			output <- f
