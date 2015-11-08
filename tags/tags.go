@@ -47,7 +47,7 @@ func New(srcKey, dstKey string, meta map[string]interface{}) (goldsmith.Chainer,
 }
 
 func (*tags) Filter(path string) bool {
-	if ext := filepath.Ext(path); ext == ".html" {
+	if ext := filepath.Ext(path); ext != ".html" {
 		return true
 	}
 
