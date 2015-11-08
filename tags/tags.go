@@ -54,8 +54,8 @@ func (*tags) Filter(path string) bool {
 	return false
 }
 
-func (t *tags) buildTagData(input, output chan *goldsmith.File) tagInfoMap {
-	tf := make(tagInfoMap)
+func (t *tags) buildTagInfo(input, output chan *goldsmith.File) tagInfoMap {
+	info := make(tagInfoMap)
 
 	for file := range input {
 		if data, ok := file.Meta[t.srcKey]; ok {
@@ -71,10 +71,10 @@ func (t *tags) buildTagData(input, output chan *goldsmith.File) tagInfoMap {
 					continue
 				}
 
-				tagInfo, ok := tf[tagStr]
+				tagInfo, ok := info[tagStr]
 				if !ok {
 					tagInfo.SafeName = safeTag(tagStr)
-					tagInfo.Path = t.buildTagPagePath(tagStr)
+					tagInfo.Path = t.tagPagePath(tagStr)
 				}
 
 				for _, taggedFile := range tagInfo.Files {
@@ -84,40 +84,23 @@ func (t *tags) buildTagData(input, output chan *goldsmith.File) tagInfoMap {
 				}
 
 				tagInfo.Files = append(tagInfo.Files, file)
-				tf[tagStr] = tagInfo
+				info[tagStr] = tagInfo
 			}
 
 			file.Meta[t.dstKey] = map[string]interface{}{
-				"all": tf,
+				"all": info,
 			}
 		}
 
 		output <- file
 	}
 
-	return tf
+	return info
 }
 
-func (t *tags) buildIndexPage(ctx goldsmith.Context, tf tagInfoMap, output chan *goldsmith.File) {
-	file, err := ctx.NewFile(t.buildTagIndexPagePath())
-	if err != nil {
-		panic(err)
-	}
-
-	for key, value := range t.meta {
-		file.Meta[key] = value
-	}
-
-	file.Meta[t.dstKey] = map[string]interface{}{
-		"all": tf,
-	}
-
-	output <- file
-}
-
-func (t *tags) buildTagPages(ctx goldsmith.Context, tf tagInfoMap, output chan *goldsmith.File) {
-	for tag := range tf {
-		file, err := ctx.NewFile(t.buildTagPagePath(tag))
+func (t *tags) buildPages(ctx goldsmith.Context, info tagInfoMap, output chan *goldsmith.File) {
+	for tag := range info {
+		file, err := ctx.NewFile(t.tagPagePath(tag))
 		if err != nil {
 			panic(err)
 		}
@@ -127,7 +110,7 @@ func (t *tags) buildTagPages(ctx goldsmith.Context, tf tagInfoMap, output chan *
 		}
 
 		file.Meta[t.dstKey] = map[string]interface{}{
-			"all": tf,
+			"all": info,
 			"tag": tag,
 		}
 
@@ -135,12 +118,8 @@ func (t *tags) buildTagPages(ctx goldsmith.Context, tf tagInfoMap, output chan *
 	}
 }
 
-func (t *tags) buildTagPagePath(tag string) string {
+func (t *tags) tagPagePath(tag string) string {
 	return filepath.Join(t.srcKey, safeTag(tag), "index.html")
-}
-
-func (t *tags) buildTagIndexPagePath() string {
-	return filepath.Join(t.srcKey, "index.html")
 }
 
 func safeTag(tag string) string {
@@ -149,7 +128,6 @@ func safeTag(tag string) string {
 
 func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
 	defer close(output)
-	tf := t.buildTagData(input, output)
-	t.buildIndexPage(ctx, tf, output)
-	t.buildTagPages(ctx, tf, output)
+	info := t.buildTagInfo(input, output)
+	t.buildPages(ctx, info, output)
 }
