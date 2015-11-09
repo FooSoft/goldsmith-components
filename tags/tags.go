@@ -30,13 +30,19 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
+type files []*goldsmith.File
+
+func (f files) Len() int           { return len(f) }
+func (f files) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
+func (f files) Less(i, j int) bool { return strings.Compare(f[i].Path, f[j].Path) < 0 }
+
 type tagInfo struct {
-	Files    []*goldsmith.File
+	Files    files
 	SafeName string
 	Path     string
 }
 
-type tagInfoMap map[string]*tagInfo
+type tagInfoMap map[string]tagInfo
 
 type tags struct {
 	srcKey, dstKey string
@@ -59,19 +65,19 @@ func buildMeta(tag string, tags []string, info tagInfoMap) map[string]interface{
 	meta := make(map[string]interface{})
 
 	if len(tag) > 0 {
-		meta["index"] = tag
+		meta["Index"] = tag
 	}
 
 	if tags != nil {
 		var tagsAlpha []string
 		copy(tagsAlpha, tags)
 		sort.Strings(tagsAlpha)
-		meta["set"] = tags
+		meta["Set"] = tags
 
 	}
 
 	if info != nil {
-		meta["meta"] = info
+		meta["Info"] = info
 	}
 
 	return meta
@@ -83,12 +89,14 @@ func (t *tags) buildTags(input, output chan *goldsmith.File) tagInfoMap {
 	for file := range input {
 		data, ok := file.Meta[t.srcKey]
 		if !ok {
+			file.Meta[t.dstKey] = buildMeta("", nil, info)
 			output <- file
 			continue
 		}
 
 		tags, ok := data.([]interface{})
 		if !ok {
+			file.Meta[t.dstKey] = buildMeta("", nil, info)
 			output <- file
 			continue
 		}
@@ -102,18 +110,22 @@ func (t *tags) buildTags(input, output chan *goldsmith.File) tagInfoMap {
 
 			item, ok := info[tagStr]
 			if !ok {
-				item = &tagInfo{
-					SafeName: safeTag(tagStr),
-					Path:     t.tagPagePath(tagStr),
-				}
+				item.SafeName = safeTag(tagStr)
+				item.Path = t.tagPagePath(tagStr)
 			}
 
 			item.Files = append(item.Files, file)
 			tagStrs = append(tagStrs, tagStr)
+
+			info[tagStr] = item
 		}
 
 		file.Meta[t.dstKey] = buildMeta("", tagStrs, info)
 		output <- file
+	}
+
+	for _, meta := range info {
+		sort.Sort(meta.Files)
 	}
 
 	return info
