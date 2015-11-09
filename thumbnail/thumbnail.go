@@ -23,6 +23,7 @@
 package thumbnail
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/gif"
@@ -74,7 +75,9 @@ func (t *thumbnail) thumbName(path string) (string, bool) {
 }
 
 func (t *thumbnail) thumbnail(ctx goldsmith.Context, origFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
-	origImg, _, err := image.Decode(&origFile.Buff)
+	reader := bytes.NewReader(origFile.Buff.Bytes())
+
+	origImg, _, err := image.Decode(reader)
 	if err != nil {
 		return nil, err
 	}
