@@ -28,6 +28,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -109,12 +110,16 @@ func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 					closer = yamlCloser
 				case jsonOpener:
 					closer = jsonCloser
+					front.WriteString(jsonOpener)
 				default:
 					header = false
 				}
 			} else {
 				switch strings.TrimSpace(line) {
 				case closer:
+					if closer == jsonCloser {
+						front.WriteString(jsonCloser)
+					}
 					header = false
 				default:
 					front.Write([]byte(line + "\n"))
@@ -143,6 +148,7 @@ func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 			return nil, nil, err
 		}
 	case jsonCloser:
+		log.Print(string(front.Bytes()))
 		if err := json.Unmarshal(front.Bytes(), meta); err != nil {
 			return nil, nil, err
 		}
