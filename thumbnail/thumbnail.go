@@ -71,7 +71,7 @@ func (t *thumbnail) thumbName(path string) (string, bool) {
 	ext := filepath.Ext(path)
 	body := strings.TrimSuffix(path, ext)
 
-	return fmt.Sprintf("%s-thumb%s", body, ext), true
+	return fmt.Sprintf("%s-thumb.png", body), true
 }
 
 func (t *thumbnail) thumbnail(ctx goldsmith.Context, origFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
@@ -107,8 +107,8 @@ func (t *thumbnail) Chain(ctx goldsmith.Context, input, output chan *goldsmith.F
 			defer wg.Done()
 
 			if path, create := t.thumbName(file.Path); create {
-				if thumb, err := t.thumbnail(ctx, f, path); err == nil {
-					output <- thumb
+				if tn, err := t.thumbnail(ctx, f, path); err == nil {
+					output <- tn
 				}
 			}
 
