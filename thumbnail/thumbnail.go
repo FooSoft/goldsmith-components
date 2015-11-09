@@ -23,14 +23,17 @@
 package thumbnail
 
 import (
+	"fmt"
 	"image"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/FooSoft/goldsmith"
+	"github.com/nfnt/resize"
 )
 
 type Namer func(path string, dims uint) (string, bool)
@@ -59,23 +62,35 @@ func (t *thumbnail) Filter(path string) bool {
 	}
 }
 
+func (t *thumbnail) thumbName(path string) (string, bool) {
+	if t.namer != nil {
+		return t.namer(path, t.dims)
+	}
+
+	ext := filepath.Ext(path)
+	body := strings.TrimSuffix(path, ext)
+
+	return fmt.Sprintf("%s-thumb%s", body, ext), true
+}
+
 func (t *thumbnail) thumbnail(ctx goldsmith.Context, origFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
 	origImg, _, err := image.Decode(&origFile.Buff)
 	if err != nil {
 		return nil, err
 	}
 
+	thumbImg := resize.Thumbnail(t.dims, t.dims, origImg, resize.Bicubic)
 	thumbFile := ctx.NewFile(thumbPath)
 
 	switch filepath.Ext(thumbPath) {
 	case ".jpeg":
 		fallthrough
 	case ".jpg":
-		thumbFile.Err = jpeg.Encode(&thumbFile.Buff, origImg, nil)
+		thumbFile.Err = jpeg.Encode(&thumbFile.Buff, thumbImg, nil)
 	case ".gif":
-		thumbFile.Err = gif.Encode(&thumbFile.Buff, origImg, nil)
+		thumbFile.Err = gif.Encode(&thumbFile.Buff, thumbImg, nil)
 	case ".png":
-		thumbFile.Err = png.Encode(&thumbFile.Buff, origImg)
+		thumbFile.Err = png.Encode(&thumbFile.Buff, thumbImg)
 	}
 
 	return thumbFile, nil
@@ -90,7 +105,7 @@ func (t *thumbnail) Chain(ctx goldsmith.Context, input, output chan *goldsmith.F
 		go func(f *goldsmith.File) {
 			defer wg.Done()
 
-			if path, create := t.namer(file.Path, t.dims); create {
+			if path, create := t.thumbName(file.Path); create {
 				if thumb, err := t.thumbnail(ctx, f, path); err == nil {
 					output <- thumb
 				}
