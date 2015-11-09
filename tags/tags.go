@@ -24,6 +24,7 @@ package tags
 
 import (
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/FooSoft/goldsmith"
@@ -35,7 +36,7 @@ type tagInfo struct {
 	Path     string
 }
 
-type tagInfoMap map[string]tagInfo
+type tagInfoMap map[string]*tagInfo
 
 type tags struct {
 	srcKey, dstKey string
@@ -54,44 +55,64 @@ func (*tags) Filter(path string) bool {
 	return false
 }
 
-func (t *tags) buildTagInfo(input, output chan *goldsmith.File) tagInfoMap {
+func buildMeta(tag string, tags []string, info tagInfoMap) map[string]interface{} {
+	meta := make(map[string]interface{})
+
+	if len(tag) > 0 {
+		meta["index"] = tag
+	}
+
+	if tags != nil {
+		var tagsAlpha []string
+		copy(tagsAlpha, tags)
+		sort.Strings(tagsAlpha)
+		meta["set"] = tags
+
+	}
+
+	if info != nil {
+		meta["meta"] = info
+	}
+
+	return meta
+}
+
+func (t *tags) buildTags(input, output chan *goldsmith.File) tagInfoMap {
 	info := make(tagInfoMap)
 
 	for file := range input {
-		if data, ok := file.Meta[t.srcKey]; ok {
-			tags, ok := data.([]interface{})
+		data, ok := file.Meta[t.srcKey]
+		if !ok {
+			output <- file
+			continue
+		}
+
+		tags, ok := data.([]interface{})
+		if !ok {
+			output <- file
+			continue
+		}
+
+		var tagStrs []string
+		for _, tag := range tags {
+			tagStr, ok := tag.(string)
 			if !ok {
 				continue
 			}
 
-		tagLoop:
-			for _, tag := range tags {
-				tagStr, ok := tag.(string)
-				if !ok {
-					continue
+			item, ok := info[tagStr]
+			if !ok {
+				item = &tagInfo{
+					SafeName: safeTag(tagStr),
+					Path:     t.tagPagePath(tagStr),
 				}
-
-				tagInfo, ok := info[tagStr]
-				if !ok {
-					tagInfo.SafeName = safeTag(tagStr)
-					tagInfo.Path = t.tagPagePath(tagStr)
-				}
-
-				for _, taggedFile := range tagInfo.Files {
-					if taggedFile == file {
-						continue tagLoop
-					}
-				}
-
-				tagInfo.Files = append(tagInfo.Files, file)
-				info[tagStr] = tagInfo
 			}
 
-			file.Meta[t.dstKey] = map[string]interface{}{
-				"all": info,
-			}
+			item.Files = append(item.Files, file)
+			tagStrs = append(tagStrs, tagStr)
 		}
 
+		file.Meta[t.dstKey] = buildMeta("", tagStrs, info)
 		output <- file
 	}
 
@@ -105,11 +126,7 @@ func (t *tags) buildPages(ctx goldsmith.Context, info tagInfoMap, output chan *g
 			file.Meta[key] = value
 		}
 
-		file.Meta[t.dstKey] = map[string]interface{}{
-			"all": info,
-			"tag": tag,
-		}
-
+		file.Meta[t.dstKey] = buildMeta(tag, nil, info)
 		output <- file
 	}
 }
@@ -124,6 +141,6 @@ func safeTag(tag string) string {
 
 func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
 	defer close(output)
-	info := t.buildTagInfo(input, output)
+	info := t.buildTags(input, output)
 	t.buildPages(ctx, info, output)
 }
