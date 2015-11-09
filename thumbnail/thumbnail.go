@@ -75,9 +75,7 @@ func (t *thumbnail) thumbName(path string) (string, bool) {
 }
 
 func (t *thumbnail) thumbnail(ctx goldsmith.Context, origFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
-	reader := bytes.NewReader(origFile.Buff.Bytes())
-
-	origImg, _, err := image.Decode(reader)
+	origImg, _, err := image.Decode(bytes.NewReader(origFile.Buff.Bytes()))
 	if err != nil {
 		return nil, err
 	}
