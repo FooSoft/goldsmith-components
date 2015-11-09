@@ -43,7 +43,7 @@ type thumbnail struct {
 	namer Namer
 }
 
-func (t *thumbnail) New(dims uint, namer Namer) (goldsmith.Chainer, error) {
+func New(dims uint, namer Namer) (goldsmith.Chainer, error) {
 	return &thumbnail{dims, namer}, nil
 }
 
@@ -56,9 +56,9 @@ func (t *thumbnail) Filter(path string) bool {
 	case ".gif":
 		fallthrough
 	case ".png":
-		return true
-	default:
 		return false
+	default:
+		return true
 	}
 }
 
@@ -112,7 +112,6 @@ func (t *thumbnail) Chain(ctx goldsmith.Context, input, output chan *goldsmith.F
 			}
 
 			output <- f
-			wg.Done()
 		}(file)
 	}
 
