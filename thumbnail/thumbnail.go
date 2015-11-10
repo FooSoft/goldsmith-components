@@ -106,7 +106,7 @@ func (t *thumbnail) Chain(ctx goldsmith.Context, input, output chan *goldsmith.F
 		go func(f *goldsmith.File) {
 			defer wg.Done()
 
-			if path, create := t.thumbName(file.Path); create {
+			if path, create := t.thumbName(f.Path); create {
 				if tn, err := t.thumbnail(ctx, f, path); err == nil {
 					output <- tn
 				}
