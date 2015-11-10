@@ -29,6 +29,7 @@ import (
 	"image/gif"
 	"image/jpeg"
 	"image/png"
+	"os"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -74,6 +75,22 @@ func (t *thumbnail) thumbName(path string) (string, bool) {
 	return fmt.Sprintf("%s-thumb.png", body), true
 }
 
+func (t *thumbnail) cached(ctx goldsmith.Context, origPath, thumbPath string) bool {
+	thumbPathFull := filepath.Join(ctx.DstDir(), thumbPath)
+	thumbStat, err := os.Stat(thumbPathFull)
+	if err != nil {
+		return false
+	}
+
+	origPathFull := filepath.Join(ctx.SrcDir(), origPath)
+	origStat, err := os.Stat(origPathFull)
+	if err != nil {
+		return false
+	}
+
+	return origStat.ModTime().Unix() <= thumbStat.ModTime().Unix()
+}
+
 func (t *thumbnail) thumbnail(ctx goldsmith.Context, origFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
 	origImg, _, err := image.Decode(bytes.NewReader(origFile.Buff.Bytes()))
 	if err != nil {
@@ -98,23 +115,35 @@ func (t *thumbnail) thumbnail(ctx goldsmith.Context, origFile *goldsmith.File, t
 }
 
 func (t *thumbnail) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	defer close(output)
-
 	var wg sync.WaitGroup
+
+	defer func() {
+		wg.Wait()
+		close(output)
+	}()
+
 	for file := range input {
 		wg.Add(1)
 		go func(f *goldsmith.File) {
-			defer wg.Done()
+			defer func() {
+				output <- f
+				wg.Done()
+			}()
 
-			if path, create := t.thumbName(f.Path); create {
-				if tn, err := t.thumbnail(ctx, f, path); err == nil {
-					output <- tn
-				}
+			thumbPath, create := t.thumbName(f.Path)
+			if !create {
+				return
 			}
 
-			output <- f
+			if t.cached(ctx, f.Path, thumbPath) {
+				ctx.RefFile(thumbPath)
+				return
+			}
+
+			var tn *goldsmith.File
+			if tn, f.Err = t.thumbnail(ctx, f, thumbPath); f.Err == nil {
+				output <- tn
+			}
 		}(file)
 	}
-
-	wg.Wait()
 }
