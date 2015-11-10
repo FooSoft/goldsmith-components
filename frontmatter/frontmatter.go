@@ -55,29 +55,34 @@ func (*frontMatter) Filter(path string) bool {
 }
 
 func (fm *frontMatter) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	defer close(output)
-
 	var wg sync.WaitGroup
+
+	defer func() {
+		wg.Wait()
+		close(output)
+	}()
+
 	for file := range input {
 		wg.Add(1)
 		go func(f *goldsmith.File) {
-			defer wg.Done()
+			defer func() {
+				output <- f
+				wg.Done()
+			}()
 
-			meta, body, err := parse(&f.Buff)
-			if err == nil {
+			var (
+				meta map[string]interface{}
+				body *bytes.Buffer
+			)
+
+			if meta, body, f.Err = parse(&f.Buff); f.Err == nil {
 				f.Buff = *body
 				for key, value := range meta {
 					f.Meta[key] = value
 				}
-			} else {
-				f.Err = err
 			}
-
-			output <- f
 		}(file)
 	}
-
-	wg.Wait()
 }
 
 func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
