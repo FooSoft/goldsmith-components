@@ -33,11 +33,23 @@ import (
 	"github.com/russross/blackfriday"
 )
 
+type MarkdownType int
+
+const (
+	MarkdownCommon MarkdownType = iota
+	MarkdownBasic
+)
+
 type markdown struct {
+	mdType MarkdownType
 }
 
-func New() (goldsmith.Chainer, error) {
-	return new(markdown), nil
+func NewCommon() (goldsmith.Chainer, error) {
+	return &markdown{MarkdownCommon}, nil
+}
+
+func NewBasic() (goldsmith.Chainer, error) {
+	return &markdown{MarkdownBasic}, nil
 }
 
 func (*markdown) Filter(path string) bool {
@@ -48,19 +60,32 @@ func (*markdown) Filter(path string) bool {
 	return true
 }
 
-func (*markdown) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	defer close(output)
-
+func (m *markdown) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
 	var wg sync.WaitGroup
+
+	defer func() {
+		wg.Wait()
+		close(output)
+	}()
+
 	for file := range input {
 		wg.Add(1)
 		go func(f *goldsmith.File) {
-			defer wg.Done()
-			f.Buff = *bytes.NewBuffer(blackfriday.MarkdownCommon(f.Buff.Bytes()))
+			defer func() {
+				output <- f
+				wg.Done()
+			}()
+
+			var data []byte
+			switch m.mdType {
+			case MarkdownCommon:
+				data = blackfriday.MarkdownCommon(f.Buff.Bytes())
+			case MarkdownBasic:
+				data = blackfriday.MarkdownBasic(f.Buff.Bytes())
+			}
+
+			f.Buff = *bytes.NewBuffer(data)
 			f.Path = strings.TrimSuffix(f.Path, path.Ext(f.Path)) + ".html"
-			output <- f
 		}(file)
 	}
-
-	wg.Wait()
 }
