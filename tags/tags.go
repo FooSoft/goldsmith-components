@@ -83,54 +83,6 @@ func buildMeta(tag string, tags []string, info tagInfoMap) map[string]interface{
 	return meta
 }
 
-func (t *tags) buildTags(input, output chan *goldsmith.File) tagInfoMap {
-	info := make(tagInfoMap)
-
-	for file := range input {
-		data, ok := file.Meta[t.srcKey]
-		if !ok {
-			file.Meta[t.dstKey] = buildMeta("", nil, info)
-			output <- file
-			continue
-		}
-
-		tags, ok := data.([]interface{})
-		if !ok {
-			file.Meta[t.dstKey] = buildMeta("", nil, info)
-			output <- file
-			continue
-		}
-
-		var tagStrs []string
-		for _, tag := range tags {
-			tagStr, ok := tag.(string)
-			if !ok {
-				continue
-			}
-
-			item, ok := info[tagStr]
-			if !ok {
-				item.SafeName = safeTag(tagStr)
-				item.Path = t.tagPagePath(tagStr)
-			}
-
-			item.Files = append(item.Files, file)
-			tagStrs = append(tagStrs, tagStr)
-
-			info[tagStr] = item
-		}
-
-		file.Meta[t.dstKey] = buildMeta("", tagStrs, info)
-		output <- file
-	}
-
-	for _, meta := range info {
-		sort.Sort(meta.Files)
-	}
-
-	return info
-}
-
 func (t *tags) buildPages(ctx goldsmith.Context, info tagInfoMap, output chan *goldsmith.File) {
 	for tag := range info {
 		file := ctx.NewFile(t.tagPagePath(tag))
@@ -153,6 +105,49 @@ func safeTag(tag string) string {
 
 func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
 	defer close(output)
-	info := t.buildTags(input, output)
+
+	info := make(tagInfoMap)
+	for file := range input {
+		tagData, ok := file.Meta[t.srcKey]
+		if !ok {
+			file.Meta[t.dstKey] = buildMeta("", nil, info)
+			output <- file
+			continue
+		}
+
+		tags, ok := tagData.([]interface{})
+		if !ok {
+			file.Meta[t.dstKey] = buildMeta("", nil, info)
+			output <- file
+			continue
+		}
+
+		var tagStrs []string
+		for _, tag := range tags {
+			tagStr, ok := tag.(string)
+			if !ok {
+				continue
+			}
+
+			tagStrs = append(tagStrs, tagStr)
+
+			item, ok := info[tagStr]
+			item.Files = append(item.Files, file)
+			if !ok {
+				item.SafeName = safeTag(tagStr)
+				item.Path = t.tagPagePath(tagStr)
+			}
+
+			info[tagStr] = item
+		}
+
+		file.Meta[t.dstKey] = buildMeta("", tagStrs, info)
+		output <- file
+	}
+
+	for _, meta := range info {
+		sort.Sort(meta.Files)
+	}
+
 	t.buildPages(ctx, info, output)
 }
