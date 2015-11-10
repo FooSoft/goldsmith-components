@@ -69,9 +69,6 @@ func buildMeta(tag string, tags []string, info tagInfoMap) map[string]interface{
 	}
 
 	if tags != nil {
-		var tagsAlpha []string
-		copy(tagsAlpha, tags)
-		sort.Strings(tagsAlpha)
 		meta["Set"] = tags
 
 	}
@@ -141,6 +138,7 @@ func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) 
 			info[tagStr] = item
 		}
 
+		sort.Strings(tagStrs)
 		file.Meta[t.dstKey] = buildMeta("", tagStrs, info)
 		output <- file
 	}
