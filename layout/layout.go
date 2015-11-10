@@ -32,17 +32,18 @@ import (
 )
 
 type layout struct {
-	tmpl *template.Template
-	def  string
+	tmpl           *template.Template
+	srcKey, dstKey string
+	defVal         string
 }
 
-func New(glob, def string, funcs template.FuncMap) (goldsmith.Chainer, error) {
-	tmpl, err := template.New("").Funcs(funcs).ParseGlob(glob)
+func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) (goldsmith.Chainer, error) {
+	tmpl, err := template.New("").Funcs(funcs).ParseFiles(paths...)
 	if err != nil {
 		return nil, err
 	}
 
-	return &layout{tmpl, def}, nil
+	return &layout{tmpl, srcKey, dstKey, defVal}, nil
 }
 
 func (*layout) Filter(path string) bool {
@@ -54,29 +55,32 @@ func (*layout) Filter(path string) bool {
 }
 
 func (t *layout) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	defer close(output)
-
 	var wg sync.WaitGroup
+
+	defer func() {
+		wg.Wait()
+		close(output)
+	}()
+
 	for file := range input {
 		wg.Add(1)
 		go func(f *goldsmith.File) {
-			defer wg.Done()
+			defer func() {
+				output <- f
+				wg.Done()
+			}()
 
-			name, ok := f.Meta["layout"]
+			name, ok := f.Meta[t.srcKey]
 			if !ok {
-				name = t.def
+				name = t.defVal
 			}
 
-			f.Meta["content"] = template.HTML(f.Buff.Bytes())
+			f.Meta[t.dstKey] = template.HTML(f.Buff.Bytes())
 
 			var buff bytes.Buffer
 			if f.Err = t.tmpl.ExecuteTemplate(&buff, name.(string), f); f.Err == nil {
 				f.Buff = buff
 			}
-
-			output <- f
 		}(file)
 	}
-
-	wg.Wait()
 }
