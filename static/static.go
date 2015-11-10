@@ -23,7 +23,6 @@
 package static
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -36,10 +35,6 @@ type static struct {
 }
 
 func New(src, dst string) (goldsmith.Chainer, error) {
-	if filepath.IsAbs(dst) {
-		return nil, fmt.Errorf("absolute paths are not supported: %s", dst)
-	}
-
 	var paths []string
 	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() {
@@ -63,12 +58,13 @@ func (s *static) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File
 	defer close(output)
 
 	for _, path := range s.paths {
-		relPath, err := filepath.Rel(s.src, path)
+		srcRelPath, err := filepath.Rel(s.src, path)
 		if err != nil {
 			panic(err)
 		}
 
-		file := ctx.NewFileStatic(filepath.Join(s.dst, relPath))
+		dstRelPath := filepath.Join(s.dst, srcRelPath)
+		file := ctx.NewFileStatic(dstRelPath)
 
 		var f *os.File
 		if f, file.Err = os.Open(path); file.Err == nil {
