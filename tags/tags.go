@@ -45,12 +45,13 @@ type tagInfo struct {
 type tagInfoMap map[string]tagInfo
 
 type tags struct {
+	basePath       string
 	srcKey, dstKey string
 	meta           map[string]interface{}
 }
 
-func New(srcKey, dstKey string, meta map[string]interface{}) (goldsmith.Chainer, error) {
-	return &tags{srcKey, dstKey, meta}, nil
+func New(basePath, srcKey, dstKey string, meta map[string]interface{}) (goldsmith.Chainer, error) {
+	return &tags{basePath, srcKey, dstKey, meta}, nil
 }
 
 func (*tags) Filter(path string) bool {
@@ -93,7 +94,7 @@ func (t *tags) buildPages(ctx goldsmith.Context, info tagInfoMap, output chan *g
 }
 
 func (t *tags) tagPagePath(tag string) string {
-	return filepath.Join(t.srcKey, safeTag(tag), "index.html")
+	return filepath.Join(t.basePath, safeTag(tag), "index.html")
 }
 
 func safeTag(tag string) string {
