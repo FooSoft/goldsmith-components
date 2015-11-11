@@ -51,13 +51,7 @@ func New(dims uint, namer Namer) (goldsmith.Chainer, error) {
 
 func (*thumbnail) Accept(file *goldsmith.File) bool {
 	switch filepath.Ext(file.Path) {
-	case ".jpeg":
-		fallthrough
-	case ".jpg":
-		fallthrough
-	case ".gif":
-		fallthrough
-	case ".png":
+	case ".jpg", ".jpeg", ".gif", ".png":
 		return true
 	default:
 		return false

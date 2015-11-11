@@ -48,9 +48,7 @@ func New() (goldsmith.Chainer, error) {
 
 func (*frontMatter) Accept(file *goldsmith.File) bool {
 	switch filepath.Ext(file.Path) {
-	case ".md":
-		fallthrough
-	case ".markdown":
+	case ".md", ".markdown":
 		return true
 	default:
 		return false
