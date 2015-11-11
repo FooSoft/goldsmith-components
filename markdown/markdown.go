@@ -53,7 +53,7 @@ func NewBasic() (goldsmith.Chainer, error) {
 }
 
 func (*markdown) Accept(file *goldsmith.File) bool {
-	switch filepath.Ext(file.Path) {
+	switch filepath.Ext(strings.ToLower(file.Path)) {
 	case ".md", ".markdown":
 		return true
 	default:

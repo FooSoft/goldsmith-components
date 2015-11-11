@@ -26,6 +26,7 @@ import (
 	"bytes"
 	"html/template"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/FooSoft/goldsmith"
@@ -47,7 +48,7 @@ func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) 
 }
 
 func (*layout) Accept(file *goldsmith.File) bool {
-	switch filepath.Ext(file.Path) {
+	switch filepath.Ext(strings.ToLower(file.Path)) {
 	case ".html", ".htm":
 		return true
 	default:

@@ -61,7 +61,7 @@ func New(basePath, srcKey, dstKey string, meta map[string]interface{}) (goldsmit
 }
 
 func (*tags) Accept(file *goldsmith.File) bool {
-	switch filepath.Ext(file.Path) {
+	switch filepath.Ext(strings.ToLower(file.Path)) {
 	case ".html", ".htm":
 		return true
 	default:

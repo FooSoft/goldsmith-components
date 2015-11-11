@@ -50,7 +50,7 @@ func New(dims uint, namer Namer) (goldsmith.Chainer, error) {
 }
 
 func (*thumbnail) Accept(file *goldsmith.File) bool {
-	switch filepath.Ext(file.Path) {
+	switch filepath.Ext(strings.ToLower(file.Path)) {
 	case ".jpg", ".jpeg", ".gif", ".png":
 		return true
 	default:
@@ -94,10 +94,8 @@ func (t *thumbnail) thumbnail(ctx goldsmith.Context, origFile *goldsmith.File, t
 	thumbImg := resize.Thumbnail(t.dims, t.dims, origImg, resize.Bicubic)
 	thumbFile := goldsmith.NewFile(thumbPath)
 
-	switch filepath.Ext(thumbPath) {
-	case ".jpeg":
-		fallthrough
-	case ".jpg":
+	switch filepath.Ext(strings.ToLower(thumbPath)) {
+	case ".jpg", ".jpeg":
 		thumbFile.Err = jpeg.Encode(&thumbFile.Buff, thumbImg, nil)
 	case ".gif":
 		thumbFile.Err = gif.Encode(&thumbFile.Buff, thumbImg, nil)
