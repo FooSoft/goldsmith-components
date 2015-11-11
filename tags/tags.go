@@ -42,6 +42,12 @@ type tagInfo struct {
 	Path     string
 }
 
+type tagState struct {
+	Index string
+	Set   []string
+	Info  tagInfoMap
+}
+
 type tagInfoMap map[string]tagInfo
 
 type tags struct {
@@ -54,41 +60,25 @@ func New(basePath, srcKey, dstKey string, meta map[string]interface{}) (goldsmit
 	return &tags{basePath, srcKey, dstKey, meta}, nil
 }
 
-func (*tags) Filter(path string) bool {
-	if ext := filepath.Ext(path); ext != ".html" {
+func (*tags) Accept(file *goldsmith.File) bool {
+	switch filepath.Ext(file.Path) {
+	case ".html":
+		fallthrough
+	case ".htm":
 		return true
+	default:
+		return false
 	}
-
-	return false
 }
 
-func buildMeta(tag string, tags []string, info tagInfoMap) map[string]interface{} {
-	meta := make(map[string]interface{})
-
-	if len(tag) > 0 {
-		meta["Index"] = tag
-	}
-
-	if tags != nil {
-		meta["Set"] = tags
-
-	}
-
-	if info != nil {
-		meta["Info"] = info
-	}
-
-	return meta
-}
-
-func (t *tags) buildPages(ctx goldsmith.Context, info tagInfoMap, output chan *goldsmith.File) {
+func (t *tags) buildPages(info tagInfoMap, output chan *goldsmith.File) {
 	for tag := range info {
-		file := ctx.NewFile(t.tagPagePath(tag))
+		file := goldsmith.NewFile(t.tagPagePath(tag))
 		for key, value := range t.meta {
 			file.Meta[key] = value
 		}
 
-		file.Meta[t.dstKey] = buildMeta(tag, nil, info)
+		file.Meta[t.dstKey] = tagState{Index: tag, Info: info}
 		output <- file
 	}
 }
@@ -108,14 +98,14 @@ func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) 
 	for file := range input {
 		tagData, ok := file.Meta[t.srcKey]
 		if !ok {
-			file.Meta[t.dstKey] = buildMeta("", nil, info)
+			file.Meta[t.dstKey] = tagState{Info: info}
 			output <- file
 			continue
 		}
 
 		tags, ok := tagData.([]interface{})
 		if !ok {
-			file.Meta[t.dstKey] = buildMeta("", nil, info)
+			file.Meta[t.dstKey] = tagState{Info: info}
 			output <- file
 			continue
 		}
@@ -140,7 +130,7 @@ func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) 
 		}
 
 		sort.Strings(tagStrs)
-		file.Meta[t.dstKey] = buildMeta("", tagStrs, info)
+		file.Meta[t.dstKey] = tagState{Info: info, Set: tagStrs}
 		output <- file
 	}
 
@@ -148,5 +138,5 @@ func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) 
 		sort.Sort(meta.Files)
 	}
 
-	t.buildPages(ctx, info, output)
+	t.buildPages(info, output)
 }

@@ -46,12 +46,15 @@ func New() (goldsmith.Chainer, error) {
 	return &frontMatter{}, nil
 }
 
-func (*frontMatter) Filter(path string) bool {
-	if path := filepath.Ext(path); path == ".md" {
+func (*frontMatter) Accept(file *goldsmith.File) bool {
+	switch filepath.Ext(file.Path) {
+	case ".md":
+		fallthrough
+	case ".markdown":
+		return true
+	default:
 		return false
 	}
-
-	return true
 }
 
 func (fm *frontMatter) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {

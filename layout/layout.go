@@ -46,12 +46,15 @@ func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) 
 	return &layout{tmpl, srcKey, dstKey, defVal}, nil
 }
 
-func (*layout) Filter(path string) bool {
-	if ext := filepath.Ext(path); ext == ".html" {
+func (*layout) Accept(file *goldsmith.File) bool {
+	switch filepath.Ext(file.Path) {
+	case ".html":
+		fallthrough
+	case ".htm":
+		return true
+	default:
 		return false
 	}
-
-	return true
 }
 
 func (t *layout) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {

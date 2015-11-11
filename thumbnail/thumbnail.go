@@ -49,8 +49,8 @@ func New(dims uint, namer Namer) (goldsmith.Chainer, error) {
 	return &thumbnail{dims, namer}, nil
 }
 
-func (t *thumbnail) Filter(path string) bool {
-	switch filepath.Ext(path) {
+func (*thumbnail) Accept(file *goldsmith.File) bool {
+	switch filepath.Ext(file.Path) {
 	case ".jpeg":
 		fallthrough
 	case ".jpg":
@@ -58,9 +58,9 @@ func (t *thumbnail) Filter(path string) bool {
 	case ".gif":
 		fallthrough
 	case ".png":
-		return false
-	default:
 		return true
+	default:
+		return false
 	}
 }
 
@@ -98,7 +98,7 @@ func (t *thumbnail) thumbnail(ctx goldsmith.Context, origFile *goldsmith.File, t
 	}
 
 	thumbImg := resize.Thumbnail(t.dims, t.dims, origImg, resize.Bicubic)
-	thumbFile := ctx.NewFile(thumbPath)
+	thumbFile := goldsmith.NewFile(thumbPath)
 
 	switch filepath.Ext(thumbPath) {
 	case ".jpeg":
@@ -136,7 +136,7 @@ func (t *thumbnail) Chain(ctx goldsmith.Context, input, output chan *goldsmith.F
 			}
 
 			if t.cached(ctx, f.Path, thumbPath) {
-				ctx.RefFile(thumbPath)
+				output <- goldsmith.NewFileRef(thumbPath)
 				return
 			}
 

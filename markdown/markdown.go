@@ -52,12 +52,15 @@ func NewBasic() (goldsmith.Chainer, error) {
 	return &markdown{MarkdownBasic}, nil
 }
 
-func (*markdown) Filter(path string) bool {
-	if ext := filepath.Ext(path); ext == ".md" {
+func (*markdown) Accept(file *goldsmith.File) bool {
+	switch filepath.Ext(file.Path) {
+	case ".md":
+		fallthrough
+	case ".markdown":
+		return true
+	default:
 		return false
 	}
-
-	return true
 }
 
 func (m *markdown) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {

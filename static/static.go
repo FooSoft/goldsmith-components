@@ -50,8 +50,8 @@ func New(src, dst string) (goldsmith.Chainer, error) {
 	return &static{src, dst, paths}, nil
 }
 
-func (*static) Filter(path string) bool {
-	return true
+func (*static) Accept(file *goldsmith.File) bool {
+	return false
 }
 
 func (s *static) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
@@ -64,7 +64,7 @@ func (s *static) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File
 		}
 
 		dstRelPath := filepath.Join(s.dst, srcRelPath)
-		file := ctx.NewFileStatic(dstRelPath)
+		file := goldsmith.NewFileStatic(dstRelPath)
 
 		var f *os.File
 		if f, file.Err = os.Open(path); file.Err == nil {
