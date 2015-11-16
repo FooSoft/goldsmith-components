@@ -86,7 +86,7 @@ func (t *tags) tagPagePath(tag string) string {
 }
 
 func safeTag(tag string) string {
-	return strings.Replace(tag, " ", "-", -1)
+	return strings.ToLower(strings.Replace(tag, " ", "-", -1))
 }
 
 func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
