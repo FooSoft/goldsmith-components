@@ -81,17 +81,17 @@ func minifyFile(file *goldsmith.File) {
 
 	switch filepath.Ext(strings.ToLower(file.Path)) {
 	case ".css":
-		file.Err = css.Minify(m, "text/css", &buff, &file.Buff)
+		file.Err = css.Minify(m, &buff, &file.Buff, nil)
 	case ".html", ".htm":
-		file.Err = html.Minify(m, "text/html", &buff, &file.Buff)
+		file.Err = html.Minify(m, &buff, &file.Buff, nil)
 	case ".js":
-		file.Err = js.Minify(m, "text/javascript", &buff, &file.Buff)
+		file.Err = js.Minify(m, &buff, &file.Buff, nil)
 	case ".json":
-		file.Err = json.Minify(m, "application/json", &buff, &file.Buff)
+		file.Err = json.Minify(m, &buff, &file.Buff, nil)
 	case ".svg":
-		file.Err = svg.Minify(m, "image/svg+xml", &buff, &file.Buff)
+		file.Err = svg.Minify(m, &buff, &file.Buff, nil)
 	case ".xml":
-		file.Err = xml.Minify(m, "text/xml", &buff, &file.Buff)
+		file.Err = xml.Minify(m, &buff, &file.Buff, nil)
 	default:
 		return
 	}
