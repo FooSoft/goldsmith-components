@@ -27,24 +27,26 @@ import (
 	"html/template"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/FooSoft/goldsmith"
 )
 
 type layout struct {
-	tmpl           *template.Template
 	srcKey, dstKey string
 	defVal         string
+	paths          []string
+	funcs          template.FuncMap
+	tmpl           *template.Template
 }
 
-func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) (goldsmith.Chainer, error) {
-	tmpl, err := template.New("").Funcs(funcs).ParseFiles(paths...)
-	if err != nil {
-		return nil, err
+func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) goldsmith.Plugin {
+	return &layout{
+		srcKey: srcKey,
+		dstKey: dstKey,
+		defVal: defVal,
+		paths:  paths,
+		funcs:  funcs,
 	}
-
-	return &layout{tmpl, srcKey, dstKey, defVal}, nil
 }
 
 func (*layout) Accept(file *goldsmith.File) bool {
@@ -56,33 +58,28 @@ func (*layout) Accept(file *goldsmith.File) bool {
 	}
 }
 
-func (t *layout) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	var wg sync.WaitGroup
+func (t *layout) Initialize(ctx goldsmith.Context) (err error) {
+	t.tmpl, err = template.New("").Funcs(t.funcs).ParseFiles(t.paths...)
+	return
+}
 
-	defer func() {
-		wg.Wait()
-		close(output)
-	}()
-
-	for file := range input {
-		wg.Add(1)
-		go func(f *goldsmith.File) {
-			defer func() {
-				output <- f
-				wg.Done()
-			}()
-
-			name, ok := f.Meta[t.srcKey]
-			if !ok {
-				name = t.defVal
-			}
-
-			f.Meta[t.dstKey] = template.HTML(f.Buff.Bytes())
-
-			var buff bytes.Buffer
-			if f.Err = t.tmpl.ExecuteTemplate(&buff, name.(string), f); f.Err == nil {
-				f.Buff = buff
-			}
-		}(file)
+func (t *layout) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
+	name, ok := file.Meta[t.srcKey]
+	if !ok {
+		name = t.defVal
 	}
+
+	nameStr, ok := name.(string)
+	if !ok {
+		name = t.defVal
+	}
+
+	file.Meta[t.dstKey] = template.HTML(file.Buff.Bytes())
+
+	var buff bytes.Buffer
+	if file.Err = t.tmpl.ExecuteTemplate(&buff, nameStr, file); file.Err == nil {
+		file.Buff = buff
+	}
+
+	return true
 }

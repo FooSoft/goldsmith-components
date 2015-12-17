@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/FooSoft/goldsmith"
 )
@@ -54,10 +55,18 @@ type tags struct {
 	basePath       string
 	srcKey, dstKey string
 	meta           map[string]interface{}
+	info           tagInfoMap
+	mtx            sync.Mutex
 }
 
-func New(basePath, srcKey, dstKey string, meta map[string]interface{}) (goldsmith.Chainer, error) {
-	return &tags{basePath, srcKey, dstKey, meta}, nil
+func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith.Plugin {
+	return &tags{
+		basePath: basePath,
+		srcKey:   srcKey,
+		dstKey:   dstKey,
+		meta:     meta,
+		info:     make(tagInfoMap),
+	}
 }
 
 func (*tags) Accept(file *goldsmith.File) bool {
@@ -69,16 +78,73 @@ func (*tags) Accept(file *goldsmith.File) bool {
 	}
 }
 
-func (t *tags) buildPages(info tagInfoMap, output chan *goldsmith.File) {
+func (t *tags) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
+	tagData, ok := file.Meta[t.srcKey]
+	if !ok {
+		file.Meta[t.dstKey] = tagState{Info: t.info}
+		return true
+	}
+
+	tags, ok := tagData.([]interface{})
+	if !ok {
+		file.Meta[t.dstKey] = tagState{Info: t.info}
+		return true
+	}
+
+	var tagStrs []string
+	for _, tag := range tags {
+		tagStr, ok := tag.(string)
+		if !ok {
+			continue
+		}
+
+		tagStrs = append(tagStrs, tagStr)
+
+		t.mtx.Lock()
+		{
+			item, ok := t.info[tagStr]
+			item.Files = append(item.Files, file)
+			if !ok {
+				item.SafeName = safeTag(tagStr)
+				item.Path = t.tagPagePath(tagStr)
+			}
+
+			t.info[tagStr] = item
+		}
+		t.mtx.Unlock()
+	}
+
+	sort.Strings(tagStrs)
+	file.Meta[t.dstKey] = tagState{Info: t.info, Set: tagStrs}
+
+	return true
+}
+
+func (t *tags) Finalize(ctx goldsmith.Context, files []*goldsmith.File) error {
+	for _, meta := range t.info {
+		sort.Sort(meta.Files)
+	}
+
+	for _, file := range t.buildPages(t.info) {
+		ctx.AddFile(file)
+	}
+
+	return nil
+}
+
+func (t *tags) buildPages(info tagInfoMap) []*goldsmith.File {
+	var files []*goldsmith.File
 	for tag := range info {
 		file := goldsmith.NewFile(t.tagPagePath(tag))
 		for key, value := range t.meta {
 			file.Meta[key] = value
 		}
 
-		file.Meta[t.dstKey] = tagState{Index: tag, Info: info}
-		output <- file
+		file.Meta[t.dstKey] = tagState{Index: tag, Info: t.info}
+		files = append(files, file)
 	}
+
+	return files
 }
 
 func (t *tags) tagPagePath(tag string) string {
@@ -87,54 +153,4 @@ func (t *tags) tagPagePath(tag string) string {
 
 func safeTag(tag string) string {
 	return strings.ToLower(strings.Replace(tag, " ", "-", -1))
-}
-
-func (t *tags) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	defer close(output)
-
-	info := make(tagInfoMap)
-	for file := range input {
-		tagData, ok := file.Meta[t.srcKey]
-		if !ok {
-			file.Meta[t.dstKey] = tagState{Info: info}
-			output <- file
-			continue
-		}
-
-		tags, ok := tagData.([]interface{})
-		if !ok {
-			file.Meta[t.dstKey] = tagState{Info: info}
-			output <- file
-			continue
-		}
-
-		var tagStrs []string
-		for _, tag := range tags {
-			tagStr, ok := tag.(string)
-			if !ok {
-				continue
-			}
-
-			tagStrs = append(tagStrs, tagStr)
-
-			item, ok := info[tagStr]
-			item.Files = append(item.Files, file)
-			if !ok {
-				item.SafeName = safeTag(tagStr)
-				item.Path = t.tagPagePath(tagStr)
-			}
-
-			info[tagStr] = item
-		}
-
-		sort.Strings(tagStrs)
-		file.Meta[t.dstKey] = tagState{Info: info, Set: tagStrs}
-		output <- file
-	}
-
-	for _, meta := range info {
-		sort.Sort(meta.Files)
-	}
-
-	t.buildPages(info, output)
 }
