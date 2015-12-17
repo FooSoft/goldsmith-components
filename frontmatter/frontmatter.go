@@ -31,7 +31,6 @@ import (
 	"log"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"gopkg.in/yaml.v2"
 
@@ -42,8 +41,8 @@ import (
 type frontMatter struct {
 }
 
-func New() (goldsmith.Chainer, error) {
-	return &frontMatter{}, nil
+func New() goldsmith.Plugin {
+	return &frontMatter{}
 }
 
 func (*frontMatter) Accept(file *goldsmith.File) bool {
@@ -55,35 +54,20 @@ func (*frontMatter) Accept(file *goldsmith.File) bool {
 	}
 }
 
-func (fm *frontMatter) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	var wg sync.WaitGroup
+func (fm *frontMatter) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
+	var (
+		meta map[string]interface{}
+		body *bytes.Buffer
+	)
 
-	defer func() {
-		wg.Wait()
-		close(output)
-	}()
-
-	for file := range input {
-		wg.Add(1)
-		go func(f *goldsmith.File) {
-			defer func() {
-				output <- f
-				wg.Done()
-			}()
-
-			var (
-				meta map[string]interface{}
-				body *bytes.Buffer
-			)
-
-			if meta, body, f.Err = parse(&f.Buff); f.Err == nil {
-				f.Buff = *body
-				for key, value := range meta {
-					f.Meta[key] = value
-				}
-			}
-		}(file)
+	if meta, body, file.Err = parse(&file.Buff); file.Err == nil {
+		file.Buff = *body
+		for key, value := range meta {
+			file.Meta[key] = value
+		}
 	}
+
+	return true
 }
 
 func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {

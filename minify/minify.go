@@ -26,7 +26,6 @@ import (
 	"bytes"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	min "github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
@@ -42,8 +41,8 @@ import (
 type minify struct {
 }
 
-func New() (goldsmith.Chainer, error) {
-	return new(minify), nil
+func New() goldsmith.Plugin {
+	return new(minify)
 }
 
 func (*minify) Accept(file *goldsmith.File) bool {
@@ -55,31 +54,10 @@ func (*minify) Accept(file *goldsmith.File) bool {
 	}
 }
 
-func (*minify) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	var wg sync.WaitGroup
+func (*minify) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
+	var buff bytes.Buffer
 
-	defer func() {
-		wg.Wait()
-		close(output)
-	}()
-
-	for file := range input {
-		wg.Add(1)
-		go func(f *goldsmith.File) {
-			minifyFile(f)
-			output <- f
-			wg.Done()
-		}(file)
-	}
-}
-
-func minifyFile(file *goldsmith.File) {
-	var (
-		buff bytes.Buffer
-		m    = min.New()
-	)
-
-	switch filepath.Ext(strings.ToLower(file.Path)) {
+	switch m := min.New(); filepath.Ext(strings.ToLower(file.Path)) {
 	case ".css":
 		file.Err = css.Minify(m, &buff, &file.Buff, nil)
 	case ".html", ".htm":
@@ -92,9 +70,8 @@ func minifyFile(file *goldsmith.File) {
 		file.Err = svg.Minify(m, &buff, &file.Buff, nil)
 	case ".xml":
 		file.Err = xml.Minify(m, &buff, &file.Buff, nil)
-	default:
-		return
 	}
 
 	file.Buff = buff
+	return true
 }

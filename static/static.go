@@ -31,40 +31,38 @@ import (
 
 type static struct {
 	src, dst string
-	paths    []string
 }
 
-func New(src, dst string) (goldsmith.Chainer, error) {
-	var paths []string
-	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() {
-			paths = append(paths, path)
-		}
-		return err
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &static{src, dst, paths}, nil
+func New(src, dst string) goldsmith.Plugin {
+	return &static{src, dst}
 }
 
 func (*static) Accept(file *goldsmith.File) bool {
 	return false
 }
 
-func (s *static) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	defer close(output)
+func (s *static) Initialize(ctx goldsmith.Context) error {
+	var paths []string
+	err := filepath.Walk(s.src, func(path string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() {
+			paths = append(paths, path)
+		}
 
-	for _, path := range s.paths {
+		return err
+	})
+
+	if err != nil {
+		return err
+	}
+
+	for _, path := range paths {
 		srcRelPath, err := filepath.Rel(s.src, path)
 		if err != nil {
 			panic(err)
 		}
 
 		dstRelPath := filepath.Join(s.dst, srcRelPath)
-		file := goldsmith.NewFileStatic(dstRelPath)
+		file := goldsmith.NewFile(dstRelPath)
 
 		var f *os.File
 		if f, file.Err = os.Open(path); file.Err == nil {
@@ -72,6 +70,8 @@ func (s *static) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File
 			f.Close()
 		}
 
-		output <- file
+		ctx.AddFile(file)
 	}
+
+	return nil
 }

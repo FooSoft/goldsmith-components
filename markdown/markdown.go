@@ -27,7 +27,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/russross/blackfriday"
@@ -44,12 +43,12 @@ type markdown struct {
 	mdType MarkdownType
 }
 
-func NewCommon() (goldsmith.Chainer, error) {
-	return &markdown{MarkdownCommon}, nil
+func NewCommon() goldsmith.Plugin {
+	return &markdown{MarkdownCommon}
 }
 
-func NewBasic() (goldsmith.Chainer, error) {
-	return &markdown{MarkdownBasic}, nil
+func NewBasic() goldsmith.Plugin {
+	return &markdown{MarkdownBasic}
 }
 
 func (*markdown) Accept(file *goldsmith.File) bool {
@@ -61,32 +60,17 @@ func (*markdown) Accept(file *goldsmith.File) bool {
 	}
 }
 
-func (m *markdown) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	var wg sync.WaitGroup
-
-	defer func() {
-		wg.Wait()
-		close(output)
-	}()
-
-	for file := range input {
-		wg.Add(1)
-		go func(f *goldsmith.File) {
-			defer func() {
-				output <- f
-				wg.Done()
-			}()
-
-			var data []byte
-			switch m.mdType {
-			case MarkdownCommon:
-				data = blackfriday.MarkdownCommon(f.Buff.Bytes())
-			case MarkdownBasic:
-				data = blackfriday.MarkdownBasic(f.Buff.Bytes())
-			}
-
-			f.Buff = *bytes.NewBuffer(data)
-			f.Path = strings.TrimSuffix(f.Path, path.Ext(f.Path)) + ".html"
-		}(file)
+func (m *markdown) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
+	var data []byte
+	switch m.mdType {
+	case MarkdownCommon:
+		data = blackfriday.MarkdownCommon(file.Buff.Bytes())
+	case MarkdownBasic:
+		data = blackfriday.MarkdownBasic(file.Buff.Bytes())
 	}
+
+	file.Buff = *bytes.NewBuffer(data)
+	file.Path = strings.TrimSuffix(file.Path, path.Ext(file.Path)) + ".html"
+
+	return true
 }
