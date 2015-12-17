@@ -32,7 +32,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/nfnt/resize"
@@ -45,8 +44,8 @@ type thumbnail struct {
 	namer Namer
 }
 
-func New(dims uint, namer Namer) (goldsmith.Chainer, error) {
-	return &thumbnail{dims, namer}, nil
+func New(dims uint, namer Namer) goldsmith.Plugin {
+	return &thumbnail{dims, namer}
 }
 
 func (*thumbnail) Accept(file *goldsmith.File) bool {
@@ -56,6 +55,25 @@ func (*thumbnail) Accept(file *goldsmith.File) bool {
 	default:
 		return false
 	}
+}
+
+func (t *thumbnail) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
+	thumbPath, create := t.thumbName(file.Path)
+	if !create {
+		return true
+	}
+
+	if t.cached(ctx, file.Path, thumbPath) {
+		ctx.RefFile(thumbPath)
+		return true
+	}
+
+	var thumbFile *goldsmith.File
+	if thumbFile, file.Err = t.thumbnail(file, thumbPath); file.Err == nil {
+		ctx.AddFile(thumbFile)
+	}
+
+	return true
 }
 
 func (t *thumbnail) thumbName(path string) (string, bool) {
@@ -85,7 +103,7 @@ func (t *thumbnail) cached(ctx goldsmith.Context, origPath, thumbPath string) bo
 	return origStat.ModTime().Unix() <= thumbStat.ModTime().Unix()
 }
 
-func (t *thumbnail) thumbnail(ctx goldsmith.Context, origFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
+func (t *thumbnail) thumbnail(origFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
 	origImg, _, err := image.Decode(bytes.NewReader(origFile.Buff.Bytes()))
 	if err != nil {
 		return nil, err
@@ -104,38 +122,4 @@ func (t *thumbnail) thumbnail(ctx goldsmith.Context, origFile *goldsmith.File, t
 	}
 
 	return thumbFile, nil
-}
-
-func (t *thumbnail) Chain(ctx goldsmith.Context, input, output chan *goldsmith.File) {
-	var wg sync.WaitGroup
-
-	defer func() {
-		wg.Wait()
-		close(output)
-	}()
-
-	for file := range input {
-		wg.Add(1)
-		go func(f *goldsmith.File) {
-			defer func() {
-				output <- f
-				wg.Done()
-			}()
-
-			thumbPath, create := t.thumbName(f.Path)
-			if !create {
-				return
-			}
-
-			if t.cached(ctx, f.Path, thumbPath) {
-				output <- goldsmith.NewFileRef(thumbPath)
-				return
-			}
-
-			var tn *goldsmith.File
-			if tn, f.Err = t.thumbnail(ctx, f, thumbPath); f.Err == nil {
-				output <- tn
-			}
-		}(file)
-	}
 }
