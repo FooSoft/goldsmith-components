@@ -61,24 +61,29 @@ func (*thumbnail) Accept(f goldsmith.File) bool {
 	}
 }
 
-func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
+	origCached := t.cached(ctx, f.Path(), f.Path())
+	if origCached {
+		ctx.ReferenceFile(f.Path())
+	}
+
 	thumbPath, create := t.thumbName(f.Path())
 	if !create {
-		return nil
+		return !origCached, nil
 	}
 
 	if t.cached(ctx, f.Path(), thumbPath) {
 		ctx.ReferenceFile(thumbPath)
-		return nil
+		return !origCached, nil
 	}
 
 	f, err := t.thumbnail(f, thumbPath)
 	if err != nil {
-		return err
+		return !origCached, err
 	}
 
 	ctx.DispatchFile(f)
-	return nil
+	return !origCached, nil
 }
 
 func (t *thumbnail) thumbName(path string) (string, bool) {
@@ -92,20 +97,20 @@ func (t *thumbnail) thumbName(path string) (string, bool) {
 	return fmt.Sprintf("%s-thumb.png", body), true
 }
 
-func (t *thumbnail) cached(ctx goldsmith.Context, origPath, thumbPath string) bool {
-	thumbPathFull := filepath.Join(ctx.DstDir(), thumbPath)
-	thumbStat, err := os.Stat(thumbPathFull)
+func (t *thumbnail) cached(ctx goldsmith.Context, srcPath, dstPath string) bool {
+	srcPathFull := filepath.Join(ctx.SrcDir(), srcPath)
+	srcStat, err := os.Stat(srcPathFull)
 	if err != nil {
 		return false
 	}
 
-	origPathFull := filepath.Join(ctx.SrcDir(), origPath)
-	origStat, err := os.Stat(origPathFull)
+	dstPathFull := filepath.Join(ctx.DstDir(), dstPath)
+	dstStat, err := os.Stat(dstPathFull)
 	if err != nil {
 		return false
 	}
 
-	return origStat.ModTime().Unix() <= thumbStat.ModTime().Unix()
+	return dstStat.ModTime().Unix() >= srcStat.ModTime().Unix()
 }
 
 func (t *thumbnail) thumbnail(f goldsmith.File, thumbPath string) (goldsmith.File, error) {

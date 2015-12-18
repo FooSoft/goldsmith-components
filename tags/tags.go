@@ -82,19 +82,19 @@ func (*tags) Accept(f goldsmith.File) bool {
 	}
 }
 
-func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
 	meta := f.Meta()
 
 	tagData, ok := meta[t.srcKey]
 	if !ok {
 		meta[t.dstKey] = tagState{Info: t.info}
-		return nil
+		return true, nil
 	}
 
 	tags, ok := tagData.([]interface{})
 	if !ok {
 		meta[t.dstKey] = tagState{Info: t.info}
-		return nil
+		return true, nil
 	}
 
 	var tagStrs []string
@@ -123,7 +123,7 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	sort.Strings(tagStrs)
 	meta[t.dstKey] = tagState{Info: t.info, Set: tagStrs}
 
-	return nil
+	return true, nil
 }
 
 func (t *tags) Finalize(ctx goldsmith.Context, files []goldsmith.File) error {

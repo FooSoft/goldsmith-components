@@ -58,7 +58,7 @@ func (*minify) Accept(f goldsmith.File) bool {
 	}
 }
 
-func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
 	var (
 		buff bytes.Buffer
 		err  error
@@ -79,6 +79,10 @@ func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		err = xml.Minify(m, &buff, f, nil)
 	}
 
+	if err != nil {
+		return false, err
+	}
+
 	f.Rewrite(buff.Bytes())
-	return err
+	return true, nil
 }

@@ -68,7 +68,7 @@ func (t *layout) Initialize(ctx goldsmith.Context) (err error) {
 	return
 }
 
-func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
 	meta := f.Meta()
 
 	name, ok := meta[t.srcKey]
@@ -83,16 +83,16 @@ func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	var inBuff bytes.Buffer
 	if _, err := inBuff.ReadFrom(f); err != nil {
-		return err
+		return false, err
 	}
 
 	meta[t.dstKey] = template.HTML(inBuff.Bytes())
 
 	var outBuff bytes.Buffer
 	if err := t.tmpl.ExecuteTemplate(&outBuff, nameStr, f); err != nil {
-		return err
+		return false, err
 	}
 
 	f.Rewrite(outBuff.Bytes())
-	return nil
+	return true, nil
 }

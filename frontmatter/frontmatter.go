@@ -57,10 +57,10 @@ func (*frontMatter) Accept(f goldsmith.File) bool {
 	}
 }
 
-func (fm *frontMatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (fm *frontMatter) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
 	meta, body, err := parse(f)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	f.Rewrite(body.Bytes())
@@ -68,7 +68,7 @@ func (fm *frontMatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		f.Meta()[key] = value
 	}
 
-	return nil
+	return true, nil
 }
 
 func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {

@@ -64,10 +64,10 @@ func (*markdown) Accept(f goldsmith.File) bool {
 	}
 }
 
-func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(f); err != nil {
-		return err
+		return false, err
 	}
 
 	var data []byte
@@ -81,5 +81,5 @@ func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	f.Rewrite(data)
 	f.Rename(strings.TrimSuffix(f.Path(), path.Ext(f.Path())) + ".html")
 
-	return nil
+	return true, nil
 }
