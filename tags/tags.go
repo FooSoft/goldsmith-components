@@ -132,7 +132,7 @@ func (t *tags) Finalize(ctx goldsmith.Context, files []goldsmith.File) error {
 	}
 
 	for _, f := range t.buildPages(ctx, t.info) {
-		ctx.AddFile(f)
+		ctx.DispatchFile(f)
 	}
 
 	return nil

@@ -66,7 +66,7 @@ func (s *static) Initialize(ctx goldsmith.Context) error {
 		}
 
 		dstRelPath := filepath.Join(s.dst, srcRelPath)
-		ctx.AddFile(goldsmith.NewFileFromPath(dstRelPath, path))
+		ctx.DispatchFile(goldsmith.NewFileFromAsset(dstRelPath, path))
 	}
 
 	return nil
