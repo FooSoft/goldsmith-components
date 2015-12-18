@@ -83,15 +83,17 @@ func (*tags) Accept(f goldsmith.File) bool {
 }
 
 func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	tagData, ok := f.Value(t.srcKey)
+	meta := f.Meta()
+
+	tagData, ok := meta[t.srcKey]
 	if !ok {
-		f.SetValue(t.dstKey, tagState{Info: t.info})
+		meta[t.dstKey] = tagState{Info: t.info}
 		return nil
 	}
 
 	tags, ok := tagData.([]interface{})
 	if !ok {
-		f.SetValue(t.dstKey, tagState{Info: t.info})
+		meta[t.dstKey] = tagState{Info: t.info}
 		return nil
 	}
 
@@ -119,7 +121,7 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	}
 
 	sort.Strings(tagStrs)
-	f.SetValue(t.dstKey, tagState{Info: t.info, Set: tagStrs})
+	meta[t.dstKey] = tagState{Info: t.info, Set: tagStrs}
 
 	return nil
 }
@@ -140,9 +142,10 @@ func (t *tags) buildPages(ctx goldsmith.Context, info tagInfoMap) (files []golds
 	for tag := range info {
 		f := goldsmith.NewFileFromData(t.tagPagePath(tag), nil)
 
-		f.SetValue(t.dstKey, tagState{Index: tag, Info: t.info})
+		meta := f.Meta()
+		meta[t.dstKey] = tagState{Index: tag, Info: t.info}
 		for key, value := range t.meta {
-			f.SetValue(key, value)
+			meta[key] = value
 		}
 
 		files = append(files, f)

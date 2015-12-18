@@ -23,6 +23,7 @@
 package markdown
 
 import (
+	"bytes"
 	"path"
 	"path/filepath"
 	"strings"
@@ -64,12 +65,17 @@ func (*markdown) Accept(f goldsmith.File) bool {
 }
 
 func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	var buff bytes.Buffer
+	if _, err := buff.ReadFrom(f); err != nil {
+		return err
+	}
+
 	var data []byte
 	switch m.mdType {
 	case MarkdownCommon:
-		data = blackfriday.MarkdownCommon(f.Bytes())
+		data = blackfriday.MarkdownCommon(buff.Bytes())
 	case MarkdownBasic:
-		data = blackfriday.MarkdownBasic(f.Bytes())
+		data = blackfriday.MarkdownBasic(buff.Bytes())
 	}
 
 	f.Rewrite(data)

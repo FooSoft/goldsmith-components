@@ -28,7 +28,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"path/filepath"
 	"strings"
 
@@ -66,7 +65,7 @@ func (fm *frontMatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	f.Rewrite(body.Bytes())
 	for key, value := range meta {
-		f.SetValue(key, value)
+		f.Meta()[key] = value
 	}
 
 	return nil
@@ -140,7 +139,6 @@ func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 			return nil, nil, err
 		}
 	case jsonCloser:
-		log.Print(string(front.Bytes()))
 		if err := json.Unmarshal(front.Bytes(), meta); err != nil {
 			return nil, nil, err
 		}

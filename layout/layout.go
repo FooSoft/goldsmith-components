@@ -34,9 +34,10 @@ import (
 type layout struct {
 	srcKey, dstKey string
 	defVal         string
-	paths          []string
-	funcs          template.FuncMap
-	tmpl           *template.Template
+
+	paths []string
+	funcs template.FuncMap
+	tmpl  *template.Template
 }
 
 func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) goldsmith.Plugin {
@@ -68,7 +69,9 @@ func (t *layout) Initialize(ctx goldsmith.Context) (err error) {
 }
 
 func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	name, ok := f.Value(t.srcKey)
+	meta := f.Meta()
+
+	name, ok := meta[t.srcKey]
 	if !ok {
 		name = t.defVal
 	}
@@ -78,13 +81,18 @@ func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		name = t.defVal
 	}
 
-	f.SetValue(t.dstKey, template.HTML(f.Bytes()))
-
-	var buff bytes.Buffer
-	if err := t.tmpl.ExecuteTemplate(&buff, nameStr, f); err != nil {
+	var inBuff bytes.Buffer
+	if _, err := inBuff.ReadFrom(f); err != nil {
 		return err
 	}
 
-	f.Rewrite(buff.Bytes())
+	meta[t.dstKey] = template.HTML(inBuff.Bytes())
+
+	var outBuff bytes.Buffer
+	if err := t.tmpl.ExecuteTemplate(&outBuff, nameStr, f); err != nil {
+		return err
+	}
+
+	f.Rewrite(outBuff.Bytes())
 	return nil
 }
