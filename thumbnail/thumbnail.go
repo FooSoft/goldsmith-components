@@ -72,7 +72,13 @@ func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return nil
 	}
 
-	return t.thumbnail(ctx, f, thumbPath)
+	f, err := t.thumbnail(f, thumbPath)
+	if err != nil {
+		return err
+	}
+
+	ctx.AddFile(f)
+	return nil
 }
 
 func (t *thumbnail) thumbName(path string) (string, bool) {
@@ -102,10 +108,10 @@ func (t *thumbnail) cached(ctx goldsmith.Context, origPath, thumbPath string) bo
 	return origStat.ModTime().Unix() <= thumbStat.ModTime().Unix()
 }
 
-func (t *thumbnail) thumbnail(ctx goldsmith.Context, f goldsmith.File, thumbPath string) error {
+func (t *thumbnail) thumbnail(f goldsmith.File, thumbPath string) (goldsmith.File, error) {
 	origImg, _, err := image.Decode(f)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var thumbBuff bytes.Buffer
@@ -120,6 +126,5 @@ func (t *thumbnail) thumbnail(ctx goldsmith.Context, f goldsmith.File, thumbPath
 		err = png.Encode(&thumbBuff, thumbImg)
 	}
 
-	ctx.NewFile(thumbPath, thumbBuff.Bytes())
-	return err
+	return goldsmith.NewFileFromData(thumbPath, thumbBuff.Bytes()), nil
 }

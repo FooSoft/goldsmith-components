@@ -80,20 +80,8 @@ func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	f.SetValue(t.dstKey, template.HTML(f.Bytes()))
 
-	params := struct {
-		Path string
-		Meta map[string]interface{}
-	}{
-		f.Path(),
-		make(map[string]interface{}),
-	}
-
-	for _, key := range f.Keys() {
-		params.Meta[key], _ = f.Value(key)
-	}
-
 	var buff bytes.Buffer
-	if err := t.tmpl.ExecuteTemplate(&buff, nameStr, params); err != nil {
+	if err := t.tmpl.ExecuteTemplate(&buff, nameStr, f); err != nil {
 		return err
 	}
 

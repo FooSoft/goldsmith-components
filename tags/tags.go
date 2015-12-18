@@ -129,19 +129,26 @@ func (t *tags) Finalize(ctx goldsmith.Context, files []goldsmith.File) error {
 		sort.Sort(meta.Files)
 	}
 
-	t.buildPages(ctx, t.info)
+	for _, f := range t.buildPages(ctx, t.info) {
+		ctx.AddFile(f)
+	}
+
 	return nil
 }
 
-func (t *tags) buildPages(ctx goldsmith.Context, info tagInfoMap) {
+func (t *tags) buildPages(ctx goldsmith.Context, info tagInfoMap) (files []goldsmith.File) {
 	for tag := range info {
-		f := ctx.NewFile(t.tagPagePath(tag), nil)
+		f := goldsmith.NewFileFromData(t.tagPagePath(tag), nil)
+
+		f.SetValue(t.dstKey, tagState{Index: tag, Info: t.info})
 		for key, value := range t.meta {
 			f.SetValue(key, value)
 		}
 
-		f.SetValue(t.dstKey, tagState{Index: tag, Info: t.info})
+		files = append(files, f)
 	}
+
+	return
 }
 
 func (t *tags) tagPagePath(tag string) string {
