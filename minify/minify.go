@@ -45,8 +45,12 @@ func New() goldsmith.Plugin {
 	return new(minify)
 }
 
-func (*minify) Accept(file *goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(file.Path)) {
+func (*minify) Name() string {
+	return "Minify"
+}
+
+func (*minify) Accept(f goldsmith.File) bool {
+	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".css", ".html", ".htm", ".js", ".svg", ".json", ".xml":
 		return true
 	default:
@@ -54,24 +58,27 @@ func (*minify) Accept(file *goldsmith.File) bool {
 	}
 }
 
-func (*minify) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
-	var buff bytes.Buffer
+func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	var (
+		buff bytes.Buffer
+		err  error
+	)
 
-	switch m := min.New(); filepath.Ext(strings.ToLower(file.Path)) {
+	switch m := min.New(); filepath.Ext(strings.ToLower(f.Path())) {
 	case ".css":
-		file.Err = css.Minify(m, &buff, &file.Buff, nil)
+		err = css.Minify(m, &buff, f, nil)
 	case ".html", ".htm":
-		file.Err = html.Minify(m, &buff, &file.Buff, nil)
+		err = html.Minify(m, &buff, f, nil)
 	case ".js":
-		file.Err = js.Minify(m, &buff, &file.Buff, nil)
+		err = js.Minify(m, &buff, f, nil)
 	case ".json":
-		file.Err = json.Minify(m, &buff, &file.Buff, nil)
+		err = json.Minify(m, &buff, f, nil)
 	case ".svg":
-		file.Err = svg.Minify(m, &buff, &file.Buff, nil)
+		err = svg.Minify(m, &buff, f, nil)
 	case ".xml":
-		file.Err = xml.Minify(m, &buff, &file.Buff, nil)
+		err = xml.Minify(m, &buff, f, nil)
 	}
 
-	file.Buff = buff
-	return true
+	f.Rewrite(buff.Bytes())
+	return err
 }

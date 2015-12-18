@@ -45,8 +45,12 @@ func New() goldsmith.Plugin {
 	return &frontMatter{}
 }
 
-func (*frontMatter) Accept(file *goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(file.Path)) {
+func (*frontMatter) Name() string {
+	return "FrontMatter"
+}
+
+func (*frontMatter) Accept(f goldsmith.File) bool {
+	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".md", ".markdown":
 		return true
 	default:
@@ -54,20 +58,18 @@ func (*frontMatter) Accept(file *goldsmith.File) bool {
 	}
 }
 
-func (fm *frontMatter) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
-	var (
-		meta map[string]interface{}
-		body *bytes.Buffer
-	)
-
-	if meta, body, file.Err = parse(&file.Buff); file.Err == nil {
-		file.Buff = *body
-		for key, value := range meta {
-			file.Meta[key] = value
-		}
+func (fm *frontMatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	meta, body, err := parse(f)
+	if err != nil {
+		return err
 	}
 
-	return true
+	f.Rewrite(body.Bytes())
+	for key, value := range meta {
+		f.SetValue(key, value)
+	}
+
+	return nil
 }
 
 func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {

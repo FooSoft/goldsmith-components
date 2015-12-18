@@ -23,7 +23,6 @@
 package markdown
 
 import (
-	"bytes"
 	"path"
 	"path/filepath"
 	"strings"
@@ -51,8 +50,12 @@ func NewBasic() goldsmith.Plugin {
 	return &markdown{MarkdownBasic}
 }
 
-func (*markdown) Accept(file *goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(file.Path)) {
+func (*markdown) Name() string {
+	return "Markdown"
+}
+
+func (*markdown) Accept(f goldsmith.File) bool {
+	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".md", ".markdown":
 		return true
 	default:
@@ -60,17 +63,17 @@ func (*markdown) Accept(file *goldsmith.File) bool {
 	}
 }
 
-func (m *markdown) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
+func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	var data []byte
 	switch m.mdType {
 	case MarkdownCommon:
-		data = blackfriday.MarkdownCommon(file.Buff.Bytes())
+		data = blackfriday.MarkdownCommon(f.Bytes())
 	case MarkdownBasic:
-		data = blackfriday.MarkdownBasic(file.Buff.Bytes())
+		data = blackfriday.MarkdownBasic(f.Bytes())
 	}
 
-	file.Buff = *bytes.NewBuffer(data)
-	file.Path = strings.TrimSuffix(file.Path, path.Ext(file.Path)) + ".html"
+	f.Rewrite(data)
+	f.Rename(strings.TrimSuffix(f.Path(), path.Ext(f.Path())) + ".html")
 
-	return true
+	return nil
 }

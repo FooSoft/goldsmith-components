@@ -48,8 +48,12 @@ func New(dims uint, namer Namer) goldsmith.Plugin {
 	return &thumbnail{dims, namer}
 }
 
-func (*thumbnail) Accept(file *goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(file.Path)) {
+func (*thumbnail) Name() string {
+	return "Thumbnail"
+}
+
+func (*thumbnail) Accept(f goldsmith.File) bool {
+	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".jpg", ".jpeg", ".gif", ".png":
 		return true
 	default:
@@ -57,23 +61,18 @@ func (*thumbnail) Accept(file *goldsmith.File) bool {
 	}
 }
 
-func (t *thumbnail) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
-	thumbPath, create := t.thumbName(file.Path)
+func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	thumbPath, create := t.thumbName(f.Path())
 	if !create {
-		return true
+		return nil
 	}
 
-	if t.cached(ctx, file.Path, thumbPath) {
+	if t.cached(ctx, f.Path(), thumbPath) {
 		ctx.RefFile(thumbPath)
-		return true
+		return nil
 	}
 
-	var thumbFile *goldsmith.File
-	if thumbFile, file.Err = t.thumbnail(file, thumbPath); file.Err == nil {
-		ctx.AddFile(thumbFile)
-	}
-
-	return true
+	return t.thumbnail(ctx, f, thumbPath)
 }
 
 func (t *thumbnail) thumbName(path string) (string, bool) {
@@ -103,23 +102,24 @@ func (t *thumbnail) cached(ctx goldsmith.Context, origPath, thumbPath string) bo
 	return origStat.ModTime().Unix() <= thumbStat.ModTime().Unix()
 }
 
-func (t *thumbnail) thumbnail(origFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
-	origImg, _, err := image.Decode(bytes.NewReader(origFile.Buff.Bytes()))
+func (t *thumbnail) thumbnail(ctx goldsmith.Context, f goldsmith.File, thumbPath string) error {
+	origImg, _, err := image.Decode(f)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
+	var thumbBuff bytes.Buffer
 	thumbImg := resize.Thumbnail(t.dims, t.dims, origImg, resize.Bicubic)
-	thumbFile := goldsmith.NewFile(thumbPath)
 
 	switch filepath.Ext(strings.ToLower(thumbPath)) {
 	case ".jpg", ".jpeg":
-		thumbFile.Err = jpeg.Encode(&thumbFile.Buff, thumbImg, nil)
+		err = jpeg.Encode(&thumbBuff, thumbImg, nil)
 	case ".gif":
-		thumbFile.Err = gif.Encode(&thumbFile.Buff, thumbImg, nil)
+		err = gif.Encode(&thumbBuff, thumbImg, nil)
 	case ".png":
-		thumbFile.Err = png.Encode(&thumbFile.Buff, thumbImg)
+		err = png.Encode(&thumbBuff, thumbImg)
 	}
 
-	return thumbFile, nil
+	ctx.NewFile(thumbPath, thumbBuff.Bytes())
+	return err
 }

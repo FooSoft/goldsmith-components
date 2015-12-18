@@ -37,7 +37,11 @@ func New(src, dst string) goldsmith.Plugin {
 	return &static{src, dst}
 }
 
-func (*static) Accept(file *goldsmith.File) bool {
+func (*static) Name() string {
+	return "Static"
+}
+
+func (*static) Accept(file goldsmith.File) bool {
 	return false
 }
 
@@ -62,15 +66,7 @@ func (s *static) Initialize(ctx goldsmith.Context) error {
 		}
 
 		dstRelPath := filepath.Join(s.dst, srcRelPath)
-		file := goldsmith.NewFile(dstRelPath)
-
-		var f *os.File
-		if f, file.Err = os.Open(path); file.Err == nil {
-			_, file.Err = file.Buff.ReadFrom(f)
-			f.Close()
-		}
-
-		ctx.AddFile(file)
+		ctx.CopyFile(dstRelPath, path)
 	}
 
 	return nil

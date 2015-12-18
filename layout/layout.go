@@ -49,8 +49,12 @@ func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) 
 	}
 }
 
-func (*layout) Accept(file *goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(file.Path)) {
+func (*layout) Name() string {
+	return "Layout"
+}
+
+func (*layout) Accept(f goldsmith.File) bool {
+	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".html", ".htm":
 		return true
 	default:
@@ -63,8 +67,8 @@ func (t *layout) Initialize(ctx goldsmith.Context) (err error) {
 	return
 }
 
-func (t *layout) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
-	name, ok := file.Meta[t.srcKey]
+func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	name, ok := f.Value(t.srcKey)
 	if !ok {
 		name = t.defVal
 	}
@@ -74,12 +78,25 @@ func (t *layout) Process(ctx goldsmith.Context, file *goldsmith.File) bool {
 		name = t.defVal
 	}
 
-	file.Meta[t.dstKey] = template.HTML(file.Buff.Bytes())
+	f.SetValue(t.dstKey, template.HTML(f.Bytes()))
 
-	var buff bytes.Buffer
-	if file.Err = t.tmpl.ExecuteTemplate(&buff, nameStr, file); file.Err == nil {
-		file.Buff = buff
+	params := struct {
+		Path string
+		Meta map[string]interface{}
+	}{
+		f.Path(),
+		make(map[string]interface{}),
 	}
 
-	return true
+	for _, key := range f.Keys() {
+		params.Meta[key], _ = f.Value(key)
+	}
+
+	var buff bytes.Buffer
+	if err := t.tmpl.ExecuteTemplate(&buff, nameStr, params); err != nil {
+		return err
+	}
+
+	f.Rewrite(buff.Bytes())
+	return nil
 }
