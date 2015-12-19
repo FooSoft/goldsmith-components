@@ -50,8 +50,10 @@ func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) 
 	}
 }
 
-func (*layout) Name() string {
-	return "Layout"
+func (t *layout) Initialize(ctx goldsmith.Context) (name string, flags uint, err error) {
+	name = "Layout"
+	t.tmpl, err = template.New("").Funcs(t.funcs).ParseFiles(t.paths...)
+	return
 }
 
 func (*layout) Accept(f goldsmith.File) bool {
@@ -61,11 +63,6 @@ func (*layout) Accept(f goldsmith.File) bool {
 	default:
 		return false
 	}
-}
-
-func (t *layout) Initialize(ctx goldsmith.Context) (err error) {
-	t.tmpl, err = template.New("").Funcs(t.funcs).ParseFiles(t.paths...)
-	return
 }
 
 func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {

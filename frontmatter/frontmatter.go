@@ -44,8 +44,9 @@ func New() goldsmith.Plugin {
 	return &frontMatter{}
 }
 
-func (*frontMatter) Name() string {
-	return "FrontMatter"
+func (*frontMatter) Initialize(ctx goldsmith.Context) (name string, flags uint, err error) {
+	name = "FrontMatter"
+	return
 }
 
 func (*frontMatter) Accept(f goldsmith.File) bool {

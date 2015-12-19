@@ -37,17 +37,11 @@ func New(src, dst string) goldsmith.Plugin {
 	return &static{src, dst}
 }
 
-func (*static) Name() string {
-	return "Static"
-}
+func (s *static) Initialize(ctx goldsmith.Context) (name string, flags uint, err error) {
+	name = "Static"
 
-func (*static) Accept(file goldsmith.File) bool {
-	return false
-}
-
-func (s *static) Initialize(ctx goldsmith.Context) error {
 	var paths []string
-	err := filepath.Walk(s.src, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(s.src, func(path string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() {
 			paths = append(paths, path)
 		}
@@ -55,19 +49,18 @@ func (s *static) Initialize(ctx goldsmith.Context) error {
 		return err
 	})
 
-	if err != nil {
-		return err
-	}
+	if err == nil {
+		for _, path := range paths {
+			srcRelPath, err := filepath.Rel(s.src, path)
+			if err != nil {
+				panic(err)
+			}
 
-	for _, path := range paths {
-		srcRelPath, err := filepath.Rel(s.src, path)
-		if err != nil {
-			panic(err)
+			dstRelPath := filepath.Join(s.dst, srcRelPath)
+			f := goldsmith.NewFileFromAsset(dstRelPath, path)
+			ctx.DispatchFile(f)
 		}
-
-		dstRelPath := filepath.Join(s.dst, srcRelPath)
-		ctx.DispatchFile(goldsmith.NewFileFromAsset(dstRelPath, path))
 	}
 
-	return nil
+	return
 }

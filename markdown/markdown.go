@@ -51,8 +51,9 @@ func NewBasic() goldsmith.Plugin {
 	return &markdown{MarkdownBasic}
 }
 
-func (*markdown) Name() string {
-	return "Markdown"
+func (*markdown) Initialize(ctx goldsmith.Context) (name string, flags uint, err error) {
+	name = "Markdown"
+	return
 }
 
 func (*markdown) Accept(f goldsmith.File) bool {

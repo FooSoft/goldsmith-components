@@ -69,8 +69,10 @@ func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith
 	}
 }
 
-func (*tags) Name() string {
-	return "Tags"
+func (*tags) Initialize(ctx goldsmith.Context) (name string, flags uint, err error) {
+	name = "Tags"
+	flags = goldsmith.PLUGIN_FLAG_BATCH
+	return
 }
 
 func (*tags) Accept(f goldsmith.File) bool {
@@ -126,7 +128,7 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
 	return true, nil
 }
 
-func (t *tags) Finalize(ctx goldsmith.Context, files []goldsmith.File) error {
+func (t *tags) Finalize(ctx goldsmith.Context) error {
 	for _, meta := range t.info {
 		sort.Sort(meta.Files)
 	}

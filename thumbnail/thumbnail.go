@@ -48,8 +48,9 @@ func New(dims uint, namer Namer) goldsmith.Plugin {
 	return &thumbnail{dims, namer}
 }
 
-func (*thumbnail) Name() string {
-	return "Thumbnail"
+func (*thumbnail) Initialize(ctx goldsmith.Context) (name string, flags uint, err error) {
+	name = "Thumbnail"
+	return
 }
 
 func (*thumbnail) Accept(f goldsmith.File) bool {
