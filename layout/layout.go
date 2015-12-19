@@ -90,6 +90,9 @@ func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) 
 		return false, err
 	}
 
-	f.Rewrite(outBuff.Bytes())
-	return true, nil
+	nf := goldsmith.NewFileFromData(f.Path(), outBuff.Bytes())
+	nf.Apply(meta)
+	ctx.DispatchFile(nf)
+
+	return false, nil
 }

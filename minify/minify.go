@@ -84,6 +84,9 @@ func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
 		return false, err
 	}
 
-	f.Rewrite(buff.Bytes())
-	return true, nil
+	nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
+	nf.Apply(f.Meta())
+	ctx.DispatchFile(nf)
+
+	return false, nil
 }

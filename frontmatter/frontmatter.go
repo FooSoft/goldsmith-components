@@ -64,12 +64,12 @@ func (fm *frontMatter) Process(ctx goldsmith.Context, f goldsmith.File) (bool, e
 		return false, err
 	}
 
-	f.Rewrite(body.Bytes())
-	for key, value := range meta {
-		f.Meta()[key] = value
-	}
+	nf := goldsmith.NewFileFromData(f.Path(), body.Bytes())
+	nf.Apply(f.Meta())
+	nf.Apply(meta)
+	ctx.DispatchFile(nf)
 
-	return true, nil
+	return false, nil
 }
 
 func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {

@@ -79,8 +79,10 @@ func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error
 		data = blackfriday.MarkdownBasic(buff.Bytes())
 	}
 
-	f.Rewrite(data)
-	f.Rename(strings.TrimSuffix(f.Path(), path.Ext(f.Path())) + ".html")
+	name := strings.TrimSuffix(f.Path(), path.Ext(f.Path())) + ".html"
+	nf := goldsmith.NewFileFromData(name, data)
+	nf.Apply(f.Meta())
+	ctx.DispatchFile(nf)
 
-	return true, nil
+	return false, nil
 }
