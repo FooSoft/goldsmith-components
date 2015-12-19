@@ -51,7 +51,7 @@ func NewBasic() goldsmith.Plugin {
 	return &markdown{MarkdownBasic}
 }
 
-func (*markdown) Initialize(ctx goldsmith.Context) (name string, flags uint, err error) {
+func (*markdown) Initialize() (name string, flags uint, err error) {
 	name = "Markdown"
 	return
 }

@@ -45,7 +45,7 @@ func New() goldsmith.Plugin {
 	return new(minify)
 }
 
-func (*minify) Initialize(ctx goldsmith.Context) (name string, flags uint, err error) {
+func (*minify) Initialize() (name string, flags uint, err error) {
 	name = "Minify"
 	return
 }

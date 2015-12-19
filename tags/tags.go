@@ -69,7 +69,7 @@ func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith
 	}
 }
 
-func (*tags) Initialize(ctx goldsmith.Context) (name string, flags uint, err error) {
+func (*tags) Initialize() (name string, flags uint, err error) {
 	name = "Tags"
 	flags = goldsmith.PLUGIN_FLAG_BATCH
 	return

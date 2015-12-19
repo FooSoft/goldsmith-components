@@ -50,7 +50,7 @@ func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) 
 	}
 }
 
-func (t *layout) Initialize(ctx goldsmith.Context) (name string, flags uint, err error) {
+func (t *layout) Initialize() (name string, flags uint, err error) {
 	name = "Layout"
 	t.tmpl, err = template.New("").Funcs(t.funcs).ParseFiles(t.paths...)
 	return
