@@ -37,12 +37,7 @@ func New(src, dst string) goldsmith.Plugin {
 	return &static{src, dst}
 }
 
-func (s *static) Initialize() (name string, flags uint, err error) {
-	name = "Static"
-	return
-}
-
-func (s *static) Finalize(ctx goldsmith.Context) error {
+func (s *static) Initialize(ctx goldsmith.Context) error {
 	var paths []string
 	err := filepath.Walk(s.src, func(path string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() {

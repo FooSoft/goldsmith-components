@@ -45,12 +45,7 @@ func New() goldsmith.Plugin {
 	return new(minify)
 }
 
-func (*minify) Initialize() (name string, flags uint, err error) {
-	name = "Minify"
-	return
-}
-
-func (*minify) Accept(f goldsmith.File) bool {
+func (*minify) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".css", ".html", ".htm", ".js", ".svg", ".json", ".xml":
 		return true
@@ -59,7 +54,7 @@ func (*minify) Accept(f goldsmith.File) bool {
 	}
 }
 
-func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
+func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	var (
 		buff bytes.Buffer
 		err  error
@@ -81,12 +76,12 @@ func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
 	}
 
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
 	nf.Apply(f.Meta())
 	ctx.DispatchFile(nf)
 
-	return false, nil
+	return nil
 }

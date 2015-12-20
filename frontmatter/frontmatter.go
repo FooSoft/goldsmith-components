@@ -44,12 +44,7 @@ func New() goldsmith.Plugin {
 	return &frontMatter{}
 }
 
-func (*frontMatter) Initialize() (name string, flags uint, err error) {
-	name = "FrontMatter"
-	return
-}
-
-func (*frontMatter) Accept(f goldsmith.File) bool {
+func (*frontMatter) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".md", ".markdown":
 		return true
@@ -58,10 +53,10 @@ func (*frontMatter) Accept(f goldsmith.File) bool {
 	}
 }
 
-func (fm *frontMatter) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
+func (fm *frontMatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	meta, body, err := parse(f)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	nf := goldsmith.NewFileFromData(f.Path(), body.Bytes())
@@ -69,7 +64,7 @@ func (fm *frontMatter) Process(ctx goldsmith.Context, f goldsmith.File) (bool, e
 	nf.Apply(meta)
 	ctx.DispatchFile(nf)
 
-	return false, nil
+	return nil
 }
 
 func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {

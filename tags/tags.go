@@ -56,7 +56,9 @@ type tags struct {
 	srcKey, dstKey string
 	meta           map[string]interface{}
 	info           tagInfoMap
-	mtx            sync.Mutex
+	infoMtx        sync.Mutex
+	files          []goldsmith.File
+	filesMtx       sync.Mutex
 }
 
 func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith.Plugin {
@@ -69,13 +71,7 @@ func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith
 	}
 }
 
-func (*tags) Initialize() (name string, flags uint, err error) {
-	name = "Tags"
-	flags = goldsmith.PLUGIN_FLAG_BATCH
-	return
-}
-
-func (*tags) Accept(f goldsmith.File) bool {
+func (*tags) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".html", ".htm":
 		return true
@@ -84,19 +80,25 @@ func (*tags) Accept(f goldsmith.File) bool {
 	}
 }
 
-func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
+func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	defer func() {
+		t.filesMtx.Lock()
+		t.files = append(t.files, f)
+		t.filesMtx.Unlock()
+	}()
+
 	meta := f.Meta()
 
 	tagData, ok := meta[t.srcKey]
 	if !ok {
 		meta[t.dstKey] = tagState{Info: t.info}
-		return true, nil
+		return nil
 	}
 
 	tags, ok := tagData.([]interface{})
 	if !ok {
 		meta[t.dstKey] = tagState{Info: t.info}
-		return true, nil
+		return nil
 	}
 
 	var tagStrs []string
@@ -108,7 +110,7 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
 
 		tagStrs = append(tagStrs, tagStr)
 
-		t.mtx.Lock()
+		t.infoMtx.Lock()
 		{
 			item, ok := t.info[tagStr]
 			item.Files = append(item.Files, f)
@@ -119,13 +121,13 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
 
 			t.info[tagStr] = item
 		}
-		t.mtx.Unlock()
+		t.infoMtx.Unlock()
 	}
 
 	sort.Strings(tagStrs)
 	meta[t.dstKey] = tagState{Info: t.info, Set: tagStrs}
 
-	return true, nil
+	return nil
 }
 
 func (t *tags) Finalize(ctx goldsmith.Context) error {
@@ -134,6 +136,10 @@ func (t *tags) Finalize(ctx goldsmith.Context) error {
 	}
 
 	for _, f := range t.buildPages(ctx, t.info) {
+		ctx.DispatchFile(f)
+	}
+
+	for _, f := range t.files {
 		ctx.DispatchFile(f)
 	}
 

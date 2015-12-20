@@ -48,12 +48,7 @@ func New(dims uint, namer Namer) goldsmith.Plugin {
 	return &thumbnail{dims, namer}
 }
 
-func (*thumbnail) Initialize() (name string, flags uint, err error) {
-	name = "Thumbnail"
-	return
-}
-
-func (*thumbnail) Accept(f goldsmith.File) bool {
+func (*thumbnail) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".jpg", ".jpeg", ".gif", ".png":
 		return true
@@ -62,29 +57,30 @@ func (*thumbnail) Accept(f goldsmith.File) bool {
 	}
 }
 
-func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
-	origCached := t.cached(ctx, f.Path(), f.Path())
-	if origCached {
+func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	if t.cached(ctx, f.Path(), f.Path()) {
 		ctx.ReferenceFile(f.Path())
+	} else {
+		defer ctx.DispatchFile(f)
 	}
 
 	thumbPath, create := t.thumbName(f.Path())
 	if !create {
-		return !origCached, nil
+		return nil
 	}
 
 	if t.cached(ctx, f.Path(), thumbPath) {
 		ctx.ReferenceFile(thumbPath)
-		return !origCached, nil
+		return nil
 	}
 
-	f, err := t.thumbnail(f, thumbPath)
+	fn, err := t.thumbnail(f, thumbPath)
 	if err != nil {
-		return !origCached, err
+		return err
 	}
+	ctx.DispatchFile(fn)
 
-	ctx.DispatchFile(f)
-	return !origCached, nil
+	return nil
 }
 
 func (t *thumbnail) thumbName(path string) (string, bool) {

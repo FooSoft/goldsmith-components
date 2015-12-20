@@ -51,12 +51,7 @@ func NewBasic() goldsmith.Plugin {
 	return &markdown{MarkdownBasic}
 }
 
-func (*markdown) Initialize() (name string, flags uint, err error) {
-	name = "Markdown"
-	return
-}
-
-func (*markdown) Accept(f goldsmith.File) bool {
+func (*markdown) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".md", ".markdown":
 		return true
@@ -65,10 +60,10 @@ func (*markdown) Accept(f goldsmith.File) bool {
 	}
 }
 
-func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
+func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(f); err != nil {
-		return false, err
+		return err
 	}
 
 	var data []byte
@@ -84,5 +79,5 @@ func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error
 	nf.Apply(f.Meta())
 	ctx.DispatchFile(nf)
 
-	return false, nil
+	return nil
 }

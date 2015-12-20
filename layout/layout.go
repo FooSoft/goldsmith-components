@@ -50,13 +50,12 @@ func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) 
 	}
 }
 
-func (t *layout) Initialize() (name string, flags uint, err error) {
-	name = "Layout"
+func (t *layout) Initialize(ctx goldsmith.Context) (err error) {
 	t.tmpl, err = template.New("").Funcs(t.funcs).ParseFiles(t.paths...)
 	return
 }
 
-func (*layout) Accept(f goldsmith.File) bool {
+func (*layout) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".html", ".htm":
 		return true
@@ -65,7 +64,7 @@ func (*layout) Accept(f goldsmith.File) bool {
 	}
 }
 
-func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
+func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	meta := f.Meta()
 
 	name, ok := meta[t.srcKey]
@@ -75,24 +74,24 @@ func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) (bool, error) 
 
 	nameStr, ok := name.(string)
 	if !ok {
-		name = t.defVal
+		nameStr = t.defVal
 	}
 
 	var inBuff bytes.Buffer
 	if _, err := inBuff.ReadFrom(f); err != nil {
-		return false, err
+		return err
 	}
 
 	meta[t.dstKey] = template.HTML(inBuff.Bytes())
 
 	var outBuff bytes.Buffer
 	if err := t.tmpl.ExecuteTemplate(&outBuff, nameStr, f); err != nil {
-		return false, err
+		return err
 	}
 
 	nf := goldsmith.NewFileFromData(f.Path(), outBuff.Bytes())
 	nf.Apply(meta)
 	ctx.DispatchFile(nf)
 
-	return false, nil
+	return nil
 }
