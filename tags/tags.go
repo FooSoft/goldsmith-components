@@ -31,34 +31,16 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type files []goldsmith.File
-
-func (f files) Len() int           { return len(f) }
-func (f files) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
-func (f files) Less(i, j int) bool { return strings.Compare(f[i].Path(), f[j].Path()) < 0 }
-
-type tagInfo struct {
-	Files    files
-	SafeName string
-	Path     string
-}
-
-type tagState struct {
-	Index string
-	Set   []string
-	Info  tagInfoMap
-}
-
-type tagInfoMap map[string]tagInfo
-
 type tags struct {
 	basePath       string
 	srcKey, dstKey string
 	meta           map[string]interface{}
-	info           tagInfoMap
-	infoMtx        sync.Mutex
-	files          []goldsmith.File
-	filesMtx       sync.Mutex
+
+	info    map[string]tagInfo
+	infoMtx sync.Mutex
+
+	files    []goldsmith.File
+	filesMtx sync.Mutex
 }
 
 func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith.Plugin {
@@ -67,7 +49,7 @@ func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith
 		srcKey:   srcKey,
 		dstKey:   dstKey,
 		meta:     meta,
-		info:     make(tagInfoMap),
+		info:     make(map[string]tagInfo),
 	}
 }
 
@@ -146,7 +128,7 @@ func (t *tags) Finalize(ctx goldsmith.Context) error {
 	return nil
 }
 
-func (t *tags) buildPages(ctx goldsmith.Context, info tagInfoMap) (files []goldsmith.File) {
+func (t *tags) buildPages(ctx goldsmith.Context, info map[string]tagInfo) (files []goldsmith.File) {
 	for tag := range info {
 		f := goldsmith.NewFileFromData(t.tagPagePath(tag), nil)
 
@@ -168,4 +150,30 @@ func (t *tags) tagPagePath(tag string) string {
 
 func safeTag(tag string) string {
 	return strings.ToLower(strings.Replace(tag, " ", "-", -1))
+}
+
+type files []goldsmith.File
+
+func (f files) Len() int {
+	return len(f)
+}
+
+func (f files) Swap(i, j int) {
+	f[i], f[j] = f[j], f[i]
+}
+
+func (f files) Less(i, j int) bool {
+	return strings.Compare(f[i].Path(), f[j].Path()) < 0
+}
+
+type tagInfo struct {
+	Files    files
+	SafeName string
+	Path     string
+}
+
+type tagState struct {
+	Index string
+	Set   []string
+	Info  map[string]tagInfo
 }
