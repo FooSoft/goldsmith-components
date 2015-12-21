@@ -85,7 +85,7 @@ func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	c.colsMtx.Lock()
 	{
 		fg, ok := c.cols[colStr]
-		fg.files = append(fg.files, f)
+		fg.Files = append(fg.Files, f)
 		if !ok {
 			fg.comp = c.comp
 			c.cols[colStr] = fg
@@ -109,22 +109,22 @@ func (c *collection) Finalize(ctx goldsmith.Context) error {
 }
 
 type fileGroup struct {
-	files []goldsmith.File
+	Files []goldsmith.File
 	comp  Comparer
 }
 
 func (f fileGroup) Len() int {
-	return len(f.files)
+	return len(f.Files)
 }
 
 func (f fileGroup) Swap(i, j int) {
-	f.files[i], f.files[j] = f.files[j], f.files[i]
+	f.Files[i], f.Files[j] = f.Files[j], f.Files[i]
 }
 
 func (f fileGroup) Less(i, j int) bool {
 	if f.comp == nil {
-		return strings.Compare(f.files[i].Path(), f.files[j].Path()) < 0
+		return strings.Compare(f.Files[i].Path(), f.Files[j].Path()) < 0
 	}
 
-	return f.comp(f.files[i], f.files[j])
+	return f.comp(f.Files[i], f.Files[j])
 }
