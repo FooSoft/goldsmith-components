@@ -37,7 +37,7 @@ type collection struct {
 	srcKey, dstKey string
 
 	comp    Comparer
-	cols    map[string]*fileGroup
+	cols    map[string][]goldsmith.File
 	colsMtx sync.Mutex
 
 	files    []goldsmith.File
@@ -49,7 +49,7 @@ func New(srcKey, dstKey string, comp Comparer) goldsmith.Plugin {
 		srcKey: srcKey,
 		dstKey: dstKey,
 		comp:   comp,
-		cols:   make(map[string]*fileGroup),
+		cols:   make(map[string][]goldsmith.File),
 	}
 }
 
@@ -84,13 +84,9 @@ func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	c.colsMtx.Lock()
 	{
-		fg, ok := c.cols[colStr]
-		if !ok {
-			fg = &fileGroup{comp: c.comp}
-			c.cols[colStr] = fg
-		}
-
-		fg.Files = append(fg.Files, f)
+		files, _ := c.cols[colStr]
+		files = append(files, f)
+		c.cols[colStr] = files
 	}
 	c.colsMtx.Unlock()
 
@@ -99,7 +95,8 @@ func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 func (c *collection) Finalize(ctx goldsmith.Context) error {
 	for _, files := range c.cols {
-		sort.Sort(files)
+		fg := &fileGroup{files, c.comp}
+		sort.Sort(fg)
 	}
 
 	for _, f := range c.files {
