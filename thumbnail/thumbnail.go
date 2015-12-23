@@ -107,7 +107,7 @@ func (t *thumbnail) cached(ctx goldsmith.Context, srcPath, dstPath string) bool 
 		return false
 	}
 
-	return dstStat.ModTime().Unix() >= srcStat.ModTime().Unix()
+	return dstStat.ModTime().Unix() >= srcStat.ModTime().Unix() && dstStat.Size() == srcStat.Size()
 }
 
 func (t *thumbnail) thumbnail(f goldsmith.File, thumbPath string) (goldsmith.File, error) {
