@@ -27,6 +27,7 @@ import (
 	"html/template"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/FooSoft/goldsmith"
 )
@@ -34,6 +35,9 @@ import (
 type layout struct {
 	srcKey, dstKey string
 	defVal         string
+
+	files    []goldsmith.File
+	filesMtx sync.Mutex
 
 	paths []string
 	funcs template.FuncMap
@@ -65,33 +69,43 @@ func (*layout) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 }
 
 func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	meta := f.Meta()
-
-	name, ok := meta[t.srcKey]
-	if !ok {
-		name = t.defVal
-	}
-
-	nameStr, ok := name.(string)
-	if !ok {
-		nameStr = t.defVal
-	}
-
-	var inBuff bytes.Buffer
-	if _, err := inBuff.ReadFrom(f); err != nil {
+	var buff bytes.Buffer
+	if _, err := buff.ReadFrom(f); err != nil {
 		return err
 	}
 
-	meta[t.dstKey] = template.HTML(inBuff.Bytes())
+	f.Meta()[t.dstKey] = template.HTML(buff.Bytes())
 
-	var outBuff bytes.Buffer
-	if err := t.tmpl.ExecuteTemplate(&outBuff, nameStr, f); err != nil {
-		return err
+	t.filesMtx.Lock()
+	t.files = append(t.files, f)
+	t.filesMtx.Unlock()
+
+	return nil
+}
+
+func (t *layout) Finalize(ctx goldsmith.Context) error {
+	for _, f := range t.files {
+		meta := f.Meta()
+
+		name, ok := meta[t.srcKey]
+		if !ok {
+			name = t.defVal
+		}
+
+		nameStr, ok := name.(string)
+		if !ok {
+			nameStr = t.defVal
+		}
+
+		var buff bytes.Buffer
+		if err := t.tmpl.ExecuteTemplate(&buff, nameStr, f); err != nil {
+			return err
+		}
+
+		nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
+		nf.Apply(meta)
+		ctx.DispatchFile(nf)
 	}
-
-	nf := goldsmith.NewFileFromData(f.Path(), outBuff.Bytes())
-	nf.Apply(meta)
-	ctx.DispatchFile(nf)
 
 	return nil
 }
