@@ -22,7 +22,10 @@
 
 package where
 
-import "github.com/FooSoft/goldsmith"
+import (
+	"github.com/FooSoft/goldsmith"
+	"github.com/bmatcuk/doublestar"
+)
 
 type filter func(f goldsmith.File) bool
 
@@ -31,8 +34,18 @@ type where struct {
 	plugin   goldsmith.Plugin
 }
 
-func New(f filter, p goldsmith.Plugin) goldsmith.Plugin {
+func NewFilter(f filter, p goldsmith.Plugin) goldsmith.Plugin {
 	return &where{f, p}
+}
+
+func NewGlob(g string, p goldsmith.Plugin) goldsmith.Plugin {
+	cb := func(f goldsmith.File) bool {
+		matched, _ := doublestar.Match(g, f.Path())
+		return matched
+	}
+
+	return NewFilter(cb, p)
+
 }
 
 func (w *where) Initialize(ctx goldsmith.Context) error {
