@@ -24,19 +24,19 @@ package where
 
 import "github.com/FooSoft/goldsmith"
 
-type Filter func(f goldsmith.File) bool
+type filter func(f goldsmith.File) bool
 
 type where struct {
-	f Filter
-	p goldsmith.Plugin
+	callback filter
+	plugin   goldsmith.Plugin
 }
 
-func New(f Filter, p goldsmith.Plugin) goldsmith.Plugin {
+func New(f filter, p goldsmith.Plugin) goldsmith.Plugin {
 	return &where{f, p}
 }
 
 func (w *where) Initialize(ctx goldsmith.Context) error {
-	if init, ok := w.p.(goldsmith.Initializer); ok {
+	if init, ok := w.plugin.(goldsmith.Initializer); ok {
 		return init.Initialize(ctx)
 	}
 
@@ -44,11 +44,11 @@ func (w *where) Initialize(ctx goldsmith.Context) error {
 }
 
 func (w *where) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	if !w.f(f) {
+	if !w.callback(f) {
 		return false
 	}
 
-	if accept, ok := w.p.(goldsmith.Accepter); ok {
+	if accept, ok := w.plugin.(goldsmith.Accepter); ok {
 		return accept.Accept(ctx, f)
 	}
 
@@ -56,7 +56,7 @@ func (w *where) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 }
 
 func (w *where) Finalize(ctx goldsmith.Context) error {
-	if fin, ok := w.p.(goldsmith.Finalizer); ok {
+	if fin, ok := w.plugin.(goldsmith.Finalizer); ok {
 		return fin.Finalize(ctx)
 	}
 
@@ -64,7 +64,7 @@ func (w *where) Finalize(ctx goldsmith.Context) error {
 }
 
 func (w *where) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	if proc, ok := w.p.(goldsmith.Processor); ok {
+	if proc, ok := w.plugin.(goldsmith.Processor); ok {
 		return proc.Process(ctx, f)
 	}
 

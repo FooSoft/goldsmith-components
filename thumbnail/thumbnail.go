@@ -37,15 +37,15 @@ import (
 	"github.com/nfnt/resize"
 )
 
-type Namer func(path string, dims uint) (string, bool)
+type namer func(path string, dims uint) (string, bool)
 
 type thumbnail struct {
-	dims  uint
-	namer Namer
+	dims     uint
+	callback namer
 }
 
-func New(dims uint, namer Namer) goldsmith.Plugin {
-	return &thumbnail{dims, namer}
+func New(dims uint, n namer) goldsmith.Plugin {
+	return &thumbnail{dims, n}
 }
 
 func (*thumbnail) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
@@ -84,8 +84,8 @@ func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
 }
 
 func (t *thumbnail) thumbName(path string) (string, bool) {
-	if t.namer != nil {
-		return t.namer(path, t.dims)
+	if t.callback != nil {
+		return t.callback(path, t.dims)
 	}
 
 	ext := filepath.Ext(path)
