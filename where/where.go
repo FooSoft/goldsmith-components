@@ -27,7 +27,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 )
 
-type filter func(f goldsmith.File) bool
+type filter func(path string) bool
 
 type where struct {
 	callback filter
@@ -39,12 +39,12 @@ func New(f filter, p goldsmith.Plugin) goldsmith.Plugin {
 }
 
 func NewGlob(g string, p goldsmith.Plugin) goldsmith.Plugin {
-	cb := func(f goldsmith.File) bool {
-		matched, _ := doublestar.Match(g, f.Path())
+	cb := func(path string) bool {
+		matched, _ := doublestar.Match(g, path)
 		return matched
 	}
 
-	return NewFilter(cb, p)
+	return New(cb, p)
 
 }
 
@@ -57,7 +57,7 @@ func (w *where) Initialize(ctx goldsmith.Context) error {
 }
 
 func (w *where) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	if !w.callback(f) {
+	if !w.callback(f.Path()) {
 		return false
 	}
 
