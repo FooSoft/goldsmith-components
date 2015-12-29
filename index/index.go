@@ -24,11 +24,15 @@ package index
 
 import "github.com/FooSoft/goldsmith"
 
+type filter func(path string)
+
 type index struct {
+	filename string
+	callback filter
 }
 
-func New() goldsmith.Plugin {
-	return &index{}
+func New(f string, cb filter) goldsmith.Plugin {
+	return &index{f, cb}
 }
 
 func (i *index) Initialize(ctx goldsmith.Context) error {
