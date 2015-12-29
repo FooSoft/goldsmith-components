@@ -29,5 +29,5 @@ func New(c bool, p goldsmith.Plugin) goldsmith.Plugin {
 		return p
 	}
 
-	return new(goldsmith.Plugin)
+	return struct{}{}
 }
