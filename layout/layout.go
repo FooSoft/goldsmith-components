@@ -30,6 +30,7 @@ import (
 	"sync"
 
 	"github.com/FooSoft/goldsmith"
+	"github.com/bmatcuk/doublestar"
 )
 
 type layout struct {
@@ -52,6 +53,11 @@ func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) 
 		paths:  paths,
 		funcs:  funcs,
 	}
+}
+
+func NewGlob(glob, srcKey, dstKey, defVal string, funcs template.FuncMap) goldsmith.Plugin {
+	paths, _ := doublestar.Glob(glob)
+	return New(paths, srcKey, dstKey, defVal, funcs)
 }
 
 func (t *layout) Initialize(ctx goldsmith.Context) (err error) {

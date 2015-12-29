@@ -34,7 +34,7 @@ type where struct {
 	plugin   goldsmith.Plugin
 }
 
-func NewFilter(f filter, p goldsmith.Plugin) goldsmith.Plugin {
+func New(f filter, p goldsmith.Plugin) goldsmith.Plugin {
 	return &where{f, p}
 }
 
