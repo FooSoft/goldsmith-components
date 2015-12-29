@@ -36,11 +36,23 @@ type tags struct {
 	srcKey, dstKey string
 	meta           map[string]interface{}
 
-	info    map[string]tagInfo
+	info    map[string]TagInfo
 	infoMtx sync.Mutex
 
 	files    []goldsmith.File
 	filesMtx sync.Mutex
+}
+
+type TagInfo struct {
+	Files    files
+	SafeName string
+	Path     string
+}
+
+type TagState struct {
+	Index string
+	Set   []string
+	Info  map[string]TagInfo
 }
 
 func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith.Plugin {
@@ -49,7 +61,7 @@ func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith
 		srcKey:   srcKey,
 		dstKey:   dstKey,
 		meta:     meta,
-		info:     make(map[string]tagInfo),
+		info:     make(map[string]TagInfo),
 	}
 }
 
@@ -71,13 +83,13 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	tagData, ok := f.Value(t.srcKey)
 	if !ok {
-		f.SetValue(t.dstKey, tagState{Info: t.info})
+		f.SetValue(t.dstKey, TagState{Info: t.info})
 		return nil
 	}
 
 	tags, ok := tagData.([]interface{})
 	if !ok {
-		f.SetValue(t.dstKey, tagState{Info: t.info})
+		f.SetValue(t.dstKey, TagState{Info: t.info})
 		return nil
 	}
 
@@ -105,7 +117,7 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	}
 
 	sort.Strings(tagStrs)
-	f.SetValue(t.dstKey, tagState{Info: t.info, Set: tagStrs})
+	f.SetValue(t.dstKey, TagState{Info: t.info, Set: tagStrs})
 
 	return nil
 }
@@ -126,10 +138,10 @@ func (t *tags) Finalize(ctx goldsmith.Context) error {
 	return nil
 }
 
-func (t *tags) buildPages(ctx goldsmith.Context, info map[string]tagInfo) (files []goldsmith.File) {
+func (t *tags) buildPages(ctx goldsmith.Context, info map[string]TagInfo) (files []goldsmith.File) {
 	for tag := range info {
 		f := goldsmith.NewFileFromData(t.tagPagePath(tag), nil)
-		f.SetValue(t.dstKey, tagState{Index: tag, Info: t.info})
+		f.SetValue(t.dstKey, TagState{Index: tag, Info: t.info})
 		for name, value := range t.meta {
 			f.SetValue(name, value)
 		}
@@ -160,16 +172,4 @@ func (f files) Swap(i, j int) {
 
 func (f files) Less(i, j int) bool {
 	return strings.Compare(f[i].Path(), f[j].Path()) < 0
-}
-
-type tagInfo struct {
-	Files    files
-	SafeName string
-	Path     string
-}
-
-type tagState struct {
-	Index string
-	Set   []string
-	Info  map[string]tagInfo
 }
