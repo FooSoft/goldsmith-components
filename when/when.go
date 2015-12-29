@@ -24,60 +24,10 @@ package when
 
 import "github.com/FooSoft/goldsmith"
 
-type when struct {
-	cond   bool
-	plugin goldsmith.Plugin
-}
-
 func New(c bool, p goldsmith.Plugin) goldsmith.Plugin {
-	return &when{c, p}
-}
-
-func (w *when) Initialize(ctx goldsmith.Context) error {
-	if !w.cond {
-		return nil
+	if c {
+		return p
 	}
 
-	if init, ok := w.plugin.(goldsmith.Initializer); ok {
-		return init.Initialize(ctx)
-	}
-
-	return nil
-}
-
-func (w *when) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	if !w.cond {
-		return false
-	}
-
-	if accept, ok := w.plugin.(goldsmith.Accepter); ok {
-		return accept.Accept(ctx, f)
-	}
-
-	return true
-}
-
-func (w *when) Finalize(ctx goldsmith.Context) error {
-	if !w.cond {
-		return nil
-	}
-
-	if fin, ok := w.plugin.(goldsmith.Finalizer); ok {
-		return fin.Finalize(ctx)
-	}
-
-	return nil
-}
-
-func (w *when) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	if !w.cond {
-		return nil
-	}
-
-	if proc, ok := w.plugin.(goldsmith.Processor); ok {
-		return proc.Process(ctx, f)
-	}
-
-	ctx.DispatchFile(f)
-	return nil
+	return new(goldsmith.Plugin)
 }
