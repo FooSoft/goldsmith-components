@@ -80,7 +80,7 @@ func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	f.Meta()[t.dstKey] = template.HTML(buff.Bytes())
+	f.SetValue(t.dstKey, template.HTML(buff.Bytes()))
 
 	t.filesMtx.Lock()
 	t.files = append(t.files, f)
@@ -91,9 +91,7 @@ func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 func (t *layout) Finalize(ctx goldsmith.Context) error {
 	for _, f := range t.files {
-		meta := f.Meta()
-
-		name, ok := meta[t.srcKey]
+		name, ok := f.Value(t.srcKey)
 		if !ok {
 			name = t.defVal
 		}
@@ -109,7 +107,7 @@ func (t *layout) Finalize(ctx goldsmith.Context) error {
 		}
 
 		nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
-		nf.Apply(meta)
+		nf.CopyValues(f)
 		ctx.DispatchFile(nf)
 	}
 

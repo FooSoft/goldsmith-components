@@ -60,8 +60,10 @@ func (fm *frontMatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	}
 
 	nf := goldsmith.NewFileFromData(f.Path(), body.Bytes())
-	nf.Apply(f.Meta())
-	nf.Apply(meta)
+	nf.CopyValues(f)
+	for name, value := range meta {
+		nf.SetValue(name, value)
+	}
 	ctx.DispatchFile(nf)
 
 	return nil

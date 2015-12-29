@@ -69,10 +69,9 @@ func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		c.filesMtx.Unlock()
 	}()
 
-	meta := f.Meta()
-	meta[c.dstKey] = c.cols
+	f.SetValue(c.dstKey, c.cols)
 
-	col, ok := meta[c.srcKey]
+	col, ok := f.Value(c.srcKey)
 	if !ok {
 		return nil
 	}
