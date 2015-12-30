@@ -82,10 +82,11 @@ func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 	var (
 		body, front bytes.Buffer
 		closer      string
-		meta        = make(map[string]interface{})
-		scanner     = bufio.NewScanner(input)
-		header      = true
 	)
+
+	meta := make(map[string]interface{})
+	scanner := bufio.NewScanner(input)
+	header := true
 
 	for scanner.Scan() {
 		line := scanner.Text()
