@@ -26,32 +26,31 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/FooSoft/goldsmith"
 )
 
-type filter func(path string)
-
 type index struct {
 	key     string
-	dirs    map[string][]Entry
+	dirs    map[string]Entries
 	dirsMtx sync.Mutex
 }
 
-type Entry struct {
-	Name    string
-	Size    int64
-	Mode    os.FileMode
-	ModTime time.Time
-	Dir     bool
+func New(key string) goldsmith.Plugin {
+	return &index{key: key, dirs: make(map[string]Entries)}
 }
 
-func New(key string) goldsmith.Plugin {
-	return &index{
-		key:  key,
-		dirs: make(map[string][]Entry),
+func (i *index) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
+	switch filepath.Ext(strings.ToLower(f.Path())) {
+	case ".html", ".htm":
+		return true
+	default:
+		return false
 	}
 }
 
@@ -83,12 +82,45 @@ func (i *index) list(dir string) ([]Entry, error) {
 		return nil, err
 	}
 
-	var entries []Entry
+	var entries Entries
 	for _, item := range items {
 		entry := Entry{item.Name(), item.Size(), item.Mode(), item.ModTime(), item.IsDir()}
 		entries = append(entries, entry)
 	}
 
+	sort.Sort(entries)
 	i.dirs[dir] = entries
+
 	return entries, nil
+}
+
+type Entry struct {
+	Name    string
+	Size    int64
+	Mode    os.FileMode
+	ModTime time.Time
+	Dir     bool
+}
+
+type Entries []Entry
+
+func (e Entries) Len() int {
+	return len(e)
+}
+
+func (e Entries) Less(i, j int) bool {
+	e1, e2 := e[i], e[j]
+
+	if e1.Dir && !e2.Dir {
+		return true
+	}
+	if !e1.Dir && e2.Dir {
+		return false
+	}
+
+	return strings.Compare(e1.Name, e2.Name) == -1
+}
+
+func (e Entries) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
 }
