@@ -22,23 +22,68 @@
 
 package index
 
-import "github.com/FooSoft/goldsmith"
+import (
+	"io/ioutil"
+	"os"
+	"path"
+	"sync"
+	"time"
+
+	"github.com/FooSoft/goldsmith"
+)
 
 type filter func(path string)
 
 type index struct {
-	filename string
-	callback filter
+	key     string
+	dirs    map[string][]Entry
+	dirsMtx sync.Mutex
 }
 
-func New(f string, cb filter) goldsmith.Plugin {
-	return &index{f, cb}
+type Entry struct {
+	name    string
+	size    int64
+	mode    os.FileMode
+	modTime time.Time
+	dir     bool
 }
 
-func (i *index) Initialize(ctx goldsmith.Context) error {
+func New(key string) goldsmith.Plugin {
+	return &index{
+		key:  key,
+		dirs: make(map[string][]Entry),
+	}
+}
+
+func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	entries, err := i.list(path.Dir(f.Path()))
+	if err != nil {
+		return err
+	}
+
+	f.SetValue(i.key, entries)
 	return nil
 }
 
-func (i *index) Finalize(ctx goldsmith.Context) error {
-	return nil
+func (i *index) list(dir string) ([]Entry, error) {
+	i.dirsMtx.Lock()
+	defer i.dirsMtx.Unlock()
+
+	if items, ok := i.dirs[dir]; ok {
+		return items, nil
+	}
+
+	items, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	var entries []Entry
+	for _, item := range items {
+		entry := Entry{item.Name(), item.Size(), item.Mode(), item.ModTime(), item.IsDir()}
+		entries = append(entries, entry)
+	}
+
+	i.dirs[dir] = entries
+	return entries, nil
 }
