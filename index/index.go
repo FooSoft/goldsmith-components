@@ -41,11 +41,11 @@ type index struct {
 }
 
 type Entry struct {
-	name    string
-	size    int64
-	mode    os.FileMode
-	modTime time.Time
-	dir     bool
+	Name    string
+	Size    int64
+	Mode    os.FileMode
+	ModTime time.Time
+	Dir     bool
 }
 
 func New(key string) goldsmith.Plugin {
@@ -56,12 +56,17 @@ func New(key string) goldsmith.Plugin {
 }
 
 func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	entries, err := i.list(path.Dir(f.Path()))
+	relDir := path.Dir(f.Path())
+	absDir := path.Join(ctx.SrcDir(), relDir)
+
+	entries, err := i.list(absDir)
 	if err != nil {
 		return err
 	}
 
 	f.SetValue(i.key, entries)
+	ctx.DispatchFile(f)
+
 	return nil
 }
 
