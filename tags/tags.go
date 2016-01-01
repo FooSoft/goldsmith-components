@@ -34,7 +34,7 @@ import (
 type tags struct {
 	basePath       string
 	srcKey, dstKey string
-	meta           map[string]goldsmith.Meta
+	meta           map[string]interface{}
 
 	info    map[string]TagInfo
 	infoMtx sync.Mutex
@@ -55,7 +55,7 @@ type TagState struct {
 	Info  map[string]TagInfo
 }
 
-func New(basePath, srcKey, dstKey string, meta map[string]goldsmith.Meta) goldsmith.Plugin {
+func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith.Plugin {
 	return &tags{
 		basePath: basePath,
 		srcKey:   srcKey,
@@ -87,7 +87,7 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return nil
 	}
 
-	tags, ok := tagData.([]goldsmith.Meta)
+	tags, ok := tagData.([]interface{})
 	if !ok {
 		f.SetValue(t.dstKey, TagState{Info: t.info})
 		return nil
