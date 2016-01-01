@@ -31,12 +31,12 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type Comparer func(i, j goldsmith.File) (less bool)
+type comparer func(i, j goldsmith.File) (less bool)
 
 type collection struct {
 	srcKey, dstKey string
 
-	comp    Comparer
+	comp    comparer
 	cols    map[string][]goldsmith.File
 	colsMtx sync.Mutex
 
@@ -44,7 +44,7 @@ type collection struct {
 	filesMtx sync.Mutex
 }
 
-func New(srcKey, dstKey string, comp Comparer) goldsmith.Plugin {
+func New(srcKey, dstKey string, comp comparer) goldsmith.Plugin {
 	return &collection{
 		srcKey: srcKey,
 		dstKey: dstKey,
@@ -53,7 +53,7 @@ func New(srcKey, dstKey string, comp Comparer) goldsmith.Plugin {
 	}
 }
 
-func (c *collection) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
+func (*collection) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".html", ".htm":
 		return true
@@ -107,7 +107,7 @@ func (c *collection) Finalize(ctx goldsmith.Context) error {
 
 type fileGroup struct {
 	Files []goldsmith.File
-	comp  Comparer
+	comp  comparer
 }
 
 func (f fileGroup) Len() int {
