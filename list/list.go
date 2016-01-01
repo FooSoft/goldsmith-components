@@ -20,7 +20,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package index
+package list
 
 import (
 	"io/ioutil"
@@ -35,17 +35,17 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type index struct {
+type list struct {
 	key     string
 	dirs    map[string]Entries
 	dirsMtx sync.Mutex
 }
 
 func New(key string) goldsmith.Plugin {
-	return &index{key: key, dirs: make(map[string]Entries)}
+	return &list{key: key, dirs: make(map[string]Entries)}
 }
 
-func (i *index) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
+func (*list) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".html", ".htm":
 		return true
@@ -54,26 +54,26 @@ func (i *index) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 	}
 }
 
-func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (l *list) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	relDir := path.Dir(f.Path())
 	absDir := path.Join(ctx.SrcDir(), relDir)
 
-	entries, err := i.list(absDir)
+	entries, err := l.scan(absDir)
 	if err != nil {
 		return err
 	}
 
-	f.SetValue(i.key, entries)
+	f.SetValue(l.key, entries)
 	ctx.DispatchFile(f)
 
 	return nil
 }
 
-func (i *index) list(dir string) ([]Entry, error) {
-	i.dirsMtx.Lock()
-	defer i.dirsMtx.Unlock()
+func (l *list) scan(dir string) ([]Entry, error) {
+	l.dirsMtx.Lock()
+	defer l.dirsMtx.Unlock()
 
-	if items, ok := i.dirs[dir]; ok {
+	if items, ok := l.dirs[dir]; ok {
 		return items, nil
 	}
 
@@ -89,7 +89,7 @@ func (i *index) list(dir string) ([]Entry, error) {
 	}
 
 	sort.Sort(entries)
-	i.dirs[dir] = entries
+	l.dirs[dir] = entries
 
 	return entries, nil
 }
