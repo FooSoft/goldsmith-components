@@ -32,23 +32,23 @@ import (
 	"github.com/russross/blackfriday"
 )
 
-type MarkdownType int
+type mdType int
 
 const (
-	MarkdownCommon MarkdownType = iota
-	MarkdownBasic
+	mdCommon mdType = iota
+	mdBasic
 )
 
 type markdown struct {
-	mdType MarkdownType
+	mdType mdType
 }
 
 func NewCommon() goldsmith.Plugin {
-	return &markdown{MarkdownCommon}
+	return &markdown{mdCommon}
 }
 
 func NewBasic() goldsmith.Plugin {
-	return &markdown{MarkdownBasic}
+	return &markdown{mdBasic}
 }
 
 func (*markdown) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
@@ -68,9 +68,9 @@ func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	var data []byte
 	switch m.mdType {
-	case MarkdownCommon:
+	case mdCommon:
 		data = blackfriday.MarkdownCommon(buff.Bytes())
-	case MarkdownBasic:
+	case mdBasic:
 		data = blackfriday.MarkdownBasic(buff.Bytes())
 	}
 
