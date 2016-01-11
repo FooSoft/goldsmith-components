@@ -20,7 +20,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package static
+package include
 
 import (
 	"os"
@@ -29,17 +29,17 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type static struct {
+type include struct {
 	src, dst string
 }
 
 func New(src, dst string) goldsmith.Plugin {
-	return &static{src, dst}
+	return &include{src, dst}
 }
 
-func (s *static) Initialize(ctx goldsmith.Context) error {
+func (i *include) Initialize(ctx goldsmith.Context) error {
 	var paths []string
-	err := filepath.Walk(s.src, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(i.src, func(path string, info os.FileInfo, err error) error {
 		if err == nil && !info.IsDir() {
 			paths = append(paths, path)
 		}
@@ -52,12 +52,12 @@ func (s *static) Initialize(ctx goldsmith.Context) error {
 	}
 
 	for _, path := range paths {
-		srcRelPath, err := filepath.Rel(s.src, path)
+		srcRelPath, err := filepath.Rel(i.src, path)
 		if err != nil {
 			panic(err)
 		}
 
-		dstRelPath := filepath.Join(s.dst, srcRelPath)
+		dstRelPath := filepath.Join(i.dst, srcRelPath)
 		f := goldsmith.NewFileFromAsset(dstRelPath, path)
 		ctx.DispatchFile(f)
 	}
