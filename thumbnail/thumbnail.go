@@ -58,6 +58,8 @@ func (*thumbnail) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 }
 
 func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	defer ctx.DispatchFile(f)
+
 	thumbPath, create := t.thumbName(f.Path())
 	if !create {
 		return nil
