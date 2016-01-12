@@ -63,7 +63,7 @@ func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return nil
 	}
 
-	if t.cached(ctx, f.Path(), thumbPath) {
+	if cached(ctx, f.Path(), thumbPath) {
 		ctx.ReferenceFile(thumbPath)
 		return nil
 	}
