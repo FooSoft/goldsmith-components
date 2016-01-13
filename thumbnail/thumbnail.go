@@ -65,17 +65,19 @@ func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return nil
 	}
 
+	var fn goldsmith.File
 	if cached(ctx, f.Path(), thumbPath) {
-		ctx.ReferenceFile(thumbPath)
-		return nil
+		thumbPathDst := filepath.Join(ctx.DstDir(), thumbPath)
+		fn = goldsmith.NewFileFromAsset(thumbPath, thumbPathDst)
+	} else {
+		var err error
+		fn, err = t.thumbnail(f, thumbPath)
+		if err != nil {
+			return err
+		}
 	}
 
-	fn, err := t.thumbnail(f, thumbPath)
-	if err != nil {
-		return err
-	}
 	ctx.DispatchFile(fn)
-
 	return nil
 }
 
