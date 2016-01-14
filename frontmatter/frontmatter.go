@@ -86,34 +86,44 @@ func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 
 	meta := make(map[string]interface{})
 	scanner := bufio.NewScanner(input)
-	header := true
+	header := false
+	first := true
 
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		if header {
+		if first {
+			first = false
+
 			if len(closer) == 0 {
 				switch strings.TrimSpace(line) {
 				case tomlOpener:
+					header = true
 					closer = tomlCloser
 				case yamlOpener:
+					header = true
 					closer = yamlCloser
 				case jsonOpener:
+					header = true
 					closer = jsonCloser
 					front.WriteString(jsonOpener)
-				default:
-					header = false
 				}
-			} else {
-				switch strings.TrimSpace(line) {
-				case closer:
-					if closer == jsonCloser {
-						front.WriteString(jsonCloser)
-					}
-					header = false
-				default:
-					front.Write([]byte(line + "\n"))
+			}
+
+			if header {
+				continue
+			}
+		}
+
+		if header {
+			switch strings.TrimSpace(line) {
+			case closer:
+				header = false
+				if closer == jsonCloser {
+					front.WriteString(jsonCloser)
 				}
+			default:
+				front.Write([]byte(line + "\n"))
 			}
 		} else {
 			body.Write([]byte(line + "\n"))
