@@ -39,6 +39,10 @@ type livejs struct {
 	js string
 }
 
+func New() goldsmith.Plugin {
+	return new(livejs)
+}
+
 func (*livejs) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 	switch filepath.Ext(strings.ToLower(f.Path())) {
 	case ".html", ".htm":
@@ -49,20 +53,20 @@ func (*livejs) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
 }
 
 func (l *livejs) Initialize(ctx goldsmith.Context) error {
-	_, filename, _, ok := runtime.Caller(1)
+	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		return errors.New("unable to get livejs path")
 	}
 
 	baseDir := path.Dir(filename)
-	jsPath := path.Join(baseDir, "live.js")
+	jsPath := path.Join(baseDir, "live.min.js")
 
 	data, err := ioutil.ReadFile(jsPath)
 	if err != nil {
 		return err
 	}
 
-	l.js = fmt.Sprintf("<script>%s</script>", data)
+	l.js = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>%s</script>\n<!-- end livejs code -->\n", data)
 	return nil
 }
 
