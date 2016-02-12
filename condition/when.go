@@ -20,11 +20,11 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package when
+package condition
 
 import "github.com/FooSoft/goldsmith"
 
-func New(c bool, p goldsmith.Plugin) goldsmith.Plugin {
+func When(c bool, p goldsmith.Plugin) goldsmith.Plugin {
 	if c {
 		return p
 	}

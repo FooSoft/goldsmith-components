@@ -20,7 +20,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package where
+package condition
 
 import (
 	"github.com/FooSoft/goldsmith"
@@ -34,18 +34,17 @@ type where struct {
 	plugin   goldsmith.Plugin
 }
 
-func New(f filter, p goldsmith.Plugin) goldsmith.Plugin {
+func Where(f filter, p goldsmith.Plugin) goldsmith.Plugin {
 	return &where{f, p}
 }
 
-func NewGlob(g string, p goldsmith.Plugin) goldsmith.Plugin {
+func WhereLike(g string, p goldsmith.Plugin) goldsmith.Plugin {
 	cb := func(path string) bool {
 		matched, _ := doublestar.Match(g, path)
 		return matched
 	}
 
-	return New(cb, p)
-
+	return Where(cb, p)
 }
 
 func (w *where) Initialize(ctx goldsmith.Context) error {
