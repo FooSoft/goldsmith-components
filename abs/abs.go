@@ -33,15 +33,17 @@ import (
 )
 
 type abs struct {
-	props []string
+	attrs   []string
+	rootUrl *url.URL
 }
 
 func New() goldsmith.Plugin {
-	return &abs{[]string{"href", "src"}}
+	return &abs{attrs: []string{"href", "src"}}
 }
 
-func NewCustom(props []string) goldsmith.Plugin {
-	return &abs{props}
+func NewCustom(root string, attrs []string) goldsmith.Plugin {
+	rootUrl, _ := url.Parse(root)
+	return &abs{attrs, rootUrl}
 }
 
 func (*abs) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
@@ -59,13 +61,23 @@ func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	for _, prop := range a.props {
-		path := fmt.Sprintf("*[%s]", prop)
+	for _, attr := range a.attrs {
+		path := fmt.Sprintf("*[%s]", attr)
 		doc.Find(path).Each(func(index int, sel *goquery.Selection) {
-			urlTxt, _ := sel.Attr(prop)
-			url, err := url.Parse(urlTxt)
-			if err == nil && !url.IsAbs() {
+			val, _ := sel.Attr(attr)
+
+			currUrl, err := url.Parse(val)
+			if err != nil || currUrl.IsAbs() {
+				return
 			}
+
+			baseUrl, err := url.Parse(filepath.Base(f.Path()))
+			currUrl = baseUrl.ResolveReference(currUrl)
+			if a.rootUrl != nil {
+				currUrl = a.rootUrl.ResolveReference(currUrl)
+			}
+
+			sel.SetAttr(attr, currUrl.String())
 		})
 	}
 
