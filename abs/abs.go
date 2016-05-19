@@ -37,13 +37,13 @@ type abs struct {
 	rootUrl *url.URL
 }
 
-func New() goldsmith.Plugin {
-	return &abs{attrs: []string{"href", "src"}}
-}
-
-func NewCustom(root string, attrs []string) goldsmith.Plugin {
+func New(root string, attrs []string) goldsmith.Plugin {
 	rootUrl, _ := url.Parse(root)
 	return &abs{attrs, rootUrl}
+}
+
+func NewBasic() goldsmith.Plugin {
+	return &abs{attrs: []string{"href", "src"}}
 }
 
 func (*abs) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
@@ -64,6 +64,7 @@ func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	for _, attr := range a.attrs {
 		path := fmt.Sprintf("*[%s]", attr)
 		doc.Find(path).Each(func(index int, sel *goquery.Selection) {
+			baseUrl, err := url.Parse(f.Path())
 			val, _ := sel.Attr(attr)
 
 			currUrl, err := url.Parse(val)
@@ -71,7 +72,6 @@ func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 				return
 			}
 
-			baseUrl, err := url.Parse(filepath.Base(f.Path()))
 			currUrl = baseUrl.ResolveReference(currUrl)
 			if a.rootUrl != nil {
 				currUrl = a.rootUrl.ResolveReference(currUrl)
@@ -87,6 +87,7 @@ func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	}
 
 	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
+	nf.CopyValues(f)
 	ctx.DispatchFile(nf)
 
 	return nil
