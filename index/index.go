@@ -54,7 +54,7 @@ func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	defer ctx.DispatchFile(f)
 
 	relDir := path.Dir(f.Path())
-	absDir := path.Join(relDir)
+	absDir := path.Join(ctx.SrcDir(), relDir)
 
 	i.dirsMtx.Lock()
 	defer i.dirsMtx.Unlock()
