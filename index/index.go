@@ -20,13 +20,12 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package list
+package index
 
 import (
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -35,66 +34,75 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type list struct {
-	key     string
-	dirs    map[string]Entries
+type index struct {
+	indexFile string
+	key       string
+
+	dirs    map[string]dirSummary
 	dirsMtx sync.Mutex
 }
 
-func New(key string) goldsmith.Plugin {
-	return &list{key: key, dirs: make(map[string]Entries)}
-}
-
-func (*list) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(f.Path())) {
-	case ".html", ".htm":
-		return true
-	default:
-		return false
+func New(indexFile, key string, meta map[string]interface{}) goldsmith.Plugin {
+	return &index{
+		indexFile: indexFile,
+		key:       key,
+		dirs:      make(map[string]dirSummary),
 	}
 }
 
-func (l *list) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	relDir := path.Dir(f.Path())
-	absDir := path.Join(ctx.SrcDir(), relDir)
+func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	defer ctx.DispatchFile(f)
 
-	entries, err := l.scan(absDir)
+	relDir := path.Dir(f.Path())
+	absDir := path.Join(relDir)
+
+	i.dirsMtx.Lock()
+	defer i.dirsMtx.Unlock()
+
+	if _, ok := i.dirs[relDir]; ok {
+		return nil
+	}
+
+	fi, err := ioutil.ReadDir(absDir)
 	if err != nil {
 		return err
 	}
 
-	f.SetValue(l.key, entries)
-	ctx.DispatchFile(f)
+	var ds dirSummary
+	for _, info := range fi {
+		item := DirItem{info.Name(), info.Size(), info.Mode(), info.ModTime(), info.IsDir()}
+		ds.items = append(ds.items, item)
+		if path.Base(item.Name) == i.indexFile {
+			ds.hasIndex = true
+		}
+	}
+
+	sort.Sort(ds.items)
+	i.dirs[relDir] = ds
+
+	return err
+}
+
+func (i *index) Finalize(ctx goldsmith.Context) error {
+	for dn, ds := range i.dirs {
+		if ds.hasIndex {
+			continue
+		}
+
+		f := goldsmith.NewFileFromData(path.Join(dn, i.indexFile), make([]byte, 0))
+		f.SetValue(i.key, ds.items)
+		ctx.DispatchFile(f)
+	}
 
 	return nil
 }
 
-func (l *list) scan(dir string) ([]Entry, error) {
-	l.dirsMtx.Lock()
-	defer l.dirsMtx.Unlock()
-
-	if items, ok := l.dirs[dir]; ok {
-		return items, nil
-	}
-
-	items, err := ioutil.ReadDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	var entries Entries
-	for _, item := range items {
-		entry := Entry{item.Name(), item.Size(), item.Mode(), item.ModTime(), item.IsDir()}
-		entries = append(entries, entry)
-	}
-
-	sort.Sort(entries)
-	l.dirs[dir] = entries
-
-	return entries, nil
+type dirSummary struct {
+	hasIndex bool
+	items    DirItems
 }
 
-type Entry struct {
+type DirItem struct {
 	Name    string
 	Size    int64
 	Mode    os.FileMode
@@ -102,25 +110,25 @@ type Entry struct {
 	Dir     bool
 }
 
-type Entries []Entry
+type DirItems []DirItem
 
-func (e Entries) Len() int {
-	return len(e)
+func (d DirItems) Len() int {
+	return len(d)
 }
 
-func (e Entries) Less(i, j int) bool {
-	e1, e2 := e[i], e[j]
+func (d DirItems) Less(i, j int) bool {
+	d1, d2 := d[i], d[j]
 
-	if e1.Dir && !e2.Dir {
+	if d1.Dir && !d2.Dir {
 		return true
 	}
-	if !e1.Dir && e2.Dir {
+	if !d1.Dir && d2.Dir {
 		return false
 	}
 
-	return strings.Compare(e1.Name, e2.Name) == -1
+	return strings.Compare(d1.Name, d2.Name) == -1
 }
 
-func (e Entries) Swap(i, j int) {
-	e[i], e[j] = e[j], e[i]
+func (d DirItems) Swap(i, j int) {
+	d[i], d[j] = d[j], d[i]
 }
