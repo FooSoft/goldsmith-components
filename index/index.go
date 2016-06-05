@@ -23,13 +23,9 @@
 package index
 
 import (
-	"io/ioutil"
-	"os"
 	"path"
-	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/FooSoft/goldsmith"
 )
@@ -39,7 +35,7 @@ type index struct {
 	key       string
 	meta      map[string]interface{}
 
-	dirs    map[string]dirSummary
+	dirs    map[string]*dirSummary
 	dirsMtx sync.Mutex
 }
 
@@ -48,41 +44,43 @@ func New(indexFile, key string, meta map[string]interface{}) goldsmith.Plugin {
 		indexFile: indexFile,
 		key:       key,
 		meta:      meta,
-		dirs:      make(map[string]dirSummary),
+		dirs:      make(map[string]*dirSummary),
 	}
 }
 
 func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	defer ctx.DispatchFile(f)
 
-	relDir := path.Dir(f.Path())
-	absDir := path.Join(ctx.SrcDir(), relDir)
-
 	i.dirsMtx.Lock()
 	defer i.dirsMtx.Unlock()
 
-	if _, ok := i.dirs[relDir]; ok {
-		return nil
-	}
+	curr := f.Path()
+	leaf := true
 
-	fi, err := ioutil.ReadDir(absDir)
-	if err != nil {
-		return err
-	}
+	for {
+		dir := path.Dir(curr)
+		ds, ok := i.dirs[dir]
+		if !ok {
+			ds = new(dirSummary)
+			i.dirs[dir] = ds
+		}
 
-	var ds dirSummary
-	for _, info := range fi {
-		item := DirItem{info.Name(), info.Size(), info.Mode(), info.ModTime(), info.IsDir()}
-		ds.items = append(ds.items, item)
-		if path.Base(item.Name) == i.indexFile {
+		base := path.Base(curr)
+		if base == i.indexFile {
 			ds.hasIndex = true
+		}
+
+		ds.items = append(ds.items, DirItem{Name: base, Dir: !leaf})
+
+		curr = dir
+		leaf = false
+
+		if dir == "." {
+			break
 		}
 	}
 
-	sort.Sort(ds.items)
-	i.dirs[relDir] = ds
-
-	return err
+	return nil
 }
 
 func (i *index) Finalize(ctx goldsmith.Context) error {
@@ -109,11 +107,8 @@ type dirSummary struct {
 }
 
 type DirItem struct {
-	Name    string
-	Size    int64
-	Mode    os.FileMode
-	ModTime time.Time
-	Dir     bool
+	Name string
+	Dir  bool
 }
 
 type DirItems []DirItem
