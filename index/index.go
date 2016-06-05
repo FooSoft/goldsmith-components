@@ -37,6 +37,7 @@ import (
 type index struct {
 	indexFile string
 	key       string
+	meta      map[string]interface{}
 
 	dirs    map[string]dirSummary
 	dirsMtx sync.Mutex
@@ -46,6 +47,7 @@ func New(indexFile, key string, meta map[string]interface{}) goldsmith.Plugin {
 	return &index{
 		indexFile: indexFile,
 		key:       key,
+		meta:      meta,
 		dirs:      make(map[string]dirSummary),
 	}
 }
@@ -91,6 +93,10 @@ func (i *index) Finalize(ctx goldsmith.Context) error {
 
 		f := goldsmith.NewFileFromData(path.Join(dn, i.indexFile), make([]byte, 0))
 		f.SetValue(i.key, ds.items)
+		for name, value := range i.meta {
+			f.SetValue(name, value)
+		}
+
 		ctx.DispatchFile(f)
 	}
 
