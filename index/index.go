@@ -24,6 +24,7 @@ package index
 
 import (
 	"path"
+	"sort"
 	"strings"
 	"sync"
 
@@ -63,7 +64,7 @@ func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 		summary, ok := i.dirs[dir]
 		if !ok {
-			summary = &dirSummary{Name: path.Base(dir), Path: dir}
+			summary = new(dirSummary)
 			i.dirs[dir] = summary
 		}
 
@@ -71,13 +72,14 @@ func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			summary.hasIndex = true
 		}
 
-		record := DirRecord{
+		entry := DirEntry{
 			Name:  base,
 			Path:  curr,
 			IsDir: !leaf,
+			File:  f,
 		}
 
-		summary.Records = append(summary.Records, record)
+		summary.entries = append(summary.entries, entry)
 
 		if dir == "." {
 			break
@@ -85,7 +87,6 @@ func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 		curr = dir
 		leaf = false
-
 	}
 
 	return nil
@@ -97,8 +98,10 @@ func (i *index) Finalize(ctx goldsmith.Context) error {
 			continue
 		}
 
+		sort.Sort(summary.entries)
+
 		f := goldsmith.NewFileFromData(path.Join(name, i.file), make([]byte, 0))
-		f.SetValue(i.key, summary)
+		f.SetValue(i.key, summary.entries)
 		for name, value := range i.meta {
 			f.SetValue(name, value)
 		}
@@ -110,25 +113,24 @@ func (i *index) Finalize(ctx goldsmith.Context) error {
 }
 
 type dirSummary struct {
-	Name     string
-	Path     string
-	Records  DirRecords
+	entries  DirEntries
 	hasIndex bool
 }
 
-type DirRecord struct {
+type DirEntry struct {
 	Name  string
 	Path  string
 	IsDir bool
+	File  goldsmith.File
 }
 
-type DirRecords []DirRecord
+type DirEntries []DirEntry
 
-func (d DirRecords) Len() int {
+func (d DirEntries) Len() int {
 	return len(d)
 }
 
-func (d DirRecords) Less(i, j int) bool {
+func (d DirEntries) Less(i, j int) bool {
 	d1, d2 := d[i], d[j]
 
 	if d1.IsDir && !d2.IsDir {
@@ -141,6 +143,6 @@ func (d DirRecords) Less(i, j int) bool {
 	return strings.Compare(d1.Name, d2.Name) == -1
 }
 
-func (d DirRecords) Swap(i, j int) {
+func (d DirEntries) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }
