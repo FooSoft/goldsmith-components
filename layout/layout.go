@@ -35,7 +35,6 @@ import (
 
 type layout struct {
 	srcKey, dstKey string
-	defVal         string
 
 	files    []goldsmith.File
 	filesMtx sync.Mutex
@@ -45,19 +44,18 @@ type layout struct {
 	tmpl  *template.Template
 }
 
-func New(paths []string, srcKey, dstKey, defVal string, funcs template.FuncMap) goldsmith.Plugin {
+func New(paths []string, srcKey, dstKey string, funcs template.FuncMap) goldsmith.Plugin {
 	return &layout{
 		srcKey: srcKey,
 		dstKey: dstKey,
-		defVal: defVal,
 		paths:  paths,
 		funcs:  funcs,
 	}
 }
 
-func NewGlob(glob, srcKey, dstKey, defVal string, funcs template.FuncMap) goldsmith.Plugin {
+func NewGlob(glob, srcKey, dstKey string, funcs template.FuncMap) goldsmith.Plugin {
 	paths, _ := doublestar.Glob(glob)
-	return New(paths, srcKey, dstKey, defVal, funcs)
+	return New(paths, srcKey, dstKey, funcs)
 }
 
 func (t *layout) Initialize(ctx goldsmith.Context) (err error) {
@@ -80,11 +78,15 @@ func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	f.SetValue(t.dstKey, template.HTML(buff.Bytes()))
+	if _, ok := f.Value(t.srcKey); ok {
+		f.SetValue(t.dstKey, template.HTML(buff.Bytes()))
 
-	t.filesMtx.Lock()
-	t.files = append(t.files, f)
-	t.filesMtx.Unlock()
+		t.filesMtx.Lock()
+		t.files = append(t.files, f)
+		t.filesMtx.Unlock()
+	} else {
+		ctx.DispatchFile(f)
+	}
 
 	return nil
 }
@@ -93,12 +95,14 @@ func (t *layout) Finalize(ctx goldsmith.Context) error {
 	for _, f := range t.files {
 		name, ok := f.Value(t.srcKey)
 		if !ok {
-			name = t.defVal
+			ctx.DispatchFile(f)
+			continue
 		}
 
 		nameStr, ok := name.(string)
 		if !ok {
-			nameStr = t.defVal
+			ctx.DispatchFile(f)
+			continue
 		}
 
 		var buff bytes.Buffer
