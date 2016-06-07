@@ -37,15 +37,17 @@ type index struct {
 	meta map[string]interface{}
 
 	dirs    map[string]*dirSummary
+	names   map[string]bool
 	dirsMtx sync.Mutex
 }
 
 func New(file, key string, meta map[string]interface{}) goldsmith.Plugin {
 	return &index{
-		file: file,
-		key:  key,
-		meta: meta,
-		dirs: make(map[string]*dirSummary),
+		file:  file,
+		key:   key,
+		meta:  meta,
+		names: make(map[string]bool),
+		dirs:  make(map[string]*dirSummary),
 	}
 }
 
@@ -59,26 +61,25 @@ func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	leaf := true
 
 	for {
-		dir := path.Dir(curr)
-		base := path.Base(curr)
+		if handled, _ := i.names[curr]; handled {
+			break
+		}
 
+		i.names[curr] = true
+
+		dir := path.Dir(curr)
 		summary, ok := i.dirs[dir]
 		if !ok {
 			summary = new(dirSummary)
 			i.dirs[dir] = summary
 		}
 
+		base := path.Base(curr)
 		if base == i.file {
 			summary.hasIndex = true
 		}
 
-		entry := DirEntry{
-			Name:  base,
-			Path:  curr,
-			IsDir: !leaf,
-			File:  f,
-		}
-
+		entry := DirEntry{Name: base, Path: curr, IsDir: !leaf, File: f}
 		summary.entries = append(summary.entries, entry)
 
 		if dir == "." {
