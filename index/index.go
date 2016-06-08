@@ -32,28 +32,26 @@ import (
 )
 
 type index struct {
-	file string
-	key  string
-	meta map[string]interface{}
+	filename string
+	key      string
+	meta     map[string]interface{}
 
 	dirs    map[string]*dirSummary
-	names   map[string]bool
+	handled map[string]bool
 	dirsMtx sync.Mutex
 }
 
-func New(file, key string, meta map[string]interface{}) goldsmith.Plugin {
+func New(filename, key string, meta map[string]interface{}) goldsmith.Plugin {
 	return &index{
-		file:  file,
-		key:   key,
-		meta:  meta,
-		names: make(map[string]bool),
-		dirs:  make(map[string]*dirSummary),
+		filename: filename,
+		key:      key,
+		meta:     meta,
+		handled:  make(map[string]bool),
+		dirs:     make(map[string]*dirSummary),
 	}
 }
 
 func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	defer ctx.DispatchFile(f)
-
 	i.dirsMtx.Lock()
 	defer i.dirsMtx.Unlock()
 
@@ -61,22 +59,27 @@ func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	leaf := true
 
 	for {
-		if handled, _ := i.names[curr]; handled {
+		if handled, _ := i.handled[curr]; handled {
 			break
 		}
 
-		i.names[curr] = true
+		i.handled[curr] = true
 
 		dir := path.Dir(curr)
+		base := path.Base(curr)
+
 		summary, ok := i.dirs[dir]
 		if !ok {
 			summary = new(dirSummary)
 			i.dirs[dir] = summary
 		}
 
-		base := path.Base(curr)
-		if base == i.file {
-			summary.hasIndex = true
+		if leaf {
+			if base == i.filename {
+				summary.index = f
+			} else {
+				ctx.DispatchFile(f)
+			}
 		}
 
 		entry := DirEntry{Name: base, Path: curr, IsDir: !leaf, File: f}
@@ -95,18 +98,17 @@ func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 func (i *index) Finalize(ctx goldsmith.Context) error {
 	for name, summary := range i.dirs {
-		if summary.hasIndex {
-			continue
-		}
-
 		sort.Sort(summary.entries)
 
-		f := goldsmith.NewFileFromData(path.Join(name, i.file), make([]byte, 0))
-		f.SetValue(i.key, summary.entries)
-		for name, value := range i.meta {
-			f.SetValue(name, value)
+		f := summary.index
+		if f == nil {
+			f = goldsmith.NewFileFromData(path.Join(name, i.filename), make([]byte, 0))
+			for name, value := range i.meta {
+				f.SetValue(name, value)
+			}
 		}
 
+		f.SetValue(i.key, summary.entries)
 		ctx.DispatchFile(f)
 	}
 
@@ -114,8 +116,8 @@ func (i *index) Finalize(ctx goldsmith.Context) error {
 }
 
 type dirSummary struct {
-	entries  DirEntries
-	hasIndex bool
+	entries DirEntries
+	index   goldsmith.File
 }
 
 type DirEntry struct {
