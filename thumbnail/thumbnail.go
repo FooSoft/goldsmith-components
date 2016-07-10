@@ -48,13 +48,8 @@ func New(dims uint, n namer) goldsmith.Plugin {
 	return &thumbnail{dims, n}
 }
 
-func (*thumbnail) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(f.Path())) {
-	case ".jpg", ".jpeg", ".gif", ".png":
-		return true
-	default:
-		return false
-	}
+func (*thumbnail) Initialize(ctx goldsmith.Context) ([]string, error) {
+	return []string{"**/*.jpg", "**/*.jpeg", "**/*.gif", "**/*.png"}, nil
 }
 
 func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
@@ -108,7 +103,7 @@ func (t *thumbnail) thumbnail(f goldsmith.File, thumbPath string) (goldsmith.Fil
 	var thumbBuff bytes.Buffer
 	thumbImg := resize.Thumbnail(t.dims, t.dims, origImg, resize.Bicubic)
 
-	switch filepath.Ext(strings.ToLower(thumbPath)) {
+	switch filepath.Ext(thumbPath) {
 	case ".jpg", ".jpeg":
 		err = jpeg.Encode(&thumbBuff, thumbImg, nil)
 	case ".gif":

@@ -23,31 +23,23 @@
 package frontmatter
 
 import (
-	"path/filepath"
-	"strings"
-
-	"github.com/FooSoft/frontmatter"
+	fm "github.com/FooSoft/frontmatter"
 	"github.com/FooSoft/goldsmith"
 )
 
-type frontMatter struct {
+type frontmatter struct {
 }
 
 func New() goldsmith.Plugin {
-	return &frontMatter{}
+	return &frontmatter{}
 }
 
-func (*frontMatter) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(f.Path())) {
-	case ".md", ".markdown":
-		return true
-	default:
-		return false
-	}
+func (*frontmatter) Initialize(ctx goldsmith.Context) ([]string, error) {
+	return []string{"**/*.md", "**/*.markdown"}, nil
 }
 
-func (fm *frontMatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	meta, body, err := frontmatter.Parse(f)
+func (*frontmatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	meta, body, err := fm.Parse(f)
 	if err != nil {
 		return err
 	}

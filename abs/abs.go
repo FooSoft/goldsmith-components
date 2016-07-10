@@ -25,8 +25,6 @@ package abs
 import (
 	"fmt"
 	"net/url"
-	"path/filepath"
-	"strings"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/PuerkitoBio/goquery"
@@ -46,13 +44,8 @@ func NewBasic() goldsmith.Plugin {
 	return &abs{attrs: []string{"href", "src"}}
 }
 
-func (*abs) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(f.Path())) {
-	case ".html", ".htm":
-		return true
-	default:
-		return false
-	}
+func (*abs) Initialize(ctx goldsmith.Context) ([]string, error) {
+	return []string{"**/*.html", "**/*.htm"}, nil
 }
 
 func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {

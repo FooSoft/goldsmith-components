@@ -23,7 +23,6 @@
 package collection
 
 import (
-	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -53,13 +52,8 @@ func New(srcKey, dstKey string, comp comparer) goldsmith.Plugin {
 	}
 }
 
-func (*collection) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(f.Path())) {
-	case ".html", ".htm":
-		return true
-	default:
-		return false
-	}
+func (*collection) Initialize(ctx goldsmith.Context) ([]string, error) {
+	return []string{"**/*.html", "**/*.htm"}, nil
 }
 
 func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {

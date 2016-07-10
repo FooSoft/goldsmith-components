@@ -65,13 +65,8 @@ func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith
 	}
 }
 
-func (*tags) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(f.Path())) {
-	case ".html", ".htm":
-		return true
-	default:
-		return false
-	}
+func (*tags) Initialize(ctx goldsmith.Context) ([]string, error) {
+	return []string{"**/*.html", "**/*.htm"}, nil
 }
 
 func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {

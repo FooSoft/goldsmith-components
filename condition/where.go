@@ -47,24 +47,12 @@ func WhereLike(g string, p goldsmith.Plugin) goldsmith.Plugin {
 	return Where(cb, p)
 }
 
-func (w *where) Initialize(ctx goldsmith.Context) error {
+func (w *where) Initialize(ctx goldsmith.Context) ([]string, error) {
 	if init, ok := w.plugin.(goldsmith.Initializer); ok {
 		return init.Initialize(ctx)
 	}
 
-	return nil
-}
-
-func (w *where) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	if !w.callback(f.Path()) {
-		return false
-	}
-
-	if accept, ok := w.plugin.(goldsmith.Accepter); ok {
-		return accept.Accept(ctx, f)
-	}
-
-	return true
+	return nil, nil
 }
 
 func (w *where) Finalize(ctx goldsmith.Context) error {

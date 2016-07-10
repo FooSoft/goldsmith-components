@@ -27,9 +27,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
-	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/PuerkitoBio/goquery"
@@ -43,19 +41,10 @@ func New() goldsmith.Plugin {
 	return new(livejs)
 }
 
-func (*livejs) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(f.Path())) {
-	case ".html", ".htm":
-		return true
-	default:
-		return false
-	}
-}
-
-func (l *livejs) Initialize(ctx goldsmith.Context) error {
+func (l *livejs) Initialize(ctx goldsmith.Context) ([]string, error) {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
-		return errors.New("unable to get livejs path")
+		return nil, errors.New("unable to get livejs path")
 	}
 
 	baseDir := path.Dir(filename)
@@ -63,11 +52,11 @@ func (l *livejs) Initialize(ctx goldsmith.Context) error {
 
 	data, err := ioutil.ReadFile(jsPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	l.js = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>%s</script>\n<!-- end livejs code -->\n", data)
-	return nil
+	return []string{"**/*.html", "**/*.htm"}, nil
 }
 
 func (l *livejs) Process(ctx goldsmith.Context, f goldsmith.File) error {

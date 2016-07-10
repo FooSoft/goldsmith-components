@@ -25,7 +25,6 @@ package markdown
 import (
 	"bytes"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/FooSoft/goldsmith"
@@ -51,13 +50,8 @@ func NewBasic() goldsmith.Plugin {
 	return &markdown{mdBasic}
 }
 
-func (*markdown) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(f.Path())) {
-	case ".md", ".markdown":
-		return true
-	default:
-		return false
-	}
+func (*markdown) Initialize(ctx goldsmith.Context) ([]string, error) {
+	return []string{"**/*.md", "**/*.markdown"}, nil
 }
 
 func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {

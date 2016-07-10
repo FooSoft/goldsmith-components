@@ -25,8 +25,6 @@ package layout
 import (
 	"bytes"
 	"html/template"
-	"path/filepath"
-	"strings"
 	"sync"
 
 	"github.com/FooSoft/goldsmith"
@@ -58,18 +56,10 @@ func NewGlob(glob, srcKey, dstKey string, funcs template.FuncMap) goldsmith.Plug
 	return New(paths, srcKey, dstKey, funcs)
 }
 
-func (t *layout) Initialize(ctx goldsmith.Context) (err error) {
+func (t *layout) Initialize(ctx goldsmith.Context) ([]string, error) {
+	var err error
 	t.tmpl, err = template.New("").Funcs(t.funcs).ParseFiles(t.paths...)
-	return
-}
-
-func (*layout) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(f.Path())) {
-	case ".html", ".htm":
-		return true
-	default:
-		return false
-	}
+	return []string{"**/*.html", "**/*.htm"}, err
 }
 
 func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {

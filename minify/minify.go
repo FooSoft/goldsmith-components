@@ -25,7 +25,6 @@ package minify
 import (
 	"bytes"
 	"path/filepath"
-	"strings"
 
 	min "github.com/tdewolff/minify"
 	"github.com/tdewolff/minify/css"
@@ -45,13 +44,8 @@ func New() goldsmith.Plugin {
 	return new(minify)
 }
 
-func (*minify) Accept(ctx goldsmith.Context, f goldsmith.File) bool {
-	switch filepath.Ext(strings.ToLower(f.Path())) {
-	case ".css", ".html", ".htm", ".js", ".svg", ".json", ".xml":
-		return true
-	default:
-		return false
-	}
+func (*minify) Initialize(ctx goldsmith.Context) ([]string, error) {
+	return []string{"**/*.css", "**/*.html", "**/*.htm", "**/*.js", "**/*.svg", "**/*.json", "**/*.xml"}, nil
 }
 
 func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) error {
@@ -60,7 +54,7 @@ func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		err  error
 	)
 
-	switch m := min.New(); filepath.Ext(strings.ToLower(f.Path())) {
+	switch m := min.New(); filepath.Ext(f.Path()) {
 	case ".css":
 		err = css.Minify(m, &buff, f, nil)
 	case ".html", ".htm":
