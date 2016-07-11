@@ -35,7 +35,7 @@ func New() goldsmith.Plugin {
 }
 
 func (*frontmatter) Initialize(ctx goldsmith.Context) ([]string, error) {
-	return []string{"**/*.md", "**/*.markdown"}, nil
+	return []string{"**/*.md", "**/*.markdown", "**/*.rst", "**/*.html", "**/*.htm"}, nil
 }
 
 func (*frontmatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
