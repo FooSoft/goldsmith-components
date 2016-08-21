@@ -56,6 +56,10 @@ func NewGlob(glob, srcKey, dstKey string, funcs template.FuncMap) goldsmith.Plug
 	return New(paths, srcKey, dstKey, funcs)
 }
 
+func (*layout) Name() string {
+	return "layout"
+}
+
 func (t *layout) Initialize(ctx goldsmith.Context) ([]string, error) {
 	var err error
 	t.tmpl, err = template.New("").Funcs(t.funcs).ParseFiles(t.paths...)

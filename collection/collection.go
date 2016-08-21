@@ -52,6 +52,10 @@ func New(srcKey, dstKey string, comp comparer) goldsmith.Plugin {
 	}
 }
 
+func (*collection) Name() string {
+	return "collection"
+}
+
 func (*collection) Initialize(ctx goldsmith.Context) ([]string, error) {
 	return []string{"**/*.html", "**/*.htm"}, nil
 }

@@ -44,6 +44,10 @@ func New() goldsmith.Plugin {
 	return new(minify)
 }
 
+func (*minify) Name() string {
+	return "minify"
+}
+
 func (*minify) Initialize(ctx goldsmith.Context) ([]string, error) {
 	return []string{"**/*.css", "**/*.html", "**/*.htm", "**/*.js", "**/*.svg", "**/*.json", "**/*.xml"}, nil
 }

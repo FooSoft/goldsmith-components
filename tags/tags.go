@@ -65,6 +65,10 @@ func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith
 	}
 }
 
+func (*tags) Name() string {
+	return "tags"
+}
+
 func (*tags) Initialize(ctx goldsmith.Context) ([]string, error) {
 	return []string{"**/*.html", "**/*.htm"}, nil
 }

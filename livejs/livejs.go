@@ -41,6 +41,10 @@ func New() goldsmith.Plugin {
 	return new(livejs)
 }
 
+func (*livejs) Name() string {
+	return "livejs"
+}
+
 func (l *livejs) Initialize(ctx goldsmith.Context) ([]string, error) {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {

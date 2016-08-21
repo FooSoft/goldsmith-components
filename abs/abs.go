@@ -44,6 +44,10 @@ func NewBasic() goldsmith.Plugin {
 	return &abs{attrs: []string{"href", "src"}}
 }
 
+func (*abs) Name() string {
+	return "abs"
+}
+
 func (*abs) Initialize(ctx goldsmith.Context) ([]string, error) {
 	return []string{"**/*.html", "**/*.htm"}, nil
 }

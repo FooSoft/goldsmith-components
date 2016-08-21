@@ -50,6 +50,10 @@ func NewBasic() goldsmith.Plugin {
 	return &markdown{mdBasic}
 }
 
+func (*markdown) Name() string {
+	return "markdown"
+}
+
 func (*markdown) Initialize(ctx goldsmith.Context) ([]string, error) {
 	return []string{"**/*.md", "**/*.markdown"}, nil
 }

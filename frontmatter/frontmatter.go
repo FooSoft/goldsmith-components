@@ -34,6 +34,10 @@ func New() goldsmith.Plugin {
 	return &frontmatter{}
 }
 
+func (*frontmatter) Name() string {
+	return "frontmatter"
+}
+
 func (*frontmatter) Initialize(ctx goldsmith.Context) ([]string, error) {
 	return []string{"**/*.md", "**/*.markdown", "**/*.rst", "**/*.html", "**/*.htm"}, nil
 }

@@ -51,6 +51,10 @@ func New(filename, key string, meta map[string]interface{}) goldsmith.Plugin {
 	}
 }
 
+func (*index) Name() string {
+	return "index"
+}
+
 func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	i.dirsMtx.Lock()
 	defer i.dirsMtx.Unlock()

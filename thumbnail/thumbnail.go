@@ -48,6 +48,10 @@ func New(dims uint, n namer) goldsmith.Plugin {
 	return &thumbnail{dims, n}
 }
 
+func (*thumbnail) Name() string {
+	return "thumbnail"
+}
+
 func (*thumbnail) Initialize(ctx goldsmith.Context) ([]string, error) {
 	return []string{"**/*.jpg", "**/*.jpeg", "**/*.gif", "**/*.png"}, nil
 }

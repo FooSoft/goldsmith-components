@@ -24,10 +24,17 @@ package condition
 
 import "github.com/FooSoft/goldsmith"
 
+type when struct {
+}
+
 func When(c bool, p goldsmith.Plugin) goldsmith.Plugin {
 	if c {
 		return p
 	}
 
-	return struct{}{}
+	return new(when)
+}
+
+func (*when) Name() string {
+	return "when"
 }

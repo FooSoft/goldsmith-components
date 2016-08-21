@@ -37,6 +37,10 @@ func New(src, dst string) goldsmith.Plugin {
 	return &include{src, dst}
 }
 
+func (*include) Name() string {
+	return "include"
+}
+
 func (i *include) Initialize(ctx goldsmith.Context) error {
 	var paths []string
 	err := filepath.Walk(i.src, func(path string, info os.FileInfo, err error) error {

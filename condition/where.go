@@ -47,6 +47,10 @@ func WhereLike(g string, p goldsmith.Plugin) goldsmith.Plugin {
 	return Where(cb, p)
 }
 
+func (*where) Name() string {
+	return "where"
+}
+
 func (w *where) Initialize(ctx goldsmith.Context) ([]string, error) {
 	if init, ok := w.plugin.(goldsmith.Initializer); ok {
 		return init.Initialize(ctx)
