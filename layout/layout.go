@@ -32,52 +32,67 @@ import (
 )
 
 type layout struct {
-	srcKey, dstKey string
+	layoutKey, contentKey string
 
 	files    []goldsmith.File
 	filesMtx sync.Mutex
 
-	paths []string
-	funcs template.FuncMap
-	tmpl  *template.Template
+	paths   []string
+	helpers template.FuncMap
+	tmpl    *template.Template
 }
 
-func New(paths []string, srcKey, dstKey string, funcs template.FuncMap) goldsmith.Plugin {
+func New(paths []string) *layout {
 	return &layout{
-		srcKey: srcKey,
-		dstKey: dstKey,
-		paths:  paths,
-		funcs:  funcs,
+		layoutKey:  "layout",
+		contentKey: "content",
+		paths:      paths,
+		helpers:    nil,
 	}
 }
 
-func NewGlob(glob, srcKey, dstKey string, funcs template.FuncMap) goldsmith.Plugin {
+func NewGlob(glob string) *layout {
 	paths, _ := doublestar.Glob(glob)
-	return New(paths, srcKey, dstKey, funcs)
+	return New(paths)
+}
+
+func (lay *layout) LayoutKey(key string) *layout {
+	lay.layoutKey = key
+	return lay
+}
+
+func (lay *layout) ContentKey(key string) *layout {
+	lay.contentKey = key
+	return lay
+}
+
+func (lay *layout) Helpers(helpers template.FuncMap) *layout {
+	lay.helpers = helpers
+	return lay
 }
 
 func (*layout) Name() string {
 	return "layout"
 }
 
-func (t *layout) Initialize(ctx goldsmith.Context) ([]string, error) {
+func (lay *layout) Initialize(ctx goldsmith.Context) ([]string, error) {
 	var err error
-	t.tmpl, err = template.New("").Funcs(t.funcs).ParseFiles(t.paths...)
+	lay.tmpl, err = template.New("").Funcs(lay.helpers).ParseFiles(lay.paths...)
 	return []string{"**/*.html", "**/*.htm"}, err
 }
 
-func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (lay *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(f); err != nil {
 		return err
 	}
 
-	if _, ok := f.Value(t.srcKey); ok {
-		f.SetValue(t.dstKey, template.HTML(buff.Bytes()))
+	if _, ok := f.Value(lay.layoutKey); ok {
+		f.SetValue(lay.contentKey, template.HTML(buff.Bytes()))
 
-		t.filesMtx.Lock()
-		t.files = append(t.files, f)
-		t.filesMtx.Unlock()
+		lay.filesMtx.Lock()
+		lay.files = append(lay.files, f)
+		lay.filesMtx.Unlock()
 	} else {
 		ctx.DispatchFile(f)
 	}
@@ -85,9 +100,9 @@ func (t *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	return nil
 }
 
-func (t *layout) Finalize(ctx goldsmith.Context) error {
-	for _, f := range t.files {
-		name, ok := f.Value(t.srcKey)
+func (lay *layout) Finalize(ctx goldsmith.Context) error {
+	for _, f := range lay.files {
+		name, ok := f.Value(lay.layoutKey)
 		if !ok {
 			ctx.DispatchFile(f)
 			continue
@@ -100,7 +115,7 @@ func (t *layout) Finalize(ctx goldsmith.Context) error {
 		}
 
 		var buff bytes.Buffer
-		if err := t.tmpl.ExecuteTemplate(&buff, nameStr, f); err != nil {
+		if err := lay.tmpl.ExecuteTemplate(&buff, nameStr, f); err != nil {
 			return err
 		}
 

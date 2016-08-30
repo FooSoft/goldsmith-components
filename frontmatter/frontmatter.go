@@ -30,8 +30,8 @@ import (
 type frontmatter struct {
 }
 
-func New() goldsmith.Plugin {
-	return &frontmatter{}
+func New() *frontmatter {
+	return new(frontmatter)
 }
 
 func (*frontmatter) Name() string {

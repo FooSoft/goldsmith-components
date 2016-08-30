@@ -33,7 +33,7 @@ import (
 
 type index struct {
 	filename string
-	key      string
+	dstKey   string
 	meta     map[string]interface{}
 
 	dirs    map[string]*dirSummary
@@ -41,45 +41,55 @@ type index struct {
 	dirsMtx sync.Mutex
 }
 
-func New(filename, key string, meta map[string]interface{}) goldsmith.Plugin {
+func New(meta map[string]interface{}) *index {
 	return &index{
-		filename: filename,
-		key:      key,
+		filename: "index.html",
+		dstKey:   "files",
 		meta:     meta,
 		handled:  make(map[string]bool),
 		dirs:     make(map[string]*dirSummary),
 	}
 }
 
+func (idx *index) IndexFilename(filename string) *index {
+	idx.filename = filename
+	return idx
+}
+
+func (idx *index) DstKey(key string) *index {
+	idx.dstKey = key
+	return idx
+}
+
 func (*index) Name() string {
 	return "index"
 }
 
-func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	i.dirsMtx.Lock()
-	defer i.dirsMtx.Unlock()
+func (idx *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	idx.dirsMtx.Lock()
+	defer idx.dirsMtx.Unlock()
 
 	curr := f.Path()
 	leaf := true
 
 	for {
-		if handled, _ := i.handled[curr]; handled {
+		if handled, _ := idx.handled[curr]; handled {
 			break
 		}
 
-		i.handled[curr] = true
+		idx.handled[curr] = true
 
 		dir := path.Dir(curr)
 		base := path.Base(curr)
 
-		summary, ok := i.dirs[dir]
+		summary, ok := idx.dirs[dir]
 		if !ok {
 			summary = new(dirSummary)
-			i.dirs[dir] = summary
+			idx.dirs[dir] = summary
 		}
 
 		if leaf {
-			if base == i.filename {
+			if base == idx.filename {
 				summary.index = f
 			} else {
 				ctx.DispatchFile(f)
@@ -100,19 +110,19 @@ func (i *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	return nil
 }
 
-func (i *index) Finalize(ctx goldsmith.Context) error {
-	for name, summary := range i.dirs {
+func (idx *index) Finalize(ctx goldsmith.Context) error {
+	for name, summary := range idx.dirs {
 		sort.Sort(summary.entries)
 
 		f := summary.index
 		if f == nil {
-			f = goldsmith.NewFileFromData(path.Join(name, i.filename), make([]byte, 0))
-			for name, value := range i.meta {
+			f = goldsmith.NewFileFromData(path.Join(name, idx.filename), make([]byte, 0))
+			for name, value := range idx.meta {
 				f.SetValue(name, value)
 			}
 		}
 
-		f.SetValue(i.key, summary.entries)
+		f.SetValue(idx.dstKey, summary.entries)
 		ctx.DispatchFile(f)
 	}
 

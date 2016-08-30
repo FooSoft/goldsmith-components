@@ -35,13 +35,18 @@ type abs struct {
 	rootUrl *url.URL
 }
 
-func New(root string, attrs []string) goldsmith.Plugin {
-	rootUrl, _ := url.Parse(root)
-	return &abs{attrs, rootUrl}
+func New() *abs {
+	return &abs{attrs: []string{"href", "src"}}
 }
 
-func NewBasic() goldsmith.Plugin {
-	return &abs{attrs: []string{"href", "src"}}
+func (a *abs) RootUrl(root string) *abs {
+	a.rootUrl, _ = url.Parse(root)
+	return a
+}
+
+func (a *abs) Attr(attrs ...string) *abs {
+	a.attrs = attrs
+	return a
 }
 
 func (*abs) Name() string {

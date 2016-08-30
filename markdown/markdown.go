@@ -42,11 +42,11 @@ type markdown struct {
 	mdType mdType
 }
 
-func NewCommon() goldsmith.Plugin {
+func NewCommon() *markdown {
 	return &markdown{mdCommon}
 }
 
-func NewBasic() goldsmith.Plugin {
+func NewBasic() *markdown {
 	return &markdown{mdBasic}
 }
 

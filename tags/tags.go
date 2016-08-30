@@ -32,7 +32,7 @@ import (
 )
 
 type tags struct {
-	basePath       string
+	baseDir        string
 	srcKey, dstKey string
 	meta           map[string]interface{}
 
@@ -55,14 +55,29 @@ type TagState struct {
 	Info  map[string]TagInfo
 }
 
-func New(basePath, srcKey, dstKey string, meta map[string]interface{}) goldsmith.Plugin {
+func New(meta map[string]interface{}) *tags {
 	return &tags{
-		basePath: basePath,
-		srcKey:   srcKey,
-		dstKey:   dstKey,
-		meta:     meta,
-		info:     make(map[string]TagInfo),
+		baseDir: "tags",
+		srcKey:  "tags",
+		dstKey:  "tags",
+		meta:    meta,
+		info:    make(map[string]TagInfo),
 	}
+}
+
+func (t *tags) BaseDir(dir string) *tags {
+	t.baseDir = dir
+	return t
+}
+
+func (t *tags) SrcKey(key string) *tags {
+	t.srcKey = key
+	return t
+}
+
+func (t *tags) DstKey(key string) *tags {
+	t.dstKey = key
+	return t
 }
 
 func (*tags) Name() string {
@@ -152,7 +167,7 @@ func (t *tags) buildPages(ctx goldsmith.Context, info map[string]TagInfo) (files
 }
 
 func (t *tags) tagPagePath(tag string) string {
-	return filepath.Join(t.basePath, safeTag(tag), "index.html")
+	return filepath.Join(t.baseDir, safeTag(tag), "index.html")
 }
 
 func safeTag(tag string) string {

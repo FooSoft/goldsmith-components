@@ -44,8 +44,18 @@ type thumbnail struct {
 	callback namer
 }
 
-func New(dims uint, n namer) goldsmith.Plugin {
-	return &thumbnail{dims, n}
+func New() *thumbnail {
+	return &thumbnail{128, nil}
+}
+
+func (t *thumbnail) Dims(dims uint) *thumbnail {
+	t.dims = dims
+	return t
+}
+
+func (t *thumbnail) Namer(callback namer) *thumbnail {
+	t.callback = callback
+	return t
 }
 
 func (*thumbnail) Name() string {
