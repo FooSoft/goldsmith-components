@@ -40,7 +40,7 @@ import (
 type minify struct {
 }
 
-func New() goldsmith.Plugin {
+func New() *minify {
 	return new(minify)
 }
 
