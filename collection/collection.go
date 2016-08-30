@@ -43,13 +43,28 @@ type collection struct {
 	filesMtx sync.Mutex
 }
 
-func New(srcKey, dstKey string, comp comparer) goldsmith.Plugin {
+func New() *collection {
 	return &collection{
-		srcKey: srcKey,
-		dstKey: dstKey,
-		comp:   comp,
+		srcKey: "collection",
+		dstKey: "collection",
+		comp:   nil,
 		cols:   make(map[string][]goldsmith.File),
 	}
+}
+
+func (c *collection) SrcKey(srcKey string) *collection {
+	c.srcKey = srcKey
+	return c
+}
+
+func (c *collection) DstKey(dstKey string) *collection {
+	c.dstKey = dstKey
+	return c
+}
+
+func (c *collection) Comparer(comp comparer) *collection {
+	c.comp = comp
+	return c
 }
 
 func (*collection) Name() string {
