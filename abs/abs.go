@@ -44,7 +44,7 @@ func (a *abs) BaseUrl(root string) *abs {
 	return a
 }
 
-func (a *abs) Attr(attrs ...string) *abs {
+func (a *abs) Attrs(attrs ...string) *abs {
 	a.attrs = attrs
 	return a
 }
