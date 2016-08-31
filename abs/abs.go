@@ -32,15 +32,15 @@ import (
 
 type abs struct {
 	attrs   []string
-	rootUrl *url.URL
+	baseUrl *url.URL
 }
 
 func New() *abs {
 	return &abs{attrs: []string{"href", "src"}}
 }
 
-func (a *abs) RootUrl(root string) *abs {
-	a.rootUrl, _ = url.Parse(root)
+func (a *abs) BaseUrl(root string) *abs {
+	a.baseUrl, _ = url.Parse(root)
 	return a
 }
 
@@ -75,8 +75,8 @@ func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			}
 
 			currUrl = baseUrl.ResolveReference(currUrl)
-			if a.rootUrl != nil {
-				currUrl = a.rootUrl.ResolveReference(currUrl)
+			if a.baseUrl != nil {
+				currUrl = a.baseUrl.ResolveReference(currUrl)
 			}
 
 			sel.SetAttr(attr, currUrl.String())
