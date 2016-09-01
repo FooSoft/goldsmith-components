@@ -32,9 +32,9 @@ import (
 )
 
 type tags struct {
-	baseDir        string
-	srcKey, dstKey string
-	meta           map[string]interface{}
+	baseDir string
+	key     string
+	meta    map[string]interface{}
 
 	info    map[string]TagInfo
 	infoMtx sync.Mutex
@@ -46,6 +46,7 @@ type tags struct {
 type TagInfo struct {
 	Files    files
 	SafeName string
+	RawName  string
 	Path     string
 }
 
@@ -58,8 +59,7 @@ type TagState struct {
 func New(meta map[string]interface{}) *tags {
 	return &tags{
 		baseDir: "tags",
-		srcKey:  "tags",
-		dstKey:  "tags",
+		key:     "tags",
 		meta:    meta,
 		info:    make(map[string]TagInfo),
 	}
@@ -70,13 +70,8 @@ func (t *tags) BaseDir(dir string) *tags {
 	return t
 }
 
-func (t *tags) SrcKey(key string) *tags {
-	t.srcKey = key
-	return t
-}
-
-func (t *tags) DstKey(key string) *tags {
-	t.dstKey = key
+func (t *tags) Key(key string) *tags {
+	t.key = key
 	return t
 }
 
@@ -95,15 +90,15 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		t.filesMtx.Unlock()
 	}()
 
-	tagData, ok := f.Value(t.srcKey)
+	tagData, ok := f.Value(t.key)
 	if !ok {
-		f.SetValue(t.dstKey, TagState{Info: t.info})
+		f.SetValue(t.key, TagState{Info: t.info})
 		return nil
 	}
 
 	tags, ok := tagData.([]interface{})
 	if !ok {
-		f.SetValue(t.dstKey, TagState{Info: t.info})
+		f.SetValue(t.key, TagState{Info: t.info})
 		return nil
 	}
 
@@ -122,6 +117,7 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			item.Files = append(item.Files, f)
 			if !ok {
 				item.SafeName = safeTag(tagStr)
+				item.RawName = tagStr
 				item.Path = t.tagPagePath(tagStr)
 			}
 
@@ -131,7 +127,7 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	}
 
 	sort.Strings(tagStrs)
-	f.SetValue(t.dstKey, TagState{Info: t.info, Set: tagStrs})
+	f.SetValue(t.key, TagState{Info: t.info, Set: tagStrs})
 
 	return nil
 }
@@ -155,7 +151,7 @@ func (t *tags) Finalize(ctx goldsmith.Context) error {
 func (t *tags) buildPages(ctx goldsmith.Context, info map[string]TagInfo) (files []goldsmith.File) {
 	for tag := range info {
 		f := goldsmith.NewFileFromData(t.tagPagePath(tag), nil)
-		f.SetValue(t.dstKey, TagState{Index: tag, Info: t.info})
+		f.SetValue(t.key, TagState{Index: tag, Info: t.info})
 		for name, value := range t.meta {
 			f.SetValue(name, value)
 		}
