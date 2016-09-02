@@ -42,18 +42,19 @@ type layout struct {
 	tmpl    *template.Template
 }
 
-func New(paths []string) *layout {
+func New(globs ...string) *layout {
+	var paths []string
+	for _, glob := range globs {
+		matches, _ := doublestar.Glob(glob)
+		paths = append(paths, matches...)
+	}
+
 	return &layout{
 		layoutKey:  "layout",
 		contentKey: "content",
 		paths:      paths,
 		helpers:    nil,
 	}
-}
-
-func NewGlob(glob string) *layout {
-	paths, _ := doublestar.Glob(glob)
-	return New(paths)
 }
 
 func (lay *layout) LayoutKey(key string) *layout {
