@@ -30,8 +30,8 @@ import (
 )
 
 type treeInfo struct {
-	Roots []*treeNode
-	Node  *treeNode
+	Ancestors []*treeNode
+	Node      *treeNode
 }
 
 type treeNode struct {
@@ -105,14 +105,10 @@ func (t *tree) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	if len(nodeNameStr) > 0 {
 		if _, ok := t.namedNodes[nodeNameStr]; ok {
-			return fmt.Errorf("duplicate node name: %s", nodeNameStr)
+			return fmt.Errorf("duplicate node: %s", nodeNameStr)
 		}
 
 		t.namedNodes[nodeNameStr] = node
-	}
-
-	if len(parentNameStr) == 0 {
-		t.rootNodes = append(t.rootNodes, node)
 	}
 
 	return nil
@@ -120,6 +116,10 @@ func (t *tree) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 func (t *tree) Finalize(ctx goldsmith.Context) error {
 	for _, n := range t.allNodes {
+		if len(n.parentName) == 0 {
+			continue
+		}
+
 		if parent, ok := t.namedNodes[n.parentName]; ok {
 			parent.Children = append(parent.Children, n)
 			n.Parent = parent
@@ -129,7 +129,12 @@ func (t *tree) Finalize(ctx goldsmith.Context) error {
 	}
 
 	for _, n := range t.allNodes {
-		n.File.SetValue(t.treeKey, treeInfo{Roots: t.rootNodes, Node: n})
+		var ancestors []*treeNode
+		for c := n.Parent; c != nil; c = c.Parent {
+			ancestors = append([]*treeNode{c}, ancestors...)
+		}
+
+		n.File.SetValue(t.treeKey, treeInfo{ancestors, n})
 		ctx.DispatchFile(n.File)
 	}
 
