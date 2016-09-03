@@ -61,13 +61,13 @@ func New() *breadcrumbs {
 	}
 }
 
-func (t *breadcrumbs) NodeKey(nodeKey string) *breadcrumbs {
-	t.nodeKey = nodeKey
+func (t *breadcrumbs) NodeKey(key string) *breadcrumbs {
+	t.nodeKey = key
 	return t
 }
 
-func (t *breadcrumbs) ParentKey(parentKey string) *breadcrumbs {
-	t.parentKey = parentKey
+func (t *breadcrumbs) ParentKey(key string) *breadcrumbs {
+	t.parentKey = key
 	return t
 }
 

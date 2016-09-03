@@ -59,7 +59,7 @@ type TagState struct {
 func New(meta map[string]interface{}) *tags {
 	return &tags{
 		baseDir: "tags",
-		key:     "tags",
+		key:     "Tags",
 		meta:    meta,
 		info:    make(map[string]TagInfo),
 	}

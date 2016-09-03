@@ -33,7 +33,7 @@ import (
 
 type index struct {
 	filename string
-	dstKey   string
+	filesKey string
 	meta     map[string]interface{}
 
 	dirs    map[string]*dirSummary
@@ -44,7 +44,7 @@ type index struct {
 func New(meta map[string]interface{}) *index {
 	return &index{
 		filename: "index.html",
-		dstKey:   "files",
+		filesKey: "Files",
 		meta:     meta,
 		handled:  make(map[string]bool),
 		dirs:     make(map[string]*dirSummary),
@@ -56,8 +56,8 @@ func (idx *index) IndexFilename(filename string) *index {
 	return idx
 }
 
-func (idx *index) DstKey(key string) *index {
-	idx.dstKey = key
+func (idx *index) FilesKey(key string) *index {
+	idx.filesKey = key
 	return idx
 }
 
@@ -122,7 +122,7 @@ func (idx *index) Finalize(ctx goldsmith.Context) error {
 			}
 		}
 
-		f.SetValue(idx.dstKey, summary.entries)
+		f.SetValue(idx.filesKey, summary.entries)
 		ctx.DispatchFile(f)
 	}
 

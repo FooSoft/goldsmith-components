@@ -50,8 +50,8 @@ func New(globs ...string) *layout {
 	}
 
 	return &layout{
-		layoutKey:  "layout",
-		contentKey: "content",
+		layoutKey:  "Layout",
+		contentKey: "Content",
 		paths:      paths,
 		helpers:    nil,
 	}

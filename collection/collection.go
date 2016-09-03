@@ -33,32 +33,31 @@ import (
 type comparer func(i, j goldsmith.File) (less bool)
 
 type collection struct {
-	srcKey, dstKey string
+	collKey, groupsKey string
 
-	comp    comparer
-	cols    map[string][]goldsmith.File
-	colsMtx sync.Mutex
+	comp   comparer
+	groups map[string][]goldsmith.File
+	files  []goldsmith.File
 
-	files    []goldsmith.File
-	filesMtx sync.Mutex
+	mtx sync.Mutex
 }
 
 func New() *collection {
 	return &collection{
-		srcKey: "collection",
-		dstKey: "collections",
-		comp:   nil,
-		cols:   make(map[string][]goldsmith.File),
+		collKey:   "Collection",
+		groupsKey: "Groups",
+		comp:      nil,
+		groups:    make(map[string][]goldsmith.File),
 	}
 }
 
-func (c *collection) CollectionSrcKey(srcKey string) *collection {
-	c.srcKey = srcKey
+func (c *collection) CollectionKey(collKey string) *collection {
+	c.collKey = collKey
 	return c
 }
 
-func (c *collection) CollectionsDstKey(dstKey string) *collection {
-	c.dstKey = dstKey
+func (c *collection) GroupsKey(groupsKey string) *collection {
+	c.groupsKey = groupsKey
 	return c
 }
 
@@ -76,15 +75,15 @@ func (*collection) Initialize(ctx goldsmith.Context) ([]string, error) {
 }
 
 func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	c.mtx.Lock()
 	defer func() {
-		f.SetValue(c.dstKey, c.cols)
-
-		c.filesMtx.Lock()
-		c.files = append(c.files, f)
-		c.filesMtx.Unlock()
+		f.SetValue(c.groupsKey, c.groups)
+		c.mtx.Unlock()
 	}()
 
-	col, ok := f.Value(c.srcKey)
+	c.files = append(c.files, f)
+
+	col, ok := f.Value(c.collKey)
 	if !ok {
 		return nil
 	}
@@ -94,19 +93,15 @@ func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return nil
 	}
 
-	c.colsMtx.Lock()
-	{
-		files, _ := c.cols[colStr]
-		files = append(files, f)
-		c.cols[colStr] = files
-	}
-	c.colsMtx.Unlock()
+	files, _ := c.groups[colStr]
+	files = append(files, f)
+	c.groups[colStr] = files
 
 	return nil
 }
 
 func (c *collection) Finalize(ctx goldsmith.Context) error {
-	for _, files := range c.cols {
+	for _, files := range c.groups {
 		fg := &fileGroup{files, c.comp}
 		sort.Sort(fg)
 	}
