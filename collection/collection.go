@@ -33,7 +33,7 @@ import (
 type comparer func(i, j goldsmith.File) (less bool)
 
 type collection struct {
-	nameKey, groupsKey string
+	srcKey, dstKey string
 
 	comp    comparer
 	cols    map[string][]goldsmith.File
@@ -45,20 +45,20 @@ type collection struct {
 
 func New() *collection {
 	return &collection{
-		nameKey:   "collection",
-		groupsKey: "collections",
-		comp:      nil,
-		cols:      make(map[string][]goldsmith.File),
+		srcKey: "collection",
+		dstKey: "collections",
+		comp:   nil,
+		cols:   make(map[string][]goldsmith.File),
 	}
 }
 
-func (c *collection) NameKey(nameKey string) *collection {
-	c.nameKey = nameKey
+func (c *collection) CollectionSrcKey(srcKey string) *collection {
+	c.srcKey = srcKey
 	return c
 }
 
-func (c *collection) GroupsKey(groupsKey string) *collection {
-	c.groupsKey = groupsKey
+func (c *collection) CollectionsDstKey(dstKey string) *collection {
+	c.dstKey = dstKey
 	return c
 }
 
@@ -77,14 +77,14 @@ func (*collection) Initialize(ctx goldsmith.Context) ([]string, error) {
 
 func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	defer func() {
-		f.SetValue(c.groupsKey, c.cols)
+		f.SetValue(c.dstKey, c.cols)
 
 		c.filesMtx.Lock()
 		c.files = append(c.files, f)
 		c.filesMtx.Unlock()
 	}()
 
-	col, ok := f.Value(c.nameKey)
+	col, ok := f.Value(c.srcKey)
 	if !ok {
 		return nil
 	}
