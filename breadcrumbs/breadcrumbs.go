@@ -20,7 +20,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package tree
+package breadcrumbs
 
 import (
 	"fmt"
@@ -29,64 +29,62 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type treeInfo struct {
-	Ancestors []*treeNode
-	Node      *treeNode
+type bcInfo struct {
+	Ancestors []*bcNode
+	Node      *bcNode
 }
 
-type treeNode struct {
-	File goldsmith.File
+type bcNode struct {
+	File     goldsmith.File
+	Parent   *bcNode
+	Children []*bcNode
 
-	Parent   *treeNode
-	Children []*treeNode
-
-	nodeName   string
 	parentName string
 }
 
-type tree struct {
-	nodeKey, parentKey, treeKey string
+type breadcrumbs struct {
+	nodeKey, parentKey, breadcrumbsKey string
 
-	allNodes   []*treeNode
-	rootNodes  []*treeNode
-	namedNodes map[string]*treeNode
+	allNodes   []*bcNode
+	rootNodes  []*bcNode
+	namedNodes map[string]*bcNode
 
 	mtx sync.Mutex
 }
 
-func New() *tree {
-	return &tree{
-		nodeKey:    "Node",
-		parentKey:  "Parent",
-		treeKey:    "Tree",
-		namedNodes: make(map[string]*treeNode),
+func New() *breadcrumbs {
+	return &breadcrumbs{
+		nodeKey:        "Node",
+		parentKey:      "Parent",
+		breadcrumbsKey: "Breadcrumbs",
+		namedNodes:     make(map[string]*bcNode),
 	}
 }
 
-func (t *tree) NodeKey(nodeKey string) *tree {
+func (t *breadcrumbs) NodeKey(nodeKey string) *breadcrumbs {
 	t.nodeKey = nodeKey
 	return t
 }
 
-func (t *tree) ParentKey(parentKey string) *tree {
+func (t *breadcrumbs) ParentKey(parentKey string) *breadcrumbs {
 	t.parentKey = parentKey
 	return t
 }
 
-func (t *tree) TreeKey(treeKey string) *tree {
-	t.treeKey = treeKey
+func (t *breadcrumbs) BreadcrumbsKey(breadcrumbsKey string) *breadcrumbs {
+	t.breadcrumbsKey = breadcrumbsKey
 	return t
 }
 
-func (*tree) Name() string {
-	return "tree"
+func (*breadcrumbs) Name() string {
+	return "breadcrumbs"
 }
 
-func (*tree) Initialize(ctx goldsmith.Context) ([]string, error) {
+func (*breadcrumbs) Initialize(ctx goldsmith.Context) ([]string, error) {
 	return []string{"**/*.html", "**/*.htm"}, nil
 }
 
-func (t *tree) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (t *breadcrumbs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	var parentNameStr string
 	if parentName, ok := f.Value(t.parentKey); ok {
 		parentNameStr, _ = parentName.(string)
@@ -100,7 +98,7 @@ func (t *tree) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
 
-	node := &treeNode{File: f, nodeName: nodeNameStr, parentName: parentNameStr}
+	node := &bcNode{File: f, parentName: parentNameStr}
 	t.allNodes = append(t.allNodes, node)
 
 	if len(nodeNameStr) > 0 {
@@ -114,7 +112,7 @@ func (t *tree) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	return nil
 }
 
-func (t *tree) Finalize(ctx goldsmith.Context) error {
+func (t *breadcrumbs) Finalize(ctx goldsmith.Context) error {
 	for _, n := range t.allNodes {
 		if len(n.parentName) == 0 {
 			continue
@@ -129,12 +127,12 @@ func (t *tree) Finalize(ctx goldsmith.Context) error {
 	}
 
 	for _, n := range t.allNodes {
-		var ancestors []*treeNode
+		var ancestors []*bcNode
 		for c := n.Parent; c != nil; c = c.Parent {
-			ancestors = append([]*treeNode{c}, ancestors...)
+			ancestors = append([]*bcNode{c}, ancestors...)
 		}
 
-		n.File.SetValue(t.treeKey, treeInfo{ancestors, n})
+		n.File.SetValue(t.breadcrumbsKey, bcInfo{ancestors, n})
 		ctx.DispatchFile(n.File)
 	}
 
