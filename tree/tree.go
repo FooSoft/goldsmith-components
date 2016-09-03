@@ -56,9 +56,9 @@ type tree struct {
 
 func New() *tree {
 	return &tree{
-		nodeKey:    "node",
-		parentKey:  "parent",
-		treeKey:    "tree",
+		nodeKey:    "Node",
+		parentKey:  "Parent",
+		treeKey:    "Tree",
 		namedNodes: make(map[string]*treeNode),
 	}
 }
