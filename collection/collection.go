@@ -78,24 +78,28 @@ func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	c.mtx.Lock()
 	defer func() {
 		f.SetValue(c.groupsKey, c.groups)
+		c.files = append(c.files, f)
 		c.mtx.Unlock()
 	}()
 
-	c.files = append(c.files, f)
-
-	col, ok := f.Value(c.collKey)
+	coll, ok := f.Value(c.collKey)
 	if !ok {
 		return nil
 	}
 
-	colStr, ok := col.(string)
-	if !ok {
-		return nil
+	var collStrs []string
+	switch t := coll.(type) {
+	case string:
+		collStrs = append(collStrs, t)
+	case []string:
+		collStrs = append(collStrs, t...)
 	}
 
-	files, _ := c.groups[colStr]
-	files = append(files, f)
-	c.groups[colStr] = files
+	for _, collStr := range collStrs {
+		files, _ := c.groups[collStr]
+		files = append(files, f)
+		c.groups[collStr] = files
+	}
 
 	return nil
 }
