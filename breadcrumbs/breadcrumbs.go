@@ -43,7 +43,7 @@ type bcNode struct {
 }
 
 type breadcrumbs struct {
-	nodeKey, parentKey, breadcrumbsKey string
+	nameKey, parentKey, crumbsKey string
 
 	allNodes   []*bcNode
 	rootNodes  []*bcNode
@@ -54,15 +54,15 @@ type breadcrumbs struct {
 
 func New() *breadcrumbs {
 	return &breadcrumbs{
-		nodeKey:        "Node",
-		parentKey:      "Parent",
-		breadcrumbsKey: "Breadcrumbs",
-		namedNodes:     make(map[string]*bcNode),
+		nameKey:    "CrumbName",
+		parentKey:  "CrumbParent",
+		crumbsKey:  "Crumbs",
+		namedNodes: make(map[string]*bcNode),
 	}
 }
 
-func (t *breadcrumbs) NodeKey(key string) *breadcrumbs {
-	t.nodeKey = key
+func (t *breadcrumbs) NameKey(key string) *breadcrumbs {
+	t.nameKey = key
 	return t
 }
 
@@ -71,8 +71,8 @@ func (t *breadcrumbs) ParentKey(key string) *breadcrumbs {
 	return t
 }
 
-func (t *breadcrumbs) BreadcrumbsKey(breadcrumbsKey string) *breadcrumbs {
-	t.breadcrumbsKey = breadcrumbsKey
+func (t *breadcrumbs) CrumbsKey(key string) *breadcrumbs {
+	t.crumbsKey = key
 	return t
 }
 
@@ -91,7 +91,7 @@ func (t *breadcrumbs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	}
 
 	var nodeNameStr string
-	if nodeName, ok := f.Value(t.nodeKey); ok {
+	if nodeName, ok := f.Value(t.nameKey); ok {
 		nodeNameStr, _ = nodeName.(string)
 	}
 
@@ -132,7 +132,7 @@ func (t *breadcrumbs) Finalize(ctx goldsmith.Context) error {
 			ancestors = append([]*bcNode{c}, ancestors...)
 		}
 
-		n.File.SetValue(t.breadcrumbsKey, bcInfo{ancestors, n})
+		n.File.SetValue(t.crumbsKey, bcInfo{ancestors, n})
 		ctx.DispatchFile(n.File)
 	}
 
