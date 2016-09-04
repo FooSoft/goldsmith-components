@@ -32,46 +32,62 @@ import (
 )
 
 type tags struct {
-	baseDir string
-	key     string
-	meta    map[string]interface{}
+	tagsKey, stateKey string
 
-	info    map[string]TagInfo
-	infoMtx sync.Mutex
+	baseDir   string
+	indexName string
+	indexMeta map[string]interface{}
 
-	files    []goldsmith.File
-	filesMtx sync.Mutex
+	info  map[string]tagInfo
+	files []goldsmith.File
+	mtx   sync.Mutex
 }
 
-type TagInfo struct {
+type tagInfo struct {
 	Files    files
 	SafeName string
 	RawName  string
 	Path     string
 }
 
-type TagState struct {
+type tagState struct {
 	Index string
-	Set   []string
-	Info  map[string]TagInfo
+	Tags  []string
+	Info  map[string]tagInfo
 }
 
-func New(meta map[string]interface{}) *tags {
+func New() *tags {
 	return &tags{
-		baseDir: "tags",
-		key:     "Tags",
-		meta:    meta,
-		info:    make(map[string]TagInfo),
+		tagsKey:   "Tags",
+		stateKey:  "TagState",
+		baseDir:   "tags",
+		indexName: "index.html",
+		info:      make(map[string]tagInfo),
 	}
+}
+
+func (t *tags) TagsKey(key string) *tags {
+	t.tagsKey = key
+	return t
+}
+
+func (t *tags) StateKey(key string) *tags {
+	t.stateKey = key
+	return t
+}
+
+func (t *tags) IndexName(name string) *tags {
+	t.indexName = name
+	return t
+}
+
+func (t *tags) IndexMeta(meta map[string]interface{}) *tags {
+	t.indexMeta = meta
+	return t
 }
 
 func (t *tags) BaseDir(dir string) *tags {
 	t.baseDir = dir
-	return t
-}
-
-func (t *tags) Key(key string) *tags {
-	t.key = key
 	return t
 }
 
@@ -84,51 +100,45 @@ func (*tags) Initialize(ctx goldsmith.Context) ([]string, error) {
 }
 
 func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
+	tagState := &tagState{Info: t.info}
+
+	t.mtx.Lock()
 	defer func() {
-		t.filesMtx.Lock()
+		f.SetValue(t.stateKey, tagState)
 		t.files = append(t.files, f)
-		t.filesMtx.Unlock()
+		t.mtx.Unlock()
 	}()
 
-	tagData, ok := f.Value(t.key)
+	tags, ok := f.Value(t.tagsKey)
 	if !ok {
-		f.SetValue(t.key, TagState{Info: t.info})
 		return nil
 	}
 
-	tags, ok := tagData.([]interface{})
+	tagsArr, ok := tags.([]interface{})
 	if !ok {
-		f.SetValue(t.key, TagState{Info: t.info})
 		return nil
 	}
 
-	var tagStrs []string
-	for _, tag := range tags {
+	for _, tag := range tagsArr {
 		tagStr, ok := tag.(string)
 		if !ok {
 			continue
 		}
 
-		tagStrs = append(tagStrs, tagStr)
+		tagState.Tags = append(tagState.Tags, tagStr)
 
-		t.infoMtx.Lock()
-		{
-			item, ok := t.info[tagStr]
-			item.Files = append(item.Files, f)
-			if !ok {
-				item.SafeName = safeTag(tagStr)
-				item.RawName = tagStr
-				item.Path = t.tagPagePath(tagStr)
-			}
-
-			t.info[tagStr] = item
+		item, ok := t.info[tagStr]
+		item.Files = append(item.Files, f)
+		if !ok {
+			item.SafeName = safeTag(tagStr)
+			item.RawName = tagStr
+			item.Path = t.tagPagePath(tagStr)
 		}
-		t.infoMtx.Unlock()
+
+		t.info[tagStr] = item
 	}
 
-	sort.Strings(tagStrs)
-	f.SetValue(t.key, TagState{Info: t.info, Set: tagStrs})
-
+	sort.Strings(tagState.Tags)
 	return nil
 }
 
@@ -137,8 +147,10 @@ func (t *tags) Finalize(ctx goldsmith.Context) error {
 		sort.Sort(meta.Files)
 	}
 
-	for _, f := range t.buildPages(ctx, t.info) {
-		ctx.DispatchFile(f)
+	if t.indexMeta != nil {
+		for _, f := range t.buildPages(ctx, t.info) {
+			ctx.DispatchFile(f)
+		}
 	}
 
 	for _, f := range t.files {
@@ -148,11 +160,11 @@ func (t *tags) Finalize(ctx goldsmith.Context) error {
 	return nil
 }
 
-func (t *tags) buildPages(ctx goldsmith.Context, info map[string]TagInfo) (files []goldsmith.File) {
+func (t *tags) buildPages(ctx goldsmith.Context, info map[string]tagInfo) (files []goldsmith.File) {
 	for tag := range info {
 		f := goldsmith.NewFileFromData(t.tagPagePath(tag), nil)
-		f.SetValue(t.key, TagState{Index: tag, Info: t.info})
-		for name, value := range t.meta {
+		f.SetValue(t.tagsKey, tagState{Index: tag, Info: t.info})
+		for name, value := range t.indexMeta {
 			f.SetValue(name, value)
 		}
 
@@ -163,7 +175,7 @@ func (t *tags) buildPages(ctx goldsmith.Context, info map[string]TagInfo) (files
 }
 
 func (t *tags) tagPagePath(tag string) string {
-	return filepath.Join(t.baseDir, safeTag(tag), "index.html")
+	return filepath.Join(t.baseDir, safeTag(tag), t.indexName)
 }
 
 func safeTag(tag string) string {
