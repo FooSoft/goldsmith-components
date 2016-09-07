@@ -1,3 +1,4 @@
+# Goldsmith-Plugins #
 
 The feature set of [Goldsmith](https://foosoft.net/projects/goldsmith/) is extensible via a flexible plugin architecture. Below is a list of
 of core plugins developed to help you generate a variety of websites out of the box.
