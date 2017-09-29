@@ -101,7 +101,7 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 		formatter := html.New(options...)
 		var buff bytes.Buffer
-		if err := formatter.Format(&buff, styles.Get("github"), iterator); err != nil {
+		if err := formatter.Format(&buff, style, iterator); err != nil {
 			errs = append(errs, err)
 			return
 		}
