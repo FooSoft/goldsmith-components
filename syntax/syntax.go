@@ -25,7 +25,6 @@ package syntax
 import (
 	"bytes"
 	"errors"
-	"log"
 	"strings"
 
 	"github.com/FooSoft/goldsmith"
@@ -38,9 +37,9 @@ import (
 type Placement int
 
 const (
-	Insert Placement = iota
-	Inline
-	Replace
+	PlaceInside Placement = iota
+	PlaceInline
+	PlaceOuter
 )
 
 type syntax struct {
@@ -49,11 +48,11 @@ type syntax struct {
 	placement Placement
 }
 
-func New() goldsmith.Plugin {
+func New() *syntax {
 	return &syntax{
 		style:     "github",
 		numbers:   false,
-		placement: Insert,
+		placement: PlaceInside,
 	}
 }
 
@@ -99,7 +98,7 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			lexer = lexers.Fallback
 		}
 
-		iterator, err := lexer.Tokenise(nil, strings.Trim(sel.Text(), "\n"))
+		iterator, err := lexer.Tokenise(nil, sel.Text())
 		if err != nil {
 			errs = append(errs, err)
 			return
@@ -124,14 +123,11 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 		html := string(buff.Bytes())
 		switch s.placement {
-		case Insert:
-			log.Print("insert")
+		case PlaceInside:
 			sel.SetHtml(html)
-		case Inline:
-			log.Print("inline")
+		case PlaceInline:
 			sel.ReplaceWithHtml(html)
-		case Replace:
-			log.Print("replace")
+		case PlaceOuter:
 			sel.Closest("pre").ReplaceWithHtml(html)
 		}
 	})
