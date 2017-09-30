@@ -24,8 +24,8 @@ package syntax
 
 import (
 	"bytes"
-	"errors"
-	"strings"
+	"fmt"
+	"log"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/PuerkitoBio/goquery"
@@ -45,6 +45,7 @@ const (
 type syntax struct {
 	style     string
 	numbers   bool
+	prefix    string
 	placement Placement
 }
 
@@ -52,6 +53,7 @@ func New() *syntax {
 	return &syntax{
 		style:     "github",
 		numbers:   false,
+		prefix:    "language-",
 		placement: PlaceInside,
 	}
 }
@@ -63,6 +65,11 @@ func (s *syntax) Style(style string) *syntax {
 
 func (s *syntax) LineNumbers(numbers bool) *syntax {
 	s.numbers = numbers
+	return s
+}
+
+func (s *syntax) Prefix(prefix string) *syntax {
+	s.prefix = prefix
 	return s
 }
 
@@ -86,14 +93,11 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	}
 
 	var errs []error
-	doc.Find("[class*=language-]").Each(func(i int, sel *goquery.Selection) {
-		segs := strings.SplitN(sel.AttrOr("class", ""), "-", 2)
-		if len(segs) < 2 {
-			errs = append(errs, errors.New("failed to determine language"))
-			return
-		}
-
-		lexer := lexers.Get(segs[1])
+	doc.Find(fmt.Sprintf("[class*=%s]", s.prefix)).Each(func(i int, sel *goquery.Selection) {
+		class := sel.AttrOr("class", "")
+		language := class[len(s.prefix):len(class)]
+		log.Print(language)
+		lexer := lexers.Get(language)
 		if lexer == nil {
 			lexer = lexers.Fallback
 		}
