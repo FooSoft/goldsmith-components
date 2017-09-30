@@ -25,6 +25,7 @@ package syntax
 import (
 	"bytes"
 	"errors"
+	"log"
 	"strings"
 
 	"github.com/FooSoft/goldsmith"
@@ -34,15 +35,25 @@ import (
 	"github.com/alecthomas/chroma/styles"
 )
 
+type Placement int
+
+const (
+	Insert Placement = iota
+	Inline
+	Replace
+)
+
 type syntax struct {
-	style   string
-	numbers bool
+	style     string
+	numbers   bool
+	placement Placement
 }
 
 func New() goldsmith.Plugin {
 	return &syntax{
-		style:   "github",
-		numbers: false,
+		style:     "github",
+		numbers:   false,
+		placement: Insert,
 	}
 }
 
@@ -53,6 +64,11 @@ func (s *syntax) Style(style string) *syntax {
 
 func (s *syntax) LineNumbers(numbers bool) *syntax {
 	s.numbers = numbers
+	return s
+}
+
+func (s *syntax) Placement(placement Placement) *syntax {
+	s.placement = placement
 	return s
 }
 
@@ -83,8 +99,6 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			lexer = lexers.Fallback
 		}
 
-		lexer.Config().DontEnsureNL = true
-
 		iterator, err := lexer.Tokenise(nil, strings.Trim(sel.Text(), "\n"))
 		if err != nil {
 			errs = append(errs, err)
@@ -108,7 +122,18 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			return
 		}
 
-		sel.SetHtml(strings.Trim(string(buff.Bytes()), "\n"))
+		html := string(buff.Bytes())
+		switch s.placement {
+		case Insert:
+			log.Print("insert")
+			sel.SetHtml(html)
+		case Inline:
+			log.Print("inline")
+			sel.ReplaceWithHtml(html)
+		case Replace:
+			log.Print("replace")
+			sel.Closest("pre").ReplaceWithHtml(html)
+		}
 	})
 
 	if len(errs) > 0 {
