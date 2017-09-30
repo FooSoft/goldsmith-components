@@ -83,7 +83,9 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			lexer = lexers.Fallback
 		}
 
-		iterator, err := lexer.Tokenise(nil, sel.Text())
+		lexer.Config().DontEnsureNL = true
+
+		iterator, err := lexer.Tokenise(nil, strings.Trim(sel.Text(), "\n"))
 		if err != nil {
 			errs = append(errs, err)
 			return
@@ -106,7 +108,7 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			return
 		}
 
-		sel.SetHtml(string(buff.Bytes()))
+		sel.SetHtml(strings.Trim(string(buff.Bytes()), "\n"))
 	})
 
 	if len(errs) > 0 {
