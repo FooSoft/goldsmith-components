@@ -25,7 +25,6 @@ package syntax
 import (
 	"bytes"
 	"fmt"
-	"log"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/PuerkitoBio/goquery"
@@ -96,7 +95,6 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	doc.Find(fmt.Sprintf("[class*=%s]", s.prefix)).Each(func(i int, sel *goquery.Selection) {
 		class := sel.AttrOr("class", "")
 		language := class[len(s.prefix):len(class)]
-		log.Print(language)
 		lexer := lexers.Get(language)
 		if lexer == nil {
 			lexer = lexers.Fallback
