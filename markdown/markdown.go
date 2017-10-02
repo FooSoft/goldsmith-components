@@ -31,23 +31,39 @@ import (
 	"github.com/russross/blackfriday"
 )
 
-type mdType int
-
-const (
-	mdCommon mdType = iota
-	mdBasic
-)
-
 type markdown struct {
-	mdType mdType
+	htmlFlags     int
+	markdownFlags int
 }
 
-func NewCommon() *markdown {
-	return &markdown{mdCommon}
+func New() *markdown {
+	htmlFlags := blackfriday.HTML_USE_XHTML |
+		blackfriday.HTML_USE_SMARTYPANTS |
+		blackfriday.HTML_SMARTYPANTS_FRACTIONS |
+		blackfriday.HTML_SMARTYPANTS_DASHES |
+		blackfriday.HTML_SMARTYPANTS_LATEX_DASHES
+
+	markdownFlags := blackfriday.EXTENSION_NO_INTRA_EMPHASIS |
+		blackfriday.EXTENSION_TABLES |
+		blackfriday.EXTENSION_FENCED_CODE |
+		blackfriday.EXTENSION_AUTOLINK |
+		blackfriday.EXTENSION_STRIKETHROUGH |
+		blackfriday.EXTENSION_SPACE_HEADERS |
+		blackfriday.EXTENSION_HEADER_IDS |
+		blackfriday.EXTENSION_BACKSLASH_LINE_BREAK |
+		blackfriday.EXTENSION_DEFINITION_LISTS
+
+	return &markdown{htmlFlags, markdownFlags}
 }
 
-func NewBasic() *markdown {
-	return &markdown{mdBasic}
+func (m *markdown) HtmlFlags(flags int) *markdown {
+	m.htmlFlags = flags
+	return m
+}
+
+func (m *markdown) MarkdownFlags(flags int) *markdown {
+	m.markdownFlags = flags
+	return m
 }
 
 func (*markdown) Name() string {
@@ -64,15 +80,10 @@ func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	var data []byte
-	switch m.mdType {
-	case mdCommon:
-		data = blackfriday.MarkdownCommon(buff.Bytes())
-	case mdBasic:
-		data = blackfriday.MarkdownBasic(buff.Bytes())
-	}
-
+	renderer := blackfriday.HtmlRenderer(m.htmlFlags, "", "")
+	data := blackfriday.Markdown(buff.Bytes(), renderer, m.markdownFlags)
 	name := strings.TrimSuffix(f.Path(), path.Ext(f.Path())) + ".html"
+
 	nf := goldsmith.NewFileFromData(name, data)
 	nf.CopyValues(f)
 	ctx.DispatchFile(nf)
