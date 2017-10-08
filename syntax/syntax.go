@@ -38,7 +38,6 @@ type Placement int
 const (
 	PlaceInside Placement = iota
 	PlaceInline
-	PlaceOuter
 )
 
 type syntax struct {
@@ -123,14 +122,20 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			return
 		}
 
-		html := string(buff.Bytes())
 		switch s.placement {
 		case PlaceInside:
-			sel.SetHtml(html)
+			sel.SetHtml(string(buff.Bytes()))
 		case PlaceInline:
-			sel.ReplaceWithHtml(html)
-		case PlaceOuter:
-			sel.Closest("pre").ReplaceWithHtml(html)
+			if docCode, err := goquery.NewDocumentFromReader(&buff); err == nil {
+				selPre := docCode.Find("pre")
+				if style, exists := selPre.Attr("style"); exists {
+					sel.SetAttr("style", style)
+				}
+
+				if htmlPre, err := selPre.Html(); err == nil {
+					sel.SetHtml(htmlPre)
+				}
+			}
 		}
 	})
 
