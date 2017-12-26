@@ -60,7 +60,7 @@ func (p *paginate) Namer(callback namer) *paginate {
 }
 
 func (*paginate) Name() string {
-	return "abs"
+	return "paginate"
 }
 
 func (*paginate) Initialize(ctx goldsmith.Context) ([]string, error) {
