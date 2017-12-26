@@ -31,9 +31,20 @@ import (
 	"github.com/russross/blackfriday"
 )
 
+type summary struct {
+	Title string
+	Intro string
+}
+
+type wrapper struct {
+	blackfriday.Renderer
+	summary summary
+}
+
 type markdown struct {
 	htmlFlags     int
 	markdownFlags int
+	summaryKey    string
 }
 
 func New() *markdown {
@@ -53,7 +64,7 @@ func New() *markdown {
 		blackfriday.EXTENSION_BACKSLASH_LINE_BREAK |
 		blackfriday.EXTENSION_DEFINITION_LISTS
 
-	return &markdown{htmlFlags, markdownFlags}
+	return &markdown{htmlFlags, markdownFlags, "summary"}
 }
 
 func (m *markdown) HtmlFlags(flags int) *markdown {
@@ -63,6 +74,11 @@ func (m *markdown) HtmlFlags(flags int) *markdown {
 
 func (m *markdown) MarkdownFlags(flags int) *markdown {
 	m.markdownFlags = flags
+	return m
+}
+
+func (m *markdown) SummaryKey(key string) *markdown {
+	m.summaryKey = key
 	return m
 }
 
@@ -80,13 +96,41 @@ func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	renderer := blackfriday.HtmlRenderer(m.htmlFlags, "", "")
-	data := blackfriday.Markdown(buff.Bytes(), renderer, m.markdownFlags)
+	wrapper := &wrapper{
+		Renderer: blackfriday.HtmlRenderer(m.htmlFlags, "", ""),
+	}
+
+	data := blackfriday.Markdown(buff.Bytes(), wrapper, m.markdownFlags)
 	name := strings.TrimSuffix(f.Path(), path.Ext(f.Path())) + ".html"
 
 	nf := goldsmith.NewFileFromData(name, data)
 	nf.CopyValues(f)
+	nf.SetValue(m.summaryKey, wrapper.summary)
 	ctx.DispatchFile(nf)
 
 	return nil
+}
+
+func (w *wrapper) Header(out *bytes.Buffer, text func() bool, level int, id string) {
+	if len(w.summary.Title) == 0 && level == 1 {
+		marker := out.Len()
+		if text() {
+			w.summary.Title = string(out.Bytes()[marker:out.Len()])
+		}
+		out.Truncate(marker)
+	}
+
+	w.Renderer.Header(out, text, level, id)
+}
+
+func (w *wrapper) Paragraph(out *bytes.Buffer, text func() bool) {
+	if len(w.summary.Intro) == 0 {
+		marker := out.Len()
+		if text() {
+			w.summary.Intro = string(out.Bytes()[marker:out.Len()])
+		}
+		out.Truncate(marker)
+	}
+
+	w.Renderer.Paragraph(out, text)
 }
