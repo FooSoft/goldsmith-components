@@ -24,6 +24,7 @@ package markdown
 
 import (
 	"bytes"
+	"html/template"
 	"path"
 	"strings"
 
@@ -32,8 +33,8 @@ import (
 )
 
 type summary struct {
-	Title string
-	Intro string
+	Title template.HTML
+	Intro template.HTML
 }
 
 type wrapper struct {
@@ -64,7 +65,7 @@ func New() *markdown {
 		blackfriday.EXTENSION_BACKSLASH_LINE_BREAK |
 		blackfriday.EXTENSION_DEFINITION_LISTS
 
-	return &markdown{htmlFlags, markdownFlags, "summary"}
+	return &markdown{htmlFlags, markdownFlags, "Summary"}
 }
 
 func (m *markdown) HtmlFlags(flags int) *markdown {
@@ -115,7 +116,7 @@ func (w *wrapper) Header(out *bytes.Buffer, text func() bool, level int, id stri
 	if len(w.summary.Title) == 0 && level == 1 {
 		marker := out.Len()
 		if text() {
-			w.summary.Title = string(out.Bytes()[marker:out.Len()])
+			w.summary.Title = template.HTML(out.Bytes()[marker:out.Len()])
 		}
 		out.Truncate(marker)
 	}
@@ -127,7 +128,7 @@ func (w *wrapper) Paragraph(out *bytes.Buffer, text func() bool) {
 	if len(w.summary.Intro) == 0 {
 		marker := out.Len()
 		if text() {
-			w.summary.Intro = string(out.Bytes()[marker:out.Len()])
+			w.summary.Intro = template.HTML(out.Bytes()[marker:out.Len()])
 		}
 		out.Truncate(marker)
 	}
