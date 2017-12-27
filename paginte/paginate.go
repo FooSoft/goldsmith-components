@@ -24,19 +24,34 @@ package abs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/FooSoft/goldsmith"
 )
 
 type namer func(path string, index int) string
 
+type pager struct {
+	HasNext bool
+	UrlNext string
+	HasPrev bool
+	UrlPrev string
+	Urls    []string
+	Count   int
+	Index   int
+}
+
 type paginate struct {
 	key      string
+	pagerKey string
 	limit    int
 	callback namer
+	files    []goldsmith.File
+	mtx      sync.Mutex
 }
 
 func New(key string) *paginate {
@@ -46,7 +61,17 @@ func New(key string) *paginate {
 		return fmt.Sprintf("%s-%d.%s", body, index, ext)
 	}
 
-	return &paginate{key, 10, callback}
+	return &paginate{
+		key:      key,
+		pagerKey: "Pager",
+		limit:    10,
+		callback: callback,
+	}
+}
+
+func (p *paginate) PagerKey(key string) *paginate {
+	p.pagerKey = key
+	return p
 }
 
 func (p *paginate) Limit(limit int) *paginate {
@@ -68,7 +93,8 @@ func (*paginate) Initialize(ctx goldsmith.Context) ([]string, error) {
 }
 
 func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	defer ctx.DispatchFile(f)
+	p.mtx.Lock()
+	defer p.mtx.Unlock()
 
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(f); err != nil {
@@ -77,32 +103,62 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	values, ok := f.Value(p.key)
 	if !ok {
+		p.files = append(p.files, f)
 		return nil
 	}
 
-	valuesArr, ok := values.([]interface{})
+	valueArr, ok := values.([]interface{})
 	if !ok {
-		return nil
+		return errors.New("invalid pagination array")
 	}
 
-	count := len(valuesArr)
-	if count < p.limit {
-		return nil
+	valueArrLen := len(valueArr)
+	pageCount := valueArrLen/p.limit + 1
+	pageUrls := []string{f.Path()}
+	for i := 1; i < pageCount; i++ {
+		pageUrls = append(pageUrls, p.callback(f.Path(), i))
 	}
 
-	f.SetValue(p.key, valuesArr[:p.limit])
-
-	for i := p.limit; i < count; i += p.limit {
-		limit := i + p.limit
-		if limit > count {
-			limit = count
+	for i := 0; i < pageCount; i++ {
+		pager := pager{
+			HasNext: i+1 < pageCount,
+			HasPrev: i > 0,
+			Urls:    pageUrls,
+			Count:   pageCount,
+			Index:   i,
 		}
 
-		nf := goldsmith.NewFileFromData(p.callback(f.Path(), i), buff.Bytes())
-		nf.CopyValues(f)
-		nf.SetValue(p.key, valuesArr[i:limit])
+		if pager.HasNext {
+			pager.UrlPrev = pageUrls[i+1]
+		}
+		if pager.HasPrev {
+			pager.UrlNext = pageUrls[i-1]
+		}
 
-		ctx.DispatchFile(nf)
+		fc := f
+		if i > 0 {
+			fc = goldsmith.NewFileFromData(p.callback(f.Path(), i), buff.Bytes())
+			fc.CopyValues(f)
+		}
+
+		indexStart := i * p.limit
+		indexEnd := indexStart + p.limit
+		if indexEnd > valueArrLen {
+			indexEnd = valueArrLen
+		}
+
+		fc.SetValue(p.key, valueArr[indexStart:indexEnd])
+		fc.SetValue(p.pagerKey, pager)
+
+		p.files = append(p.files, fc)
+	}
+
+	return nil
+}
+
+func (p *paginate) Finalize(ctx goldsmith.Context) error {
+	for _, f := range p.files {
+		ctx.DispatchFile(f)
 	}
 
 	return nil
