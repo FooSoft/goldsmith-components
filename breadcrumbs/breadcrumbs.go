@@ -29,15 +29,15 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type bcInfo struct {
-	Ancestors []*bcNode
-	Node      *bcNode
+type crumbs struct {
+	Ancestors []*node
+	Node      *node
 }
 
-type bcNode struct {
+type node struct {
 	File     goldsmith.File
-	Parent   *bcNode
-	Children []*bcNode
+	Parent   *node
+	Children []*node
 
 	parentName string
 }
@@ -45,9 +45,8 @@ type bcNode struct {
 type breadcrumbs struct {
 	nameKey, parentKey, crumbsKey string
 
-	allNodes   []*bcNode
-	rootNodes  []*bcNode
-	namedNodes map[string]*bcNode
+	allNodes   []*node
+	namedNodes map[string]*node
 
 	mtx sync.Mutex
 }
@@ -57,23 +56,23 @@ func New() *breadcrumbs {
 		nameKey:    "CrumbName",
 		parentKey:  "CrumbParent",
 		crumbsKey:  "Crumbs",
-		namedNodes: make(map[string]*bcNode),
+		namedNodes: make(map[string]*node),
 	}
 }
 
-func (t *breadcrumbs) NameKey(key string) *breadcrumbs {
-	t.nameKey = key
-	return t
+func (b *breadcrumbs) NameKey(key string) *breadcrumbs {
+	b.nameKey = key
+	return b
 }
 
-func (t *breadcrumbs) ParentKey(key string) *breadcrumbs {
-	t.parentKey = key
-	return t
+func (b *breadcrumbs) ParentKey(key string) *breadcrumbs {
+	b.parentKey = key
+	return b
 }
 
-func (t *breadcrumbs) CrumbsKey(key string) *breadcrumbs {
-	t.crumbsKey = key
-	return t
+func (b *breadcrumbs) CrumbsKey(key string) *breadcrumbs {
+	b.crumbsKey = key
+	return b
 }
 
 func (*breadcrumbs) Name() string {
@@ -84,41 +83,41 @@ func (*breadcrumbs) Initialize(ctx goldsmith.Context) ([]string, error) {
 	return []string{"**/*.html", "**/*.htm"}, nil
 }
 
-func (t *breadcrumbs) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (b *breadcrumbs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	var parentNameStr string
-	if parentName, ok := f.Value(t.parentKey); ok {
+	if parentName, ok := f.Value(b.parentKey); ok {
 		parentNameStr, _ = parentName.(string)
 	}
 
 	var nodeNameStr string
-	if nodeName, ok := f.Value(t.nameKey); ok {
+	if nodeName, ok := f.Value(b.nameKey); ok {
 		nodeNameStr, _ = nodeName.(string)
 	}
 
-	t.mtx.Lock()
-	defer t.mtx.Unlock()
+	b.mtx.Lock()
+	defer b.mtx.Unlock()
 
-	node := &bcNode{File: f, parentName: parentNameStr}
-	t.allNodes = append(t.allNodes, node)
+	node := &node{File: f, parentName: parentNameStr}
+	b.allNodes = append(b.allNodes, node)
 
 	if len(nodeNameStr) > 0 {
-		if _, ok := t.namedNodes[nodeNameStr]; ok {
-			return fmt.Errorf("duplicate node: %s", nodeNameStr)
+		if nodeDup, ok := b.namedNodes[nodeNameStr]; ok && nodeDup.File.ModTime().Unix() < node.File.ModTime().Unix() {
+			node = nodeDup
 		}
 
-		t.namedNodes[nodeNameStr] = node
+		b.namedNodes[nodeNameStr] = node
 	}
 
 	return nil
 }
 
-func (t *breadcrumbs) Finalize(ctx goldsmith.Context) error {
-	for _, n := range t.allNodes {
+func (b *breadcrumbs) Finalize(ctx goldsmith.Context) error {
+	for _, n := range b.allNodes {
 		if len(n.parentName) == 0 {
 			continue
 		}
 
-		if parent, ok := t.namedNodes[n.parentName]; ok {
+		if parent, ok := b.namedNodes[n.parentName]; ok {
 			parent.Children = append(parent.Children, n)
 			n.Parent = parent
 		} else {
@@ -126,13 +125,13 @@ func (t *breadcrumbs) Finalize(ctx goldsmith.Context) error {
 		}
 	}
 
-	for _, n := range t.allNodes {
-		var ancestors []*bcNode
+	for _, n := range b.allNodes {
+		var ancestors []*node
 		for c := n.Parent; c != nil; c = c.Parent {
-			ancestors = append([]*bcNode{c}, ancestors...)
+			ancestors = append([]*node{c}, ancestors...)
 		}
 
-		n.File.SetValue(t.crumbsKey, bcInfo{ancestors, n})
+		n.File.SetValue(b.crumbsKey, crumbs{ancestors, n})
 		ctx.DispatchFile(n.File)
 	}
 
