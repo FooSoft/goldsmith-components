@@ -20,13 +20,14 @@
 * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-package abs
+package paginate
 
 import (
 	"bytes"
 	"errors"
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -36,13 +37,16 @@ import (
 type namer func(path string, index int) string
 
 type pager struct {
-	HasNext bool
-	UrlNext string
-	HasPrev bool
-	UrlPrev string
-	Urls    []string
-	Count   int
-	Index   int
+	Items      interface{}
+	ItemCount  int
+	ItemsPaged bool
+
+	PageUrls      []string
+	PageUrlIndex  int
+	PageUrlNext   string
+	PageUrlNextOk bool
+	PageUrlPrev   string
+	PageUrlPrevOk bool
 }
 
 type paginate struct {
@@ -58,7 +62,7 @@ func New(key string) *paginate {
 	callback := func(path string, index int) string {
 		ext := filepath.Ext(path)
 		body := strings.TrimSuffix(path, ext)
-		return fmt.Sprintf("%s-%d.%s", body, index, ext)
+		return fmt.Sprintf("%s-%d%s", body, index, ext)
 	}
 
 	return &paginate{
@@ -107,13 +111,12 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return nil
 	}
 
-	valueArr, ok := values.([]interface{})
-	if !ok {
-		return errors.New("invalid pagination array")
+	valueCount, err := sliceLength(values)
+	if err != nil {
+		return err
 	}
 
-	valueArrLen := len(valueArr)
-	pageCount := valueArrLen/p.limit + 1
+	pageCount := valueCount/p.limit + 1
 	pageUrls := []string{f.Path()}
 	for i := 1; i < pageCount; i++ {
 		pageUrls = append(pageUrls, p.callback(f.Path(), i))
@@ -121,18 +124,29 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	for i := 0; i < pageCount; i++ {
 		pager := pager{
-			HasNext: i+1 < pageCount,
-			HasPrev: i > 0,
-			Urls:    pageUrls,
-			Count:   pageCount,
-			Index:   i,
+			ItemCount:     pageCount,
+			ItemsPaged:    pageCount > 1,
+			PageUrls:      pageUrls,
+			PageUrlIndex:  i,
+			PageUrlNextOk: i+1 < pageCount,
+			PageUrlPrevOk: i > 0,
 		}
 
-		if pager.HasNext {
-			pager.UrlPrev = pageUrls[i+1]
+		if i > 0 {
+			pager.PageUrlPrev = pageUrls[i-1]
 		}
-		if pager.HasPrev {
-			pager.UrlNext = pageUrls[i-1]
+		if i+1 < pageCount {
+			pager.PageUrlNext = pageUrls[i+1]
+		}
+
+		indexStart := i * p.limit
+		indexEnd := indexStart + p.limit
+		if indexEnd > valueCount {
+			indexEnd = valueCount
+		}
+
+		if pager.Items, err = sliceCrop(values, indexStart, indexEnd); err != nil {
+			return err
 		}
 
 		fc := f
@@ -140,14 +154,6 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			fc = goldsmith.NewFileFromData(p.callback(f.Path(), i), buff.Bytes())
 			fc.CopyValues(f)
 		}
-
-		indexStart := i * p.limit
-		indexEnd := indexStart + p.limit
-		if indexEnd > valueArrLen {
-			indexEnd = valueArrLen
-		}
-
-		fc.SetValue(p.key, valueArr[indexStart:indexEnd])
 		fc.SetValue(p.pagerKey, pager)
 
 		p.files = append(p.files, fc)
@@ -162,4 +168,32 @@ func (p *paginate) Finalize(ctx goldsmith.Context) error {
 	}
 
 	return nil
+}
+
+func sliceLength(slice interface{}) (int, error) {
+	sliceVal := reflect.Indirect(reflect.ValueOf(slice))
+	if sliceVal.Kind() != reflect.Slice {
+		return -1, errors.New("invalid slice")
+	}
+
+	return sliceVal.Len(), nil
+
+}
+
+func sliceCrop(slice interface{}, start, end int) (interface{}, error) {
+	sliceVal := reflect.Indirect(reflect.ValueOf(slice))
+	if sliceVal.Kind() != reflect.Slice {
+		return nil, errors.New("invalid slice")
+	}
+	if start < 0 || start > end {
+		return nil, errors.New("invalid slice range")
+	}
+
+	sliceValNew := reflect.Indirect(reflect.New(sliceVal.Type()))
+	for i := start; i < end; i++ {
+		sliceElemNew := sliceVal.Index(i)
+		sliceValNew.Set(reflect.Append(sliceValNew, sliceElemNew))
+	}
+
+	return sliceValNew.Interface(), nil
 }
