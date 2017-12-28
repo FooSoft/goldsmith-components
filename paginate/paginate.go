@@ -86,7 +86,7 @@ func (p *paginate) ItemsPerPage(limit int) *paginate {
 	return p
 }
 
-func (p *paginate) PageNamer(callback namer) *paginate {
+func (p *paginate) Namer(callback namer) *paginate {
 	p.callback = callback
 	return p
 }
