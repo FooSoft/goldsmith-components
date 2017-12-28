@@ -36,17 +36,18 @@ import (
 
 type namer func(path string, index int) string
 
-type pager struct {
-	Items      interface{}
-	ItemCount  int
-	ItemsPaged bool
+type page struct {
+	Index int
+	Items interface{}
+	File  goldsmith.File
 
-	PageUrls      []string
-	PageUrlIndex  int
-	PageUrlNext   string
-	PageUrlNextOk bool
-	PageUrlPrev   string
-	PageUrlPrevOk bool
+	Next *page
+	Prev *page
+}
+
+type pager struct {
+	PagesAll []page
+	PageCurr *page
 }
 
 type paginate struct {
@@ -117,26 +118,17 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	}
 
 	pageCount := valueCount/p.limit + 1
-	pageUrls := []string{f.Path()}
-	for i := 1; i < pageCount; i++ {
-		pageUrls = append(pageUrls, p.callback(f.Path(), i))
-	}
+	pages := make([]page, pageCount, pageCount)
 
 	for i := 0; i < pageCount; i++ {
-		pager := pager{
-			ItemCount:     pageCount,
-			ItemsPaged:    pageCount > 1,
-			PageUrls:      pageUrls,
-			PageUrlIndex:  i,
-			PageUrlNextOk: i+1 < pageCount,
-			PageUrlPrevOk: i > 0,
-		}
+		page := &pages[i]
+		page.Index = i + 1
 
 		if i > 0 {
-			pager.PageUrlPrev = pageUrls[i-1]
+			page.Prev = &pages[i-1]
 		}
 		if i+1 < pageCount {
-			pager.PageUrlNext = pageUrls[i+1]
+			page.Next = &pages[i+1]
 		}
 
 		indexStart := i * p.limit
@@ -145,18 +137,19 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			indexEnd = valueCount
 		}
 
-		if pager.Items, err = sliceCrop(values, indexStart, indexEnd); err != nil {
+		if page.Items, err = sliceCrop(values, indexStart, indexEnd); err != nil {
 			return err
 		}
 
-		fc := f
-		if i > 0 {
-			fc = goldsmith.NewFileFromData(p.callback(f.Path(), i), buff.Bytes())
-			fc.CopyValues(f)
+		if i == 0 {
+			page.File = f
+		} else {
+			page.File = goldsmith.NewFileFromData(p.callback(f.Path(), page.Index), buff.Bytes())
+			page.File.CopyValues(f)
 		}
-		fc.SetValue(p.pagerKey, pager)
+		page.File.SetValue(p.pagerKey, pager{pages, page})
 
-		p.files = append(p.files, fc)
+		p.files = append(p.files, page.File)
 	}
 
 	return nil
