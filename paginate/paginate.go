@@ -48,15 +48,17 @@ type page struct {
 type pager struct {
 	PagesAll []page
 	PageCurr *page
+	Paged    bool
 }
 
 type paginate struct {
-	key      string
-	pagerKey string
-	limit    int
-	callback namer
-	files    []goldsmith.File
-	mtx      sync.Mutex
+	key, pagerKey string
+
+	itemsPerPage int
+	callback     namer
+
+	files []goldsmith.File
+	mtx   sync.Mutex
 }
 
 func New(key string) *paginate {
@@ -67,10 +69,10 @@ func New(key string) *paginate {
 	}
 
 	return &paginate{
-		key:      key,
-		pagerKey: "Pager",
-		limit:    10,
-		callback: callback,
+		key:          key,
+		pagerKey:     "Pager",
+		itemsPerPage: 10,
+		callback:     callback,
 	}
 }
 
@@ -79,12 +81,12 @@ func (p *paginate) PagerKey(key string) *paginate {
 	return p
 }
 
-func (p *paginate) Limit(limit int) *paginate {
-	p.limit = limit
+func (p *paginate) ItemsPerPage(limit int) *paginate {
+	p.itemsPerPage = limit
 	return p
 }
 
-func (p *paginate) Namer(callback namer) *paginate {
+func (p *paginate) PageNamer(callback namer) *paginate {
 	p.callback = callback
 	return p
 }
@@ -117,7 +119,7 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	pageCount := valueCount/p.limit + 1
+	pageCount := valueCount/p.itemsPerPage + 1
 	pages := make([]page, pageCount, pageCount)
 
 	for i := 0; i < pageCount; i++ {
@@ -131,8 +133,8 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			page.Next = &pages[i+1]
 		}
 
-		indexStart := i * p.limit
-		indexEnd := indexStart + p.limit
+		indexStart := i * p.itemsPerPage
+		indexEnd := indexStart + p.itemsPerPage
 		if indexEnd > valueCount {
 			indexEnd = valueCount
 		}
@@ -147,7 +149,7 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			page.File = goldsmith.NewFileFromData(p.callback(f.Path(), page.Index), buff.Bytes())
 			page.File.CopyValues(f)
 		}
-		page.File.SetValue(p.pagerKey, pager{pages, page})
+		page.File.SetValue(p.pagerKey, pager{pages, page, pageCount > 1})
 
 		p.files = append(p.files, page.File)
 	}
