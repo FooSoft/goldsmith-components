@@ -37,7 +37,7 @@ import (
 	"github.com/nfnt/resize"
 )
 
-type namer func(path string, dims uint) (string, bool)
+type namer func(string, uint) (string, bool)
 
 type thumbnail struct {
 	dims     uint
@@ -45,7 +45,13 @@ type thumbnail struct {
 }
 
 func New() *thumbnail {
-	return &thumbnail{128, nil}
+	callback := func(path string, dims uint) (string, bool) {
+		ext := filepath.Ext(path)
+		body := strings.TrimSuffix(path, ext)
+		return fmt.Sprintf("%s-thumb.png", body), true
+	}
+
+	return &thumbnail{128, callback}
 }
 
 func (t *thumbnail) Dims(dims uint) *thumbnail {
@@ -69,7 +75,7 @@ func (*thumbnail) Initialize(ctx goldsmith.Context) ([]string, error) {
 func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	defer ctx.DispatchFile(f)
 
-	thumbPath, create := t.thumbName(f.Path())
+	thumbPath, create := t.callback(f.Path(), t.dims)
 	if !create {
 		return nil
 	}
@@ -95,17 +101,6 @@ func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	ctx.DispatchFile(fn)
 	return nil
-}
-
-func (t *thumbnail) thumbName(path string) (string, bool) {
-	if t.callback != nil {
-		return t.callback(path, t.dims)
-	}
-
-	ext := filepath.Ext(path)
-	body := strings.TrimSuffix(path, ext)
-
-	return fmt.Sprintf("%s-thumb.png", body), true
 }
 
 func (t *thumbnail) thumbnail(f goldsmith.File, thumbPath string) (goldsmith.File, error) {
