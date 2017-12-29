@@ -52,14 +52,14 @@ func (l *livejs) Initialize(ctx goldsmith.Context) ([]string, error) {
 	}
 
 	baseDir := path.Dir(filename)
-	jsPath := path.Join(baseDir, "live.min.js")
+	jsPath := path.Join(baseDir, "live.js")
 
 	data, err := ioutil.ReadFile(jsPath)
 	if err != nil {
 		return nil, err
 	}
 
-	l.js = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>%s</script>\n<!-- end livejs code -->\n", data)
+	l.js = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", data)
 	return []string{"**/*.html", "**/*.htm"}, nil
 }
 
