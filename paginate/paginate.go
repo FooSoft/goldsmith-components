@@ -119,9 +119,12 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	pageCount := valueCount/p.itemsPerPage + 1
-	pages := make([]page, pageCount, pageCount)
+	pageCount := valueCount / p.itemsPerPage
+	if valueCount%p.itemsPerPage > 0 {
+		pageCount += 1
+	}
 
+	pages := make([]page, pageCount, pageCount)
 	for i := 0; i < pageCount; i++ {
 		page := &pages[i]
 		page.Index = i + 1
