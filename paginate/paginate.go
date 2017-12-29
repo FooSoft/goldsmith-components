@@ -52,7 +52,7 @@ type pager struct {
 }
 
 type paginate struct {
-	key, pagerKey string
+	key, pagerKey, paginateKey string
 
 	itemsPerPage int
 	callback     namer
@@ -71,6 +71,7 @@ func New(key string) *paginate {
 	return &paginate{
 		key:          key,
 		pagerKey:     "Pager",
+		paginateKey:  "Paginate",
 		itemsPerPage: 10,
 		callback:     callback,
 	}
@@ -78,6 +79,11 @@ func New(key string) *paginate {
 
 func (p *paginate) PagerKey(key string) *paginate {
 	p.pagerKey = key
+	return p
+}
+
+func (p *paginate) PaginateKey(key string) *paginate {
+	p.paginateKey = key
 	return p
 }
 
@@ -106,6 +112,16 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(f); err != nil {
 		return err
+	}
+
+	paginate, ok := f.Value(p.paginateKey)
+	if !ok {
+		p.files = append(p.files, f)
+		return nil
+	}
+
+	if paginateBool, ok := paginate.(bool); !ok || !paginateBool {
+		return errors.New("invalid pagination setting")
 	}
 
 	values, ok := f.Value(p.key)
@@ -175,7 +191,6 @@ func sliceLength(slice interface{}) (int, error) {
 	}
 
 	return sliceVal.Len(), nil
-
 }
 
 func sliceCrop(slice interface{}, start, end int) (interface{}, error) {
