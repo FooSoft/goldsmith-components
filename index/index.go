@@ -96,7 +96,7 @@ func (idx *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			}
 		}
 
-		entry := DirEntry{Name: base, Path: curr, IsDir: !leaf, File: f}
+		entry := dirEntry{Name: base, Path: curr, IsDir: !leaf, File: f}
 		summary.entries = append(summary.entries, entry)
 
 		if dir == "." {
@@ -130,24 +130,24 @@ func (idx *index) Finalize(ctx goldsmith.Context) error {
 }
 
 type dirSummary struct {
-	entries DirEntries
+	entries dirEntries
 	index   goldsmith.File
 }
 
-type DirEntry struct {
+type dirEntry struct {
 	Name  string
 	Path  string
 	IsDir bool
 	File  goldsmith.File
 }
 
-type DirEntries []DirEntry
+type dirEntries []dirEntry
 
-func (d DirEntries) Len() int {
+func (d dirEntries) Len() int {
 	return len(d)
 }
 
-func (d DirEntries) Less(i, j int) bool {
+func (d dirEntries) Less(i, j int) bool {
 	d1, d2 := d[i], d[j]
 
 	if d1.IsDir && !d2.IsDir {
@@ -160,6 +160,6 @@ func (d DirEntries) Less(i, j int) bool {
 	return strings.Compare(d1.Name, d2.Name) == -1
 }
 
-func (d DirEntries) Swap(i, j int) {
+func (d dirEntries) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }
