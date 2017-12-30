@@ -89,7 +89,7 @@ func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	}
 
 	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
-	nf.CopyValues(f)
+	nf.InheritValues(f)
 	ctx.DispatchFile(nf)
 
 	return nil

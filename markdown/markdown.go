@@ -105,7 +105,7 @@ func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	name := strings.TrimSuffix(f.Path(), path.Ext(f.Path())) + ".html"
 
 	nf := goldsmith.NewFileFromData(name, data)
-	nf.CopyValues(f)
+	nf.InheritValues(f)
 	nf.SetValue(m.summaryKey, wrapper.summary)
 	ctx.DispatchFile(nf)
 

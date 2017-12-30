@@ -49,7 +49,7 @@ func (*frontmatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	}
 
 	nf := goldsmith.NewFileFromData(f.Path(), body.Bytes())
-	nf.CopyValues(f)
+	nf.InheritValues(f)
 	for name, value := range meta {
 		nf.SetValue(name, value)
 	}

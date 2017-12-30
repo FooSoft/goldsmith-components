@@ -121,7 +121,7 @@ func (lay *layout) Finalize(ctx goldsmith.Context) error {
 		}
 
 		nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
-		nf.CopyValues(f)
+		nf.InheritValues(f)
 		ctx.DispatchFile(nf)
 	}
 

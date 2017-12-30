@@ -166,7 +166,7 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			page.File = f
 		} else {
 			page.File = goldsmith.NewFileFromData(p.callback(f.Path(), page.Index), buff.Bytes())
-			page.File.CopyValues(f)
+			page.File.InheritValues(f)
 		}
 		page.File.SetValue(p.pagerKey, pager{pages, page, pageCount > 1})
 
