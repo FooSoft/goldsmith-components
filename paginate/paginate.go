@@ -56,6 +56,7 @@ type paginate struct {
 
 	itemsPerPage int
 	callback     namer
+	inheritKeys  []string
 
 	files []goldsmith.File
 	mtx   sync.Mutex
@@ -94,6 +95,11 @@ func (p *paginate) ItemsPerPage(limit int) *paginate {
 
 func (p *paginate) Namer(callback namer) *paginate {
 	p.callback = callback
+	return p
+}
+
+func (p *paginate) InheritKeys(keys ...string) *paginate {
+	p.inheritKeys = keys
 	return p
 }
 
@@ -166,7 +172,15 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			page.File = f
 		} else {
 			page.File = goldsmith.NewFileFromData(p.callback(f.Path(), page.Index), buff.Bytes())
-			page.File.InheritValues(f)
+			if len(p.inheritKeys) == 0 {
+				page.File.InheritValues(f)
+			} else {
+				for _, key := range p.inheritKeys {
+					if value, ok := f.Value(key); ok {
+						page.File.SetValue(key, value)
+					}
+				}
+			}
 		}
 		page.File.SetValue(p.pagerKey, pager{pages, page, pageCount > 1})
 

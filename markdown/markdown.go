@@ -65,7 +65,7 @@ func New() *markdown {
 		blackfriday.EXTENSION_BACKSLASH_LINE_BREAK |
 		blackfriday.EXTENSION_DEFINITION_LISTS
 
-	return &markdown{htmlFlags, markdownFlags, "Summary"}
+	return &markdown{htmlFlags: htmlFlags, markdownFlags: markdownFlags}
 }
 
 func (m *markdown) HtmlFlags(flags int) *markdown {
@@ -106,7 +106,9 @@ func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	nf := goldsmith.NewFileFromData(name, data)
 	nf.InheritValues(f)
-	nf.SetValue(m.summaryKey, wrapper.summary)
+	if len(m.summaryKey) > 0 {
+		nf.SetValue(m.summaryKey, wrapper.summary)
+	}
 	ctx.DispatchFile(nf)
 
 	return nil

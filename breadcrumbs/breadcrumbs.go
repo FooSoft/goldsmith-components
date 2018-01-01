@@ -101,8 +101,8 @@ func (b *breadcrumbs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	b.allNodes = append(b.allNodes, node)
 
 	if len(nodeNameStr) > 0 {
-		if nodeDup, ok := b.namedNodes[nodeNameStr]; ok && nodeDup.File.ModTime().Unix() < node.File.ModTime().Unix() {
-			node = nodeDup
+		if _, ok := b.namedNodes[nodeNameStr]; ok {
+			return fmt.Errorf("duplicate node: %s", nodeNameStr)
 		}
 
 		b.namedNodes[nodeNameStr] = node
