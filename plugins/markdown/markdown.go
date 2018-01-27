@@ -24,7 +24,6 @@ package markdown
 
 import (
 	"bytes"
-	"html/template"
 	"path"
 	"strings"
 
@@ -33,20 +32,9 @@ import (
 	"github.com/russross/blackfriday"
 )
 
-type summary struct {
-	Title template.HTML
-	Intro template.HTML
-}
-
-type wrapper struct {
-	blackfriday.Renderer
-	summary summary
-}
-
 type markdown struct {
 	htmlFlags     int
 	markdownFlags int
-	summaryKey    string
 }
 
 func New() *markdown {
@@ -79,11 +67,6 @@ func (m *markdown) MarkdownFlags(flags int) *markdown {
 	return m
 }
 
-func (m *markdown) SummaryKey(key string) *markdown {
-	m.summaryKey = key
-	return m
-}
-
 func (*markdown) Name() string {
 	return "markdown"
 }
@@ -98,43 +81,13 @@ func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	wrapper := &wrapper{
-		Renderer: blackfriday.HtmlRenderer(m.htmlFlags, "", ""),
-	}
-
-	data := blackfriday.Markdown(buff.Bytes(), wrapper, m.markdownFlags)
+	renderer := blackfriday.HtmlRenderer(m.htmlFlags, "", "")
+	data := blackfriday.Markdown(buff.Bytes(), renderer, m.markdownFlags)
 	name := strings.TrimSuffix(f.Path(), path.Ext(f.Path())) + ".html"
 
 	nf := goldsmith.NewFileFromData(name, data)
 	nf.InheritValues(f)
-	if len(m.summaryKey) > 0 {
-		nf.SetValue(m.summaryKey, wrapper.summary)
-	}
 	ctx.DispatchFile(nf)
 
 	return nil
-}
-
-func (w *wrapper) Header(out *bytes.Buffer, text func() bool, level int, id string) {
-	if len(w.summary.Title) == 0 && level == 1 {
-		marker := out.Len()
-		if text() {
-			w.summary.Title = template.HTML(out.Bytes()[marker:out.Len()])
-		}
-		out.Truncate(marker)
-	}
-
-	w.Renderer.Header(out, text, level, id)
-}
-
-func (w *wrapper) Paragraph(out *bytes.Buffer, text func() bool) {
-	if len(w.summary.Intro) == 0 {
-		marker := out.Len()
-		if text() {
-			w.summary.Intro = template.HTML(out.Bytes()[marker:out.Len()])
-		}
-		out.Truncate(marker)
-	}
-
-	w.Renderer.Paragraph(out, text)
 }
