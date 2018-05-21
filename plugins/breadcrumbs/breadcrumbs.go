@@ -21,9 +21,16 @@ type Breadcrumbs interface {
 	// CrumbsKey sets the metadata key used to access information about crumbs.
 	CrumbsKey(key string) Breadcrumbs
 
+	// Name implements goldsmith.Plugin.
 	Name() string
+
+	// Initialize implements goldsmith.Initializer.
 	Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error)
+
+	// Process implements goldsmith.Processor.
 	Process(ctx goldsmith.Context, f goldsmith.File) error
+
+	// Process implements goldsmith.Finalizer.
 	Finalize(ctx goldsmith.Context) error
 }
 

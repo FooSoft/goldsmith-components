@@ -22,8 +22,13 @@ type Abs interface {
 	// default set includes "href" and "src" attributes.
 	Attrs(attrs ...string) Abs
 
+	// Name implements goldsmith.Plugin.
 	Name() string
+
+	// Initialize implements goldsmith.Initializer.
 	Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error)
+
+	// Process implements goldsmith.Processor.
 	Process(ctx goldsmith.Context, f goldsmith.File) error
 }
 
