@@ -1,25 +1,6 @@
-/*
-* Copyright (c) 2016 Alex Yatskov <alex@foosoft.net>
-* Author: Alex Yatskov <alex@foosoft.net>
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
+// Copyright (c) 2016-2018 Alex Yatskov <alex@foosoft.net>
+//
+// Abs converts relative file references in HTML documents to absolute paths.
 package abs
 
 import (
@@ -32,21 +13,36 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+type Abs interface {
+	// BaseUrl sets the base path to which relative URLs are joined; the
+	// default empty string implies server root path.
+	BaseUrl(root string) Abs
+
+	// Attrs sets the attributes which are scanned for relative URLs; the
+	// default set includes "href" and "src" attributes.
+	Attrs(attrs ...string) Abs
+
+	Name() string
+	Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error)
+	Process(ctx goldsmith.Context, f goldsmith.File) error
+}
+
+// New creates a new instance of the Abs plugin.
+func New() Abs {
+	return &abs{attrs: []string{"href", "src"}}
+}
+
 type abs struct {
 	attrs   []string
 	baseUrl *url.URL
 }
 
-func New() *abs {
-	return &abs{attrs: []string{"href", "src"}}
-}
-
-func (a *abs) BaseUrl(root string) *abs {
+func (a *abs) BaseUrl(root string) Abs {
 	a.baseUrl, _ = url.Parse(root)
 	return a
 }
 
-func (a *abs) Attrs(attrs ...string) *abs {
+func (a *abs) Attrs(attrs ...string) Abs {
 	a.attrs = attrs
 	return a
 }
