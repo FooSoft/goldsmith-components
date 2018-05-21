@@ -1,5 +1,3 @@
-// Copyright (c) 2016-2018 Alex Yatskov <alex@foosoft.net>
-//
 // Abs converts relative file references in HTML documents to absolute paths.
 package abs
 
@@ -13,13 +11,14 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
+// Abs chainable plugin context.
 type Abs interface {
-	// BaseUrl sets the base path to which relative URLs are joined; the
-	// default empty string implies server root path.
-	BaseUrl(root string) Abs
+	// BaseURL sets the base path to which relative URLs are joined. The
+	// default value is root ("/").
+	BaseURL(root string) Abs
 
-	// Attrs sets the attributes which are scanned for relative URLs; the
-	// default set includes "href" and "src" attributes.
+	// Attrs sets the attributes which are scanned for relative URLs. The
+	// default attributes include "href" and "src".
 	Attrs(attrs ...string) Abs
 
 	// Name implements goldsmith.Plugin.
@@ -39,11 +38,11 @@ func New() Abs {
 
 type abs struct {
 	attrs   []string
-	baseUrl *url.URL
+	baseURL *url.URL
 }
 
-func (a *abs) BaseUrl(root string) Abs {
-	a.baseUrl, _ = url.Parse(root)
+func (a *abs) BaseURL(root string) Abs {
+	a.baseURL, _ = url.Parse(root)
 	return a
 }
 
@@ -69,22 +68,22 @@ func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	for _, attr := range a.attrs {
 		path := fmt.Sprintf("*[%s]", attr)
 		doc.Find(path).Each(func(index int, sel *goquery.Selection) {
-			baseUrl, err := url.Parse(f.Path())
+			baseURL, err := url.Parse(f.Path())
 			val, _ := sel.Attr(attr)
 
-			currUrl, err := url.Parse(val)
+			currURL, err := url.Parse(val)
 			if err != nil {
 				return
 			}
 
-			if !currUrl.IsAbs() {
-				currUrl = baseUrl.ResolveReference(currUrl)
+			if !currURL.IsAbs() {
+				currURL = baseURL.ResolveReference(currURL)
 			}
-			if a.baseUrl != nil {
-				currUrl.Path = filepath.Join(a.baseUrl.Path, currUrl.Path)
+			if a.baseURL != nil {
+				currURL.Path = filepath.Join(a.baseURL.Path, currURL.Path)
 			}
 
-			sel.SetAttr(attr, currUrl.String())
+			sel.SetAttr(attr, currURL.String())
 		})
 	}
 

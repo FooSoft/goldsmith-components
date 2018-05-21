@@ -1,6 +1,4 @@
-// Copyright (c) 2016-2018 Alex Yatskov <alex@foosoft.net>
-//
-// BreadCrumbs generates metadata required to build navigation breadcrumbs.
+// Package breadcrumbs generates metadata required to build navigation breadcrumbs.
 package breadcrumbs
 
 import (
@@ -11,15 +9,18 @@ import (
 	"github.com/FooSoft/goldsmith-components/filters/extension"
 )
 
+// Breadcrumbs chainable plugin context.
 type Breadcrumbs interface {
-	// NameKey sets the metadata key used to access the crumb name.
+	// NameKey sets the metadata key used to access the crumb name. The default
+	// key is "name".
 	NameKey(key string) Breadcrumbs
 
-	// ParentKey sets the metadata key used to access the parent name.
+	// ParentKey sets the metadata key used to access the parent name. The
+	// default key is "parent".
 	ParentKey(key string) Breadcrumbs
 
 	// CrumbsKey sets the metadata key used to access information about crumbs.
-	CrumbsKey(key string) Breadcrumbs
+	// The default key is "crumbs'.  defaults to "crumbs".
 
 	// Name implements goldsmith.Plugin.
 	Name() string
@@ -58,7 +59,7 @@ type breadcrumbs struct {
 	mtx sync.Mutex
 }
 
-// Creates a new instance of the BreadCrumbs plugin.
+// New creates a new instance of the BreadCrumbs plugin.
 func New() Breadcrumbs {
 	return &breadcrumbs{
 		nameKey:    "CrumbName",
