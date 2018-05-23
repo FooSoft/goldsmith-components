@@ -11,6 +11,11 @@ import (
 
 // Breadcrumbs chainable plugin context.
 type Breadcrumbs interface {
+	goldsmith.Plugin
+	goldsmith.Initializer
+	goldsmith.Processor
+	goldsmith.Finalizer
+
 	// NameKey sets the metadata key used to access the crumb name.
 	// The default key is "name".
 	NameKey(key string) Breadcrumbs
@@ -22,18 +27,6 @@ type Breadcrumbs interface {
 	// CrumbsKey sets the metadata key used to store information about crumbs.
 	// The default key is "crumbs'.
 	CrumbsKey(key string) Breadcrumbs
-
-	// Name implements goldsmith.Plugin.
-	Name() string
-
-	// Initialize implements goldsmith.Initializer.
-	Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error)
-
-	// Process implements goldsmith.Processor.
-	Process(ctx goldsmith.Context, f goldsmith.File) error
-
-	// Process implements goldsmith.Finalizer.
-	Finalize(ctx goldsmith.Context) error
 }
 
 // New creates a new instance of the breadcrumbs plugin.

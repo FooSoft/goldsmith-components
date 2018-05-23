@@ -7,10 +7,16 @@ import (
 	"sync"
 
 	"github.com/FooSoft/goldsmith"
+	"github.com/FooSoft/goldsmith-components/filters/extension"
 )
 
 // Collection chainable plugin context.
 type Collection interface {
+	goldsmith.Plugin
+	goldsmith.Initializer
+	goldsmith.Processor
+	goldsmith.Finalizer
+
 	// CollectionKey sets the metadata key used to access the collection name.
 	// The default key is "collection".
 	CollectionKey(collKey string) Collection
@@ -21,18 +27,6 @@ type Collection interface {
 
 	// Comparer sets the function used to sort files in collection groups.
 	Comparer(comp comparer) Collection
-
-	// Name implements goldsmith.Plugin.
-	Name() string
-
-	// Initialize implements goldsmith.Initializer.
-	Initialize(ctx goldsmith.Context) ([]string, error)
-
-	// Process implements goldsmith.Processor.
-	Process(ctx goldsmith.Context, f goldsmith.File) error
-
-	// Process implements goldsmith.Finalizer.
-	Finalize(ctx goldsmith.Context) error
 }
 
 // New creates a new instance of the collection plugin.
@@ -77,8 +71,8 @@ func (*collection) Name() string {
 	return "collection"
 }
 
-func (*collection) Initialize(ctx goldsmith.Context) ([]string, error) {
-	return []string{"**/*.html", "**/*.htm"}, nil
+func (*collection) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
 func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {

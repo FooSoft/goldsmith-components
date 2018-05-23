@@ -13,6 +13,10 @@ import (
 
 // Abs chainable plugin context.
 type Abs interface {
+	goldsmith.Plugin
+	goldsmith.Initializer
+	goldsmith.Processor
+
 	// BaseURL sets the base path to which relative URLs are joined.
 	// The default value is root ("/").
 	BaseURL(root string) Abs
@@ -20,15 +24,6 @@ type Abs interface {
 	// Attrs sets the attributes which are scanned for relative URLs.
 	// The default attributes are "href" and "src".
 	Attrs(attrs ...string) Abs
-
-	// Name implements goldsmith.Plugin.
-	Name() string
-
-	// Initialize implements goldsmith.Initializer.
-	Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error)
-
-	// Process implements goldsmith.Processor.
-	Process(ctx goldsmith.Context, f goldsmith.File) error
 }
 
 // New creates a new instance of the Abs plugin.
