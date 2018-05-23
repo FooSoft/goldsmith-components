@@ -1,25 +1,4 @@
-/*
- * Copyright (c) 2015 Alex Yatskov <alex@foosoft.net>
- * Author: Alex Yatskov <alex@foosoft.net>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
+// Package index creates pages for displaying directory listings.
 package index
 
 import (
@@ -31,6 +10,30 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
+// Index chainable plugin context.
+type Index interface {
+	goldsmith.Plugin
+	goldsmith.Processor
+	goldsmith.Finalizer
+
+	// IndexFilename sets the name of the file to be created as the directory index (default: "index.html").
+	IndexFilename(filename string) Index
+
+	// FilesKey sets the metadata key used to access the files in the current directory (default: "Files").
+	FilesKey(filename string) Index
+}
+
+// New creates a new instance of the Index plugin.
+func New(meta map[string]interface{}) Index {
+	return &index{
+		filename: "index.html",
+		filesKey: "Files",
+		meta:     meta,
+		handled:  make(map[string]bool),
+		dirs:     make(map[string]*dirSummary),
+	}
+}
+
 type index struct {
 	filename string
 	filesKey string
@@ -41,22 +44,12 @@ type index struct {
 	dirsMtx sync.Mutex
 }
 
-func New(meta map[string]interface{}) *index {
-	return &index{
-		filename: "index.html",
-		filesKey: "Files",
-		meta:     meta,
-		handled:  make(map[string]bool),
-		dirs:     make(map[string]*dirSummary),
-	}
-}
-
-func (idx *index) IndexFilename(filename string) *index {
+func (idx *index) IndexFilename(filename string) Index {
 	idx.filename = filename
 	return idx
 }
 
-func (idx *index) FilesKey(key string) *index {
+func (idx *index) FilesKey(key string) Index {
 	idx.filesKey = key
 	return idx
 }
