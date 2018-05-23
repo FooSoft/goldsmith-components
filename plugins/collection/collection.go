@@ -17,15 +17,14 @@ type Collection interface {
 	goldsmith.Processor
 	goldsmith.Finalizer
 
-	// CollectionKey sets the metadata key used to access the collection name.
-	// The default key is "collection".
+	// CollectionKey sets the metadata key used to access the collection name (default: "Collection").
 	CollectionKey(collKey string) Collection
 
-	// GroupsKey sets the metadata key used to store information about collection groups.
-	// The default key is "groups".
+	// GroupsKey sets the metadata key used to store information about collection groups (default: "Groups").
+	// This information is stored as a mapping of group names to contained files (map[string][]goldsmith.File).
 	GroupsKey(groupsKey string) Collection
 
-	// Comparer sets the function used to sort files in collection groups.
+	// Comparer sets the function used to sort files in collection groups (default: sort by filenames).
 	Comparer(comp comparer) Collection
 }
 

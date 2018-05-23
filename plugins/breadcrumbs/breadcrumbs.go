@@ -16,17 +16,29 @@ type Breadcrumbs interface {
 	goldsmith.Processor
 	goldsmith.Finalizer
 
-	// NameKey sets the metadata key used to access the crumb name.
-	// The default key is "name".
+	// NameKey sets the metadata key used to access the crumb name (default: "CrumbName").
 	NameKey(key string) Breadcrumbs
 
-	// ParentKey sets the metadata key used to access the parent name.
-	// The default key is "parent".
+	// ParentKey sets the metadata key used to access the parent name (default: "CrumbParent").
 	ParentKey(key string) Breadcrumbs
 
-	// CrumbsKey sets the metadata key used to store information about crumbs.
-	// The default key is "crumbs'.
+	// CrumbsKey sets the metadata key used to store information about crumbs (default: "Crumbs").
 	CrumbsKey(key string) Breadcrumbs
+}
+
+// A Crumb provides organizational information about this node and ones before it.
+type Crumb struct {
+	Ancestors []*Node
+	Node      *Node
+}
+
+// A Node represents information about a specific file in the site's structure.
+type Node struct {
+	File     goldsmith.File
+	Parent   *Node
+	Children []*Node
+
+	parentName string
 }
 
 // New creates a new instance of the breadcrumbs plugin.
@@ -35,21 +47,8 @@ func New() Breadcrumbs {
 		nameKey:    "CrumbName",
 		parentKey:  "CrumbParent",
 		crumbsKey:  "Crumbs",
-		namedNodes: make(map[string]*node),
+		namedNodes: make(map[string]*Node),
 	}
-}
-
-type crumbs struct {
-	Ancestors []*node
-	Node      *node
-}
-
-type node struct {
-	File     goldsmith.File
-	Parent   *node
-	Children []*node
-
-	parentName string
 }
 
 type breadcrumbs struct {
@@ -57,8 +56,8 @@ type breadcrumbs struct {
 	parentKey string
 	crumbsKey string
 
-	allNodes   []*node
-	namedNodes map[string]*node
+	allNodes   []*Node
+	namedNodes map[string]*Node
 
 	mtx sync.Mutex
 }
@@ -100,7 +99,7 @@ func (b *breadcrumbs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
-	node := &node{File: f, parentName: parentNameStr}
+	node := &Node{File: f, parentName: parentNameStr}
 	b.allNodes = append(b.allNodes, node)
 
 	if len(nodeNameStr) > 0 {
@@ -129,12 +128,12 @@ func (b *breadcrumbs) Finalize(ctx goldsmith.Context) error {
 	}
 
 	for _, n := range b.allNodes {
-		var ancestors []*node
+		var ancestors []*Node
 		for c := n.Parent; c != nil; c = c.Parent {
-			ancestors = append([]*node{c}, ancestors...)
+			ancestors = append([]*Node{c}, ancestors...)
 		}
 
-		n.File.SetValue(b.crumbsKey, crumbs{ancestors, n})
+		n.File.SetValue(b.crumbsKey, Crumb{ancestors, n})
 		ctx.DispatchFile(n.File)
 	}
 
