@@ -1,25 +1,4 @@
-/*
- * Copyright (c) 2017 Alex Yatskov <alex@foosoft.net>
- * Author: Alex Yatskov <alex@foosoft.net>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
+// Package dom makes it easy to modify your document structure.
 package dom
 
 import (
@@ -28,14 +7,23 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type processor func(*goquery.Document) error
-
-type dom struct {
-	callback processor
+// Dom plugin context.
+type Dom interface {
+	goldsmith.Plugin
+	goldsmith.Initializer
+	goldsmith.Processor
 }
 
-func New(callback processor) *dom {
+// A Processor callback function is used to modify documents.
+type Processor func(*goquery.Document) error
+
+// New creates a new instance of the dom plugin.
+func New(callback Processor) Dom {
 	return &dom{callback}
+}
+
+type dom struct {
+	callback Processor
 }
 
 func (*dom) Name() string {

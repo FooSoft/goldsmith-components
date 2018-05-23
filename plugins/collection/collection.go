@@ -28,6 +28,9 @@ type Collection interface {
 	Comparer(comp Comparer) Collection
 }
 
+// A Comparer callback function is used to sort files within a collection group.
+type Comparer func(i, j goldsmith.File) (less bool)
+
 // New creates a new instance of the collection plugin.
 func New() Collection {
 	return &collection{
@@ -37,9 +40,6 @@ func New() Collection {
 		groups:    make(map[string][]goldsmith.File),
 	}
 }
-
-// A Comparer function is used to sort files within a collection group.
-type Comparer func(i, j goldsmith.File) (less bool)
 
 type collection struct {
 	collKey   string
