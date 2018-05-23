@@ -25,7 +25,7 @@ type Collection interface {
 	GroupsKey(groupsKey string) Collection
 
 	// Comparer sets the function used to sort files in collection groups (default: sort by filenames).
-	Comparer(comp comparer) Collection
+	Comparer(comp Comparer) Collection
 }
 
 // New creates a new instance of the collection plugin.
@@ -38,13 +38,14 @@ func New() Collection {
 	}
 }
 
-type comparer func(i, j goldsmith.File) (less bool)
+// A Comparer function is used to sort files within a collection group.
+type Comparer func(i, j goldsmith.File) (less bool)
 
 type collection struct {
 	collKey   string
 	groupsKey string
 
-	comp   comparer
+	comp   Comparer
 	groups map[string][]goldsmith.File
 	files  []goldsmith.File
 
@@ -61,7 +62,7 @@ func (c *collection) GroupsKey(groupsKey string) Collection {
 	return c
 }
 
-func (c *collection) Comparer(comp comparer) Collection {
+func (c *collection) Comparer(comp Comparer) Collection {
 	c.comp = comp
 	return c
 }
@@ -119,7 +120,7 @@ func (c *collection) Finalize(ctx goldsmith.Context) error {
 
 type fileGroup struct {
 	Files []goldsmith.File
-	comp  comparer
+	comp  Comparer
 }
 
 func (f fileGroup) Len() int {
