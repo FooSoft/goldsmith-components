@@ -1,25 +1,4 @@
-/*
- * Copyright (c) 2015 Alex Yatskov <alex@foosoft.net>
- * Author: Alex Yatskov <alex@foosoft.net>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
+// Package collection groups related pages into named collections.
 package collection
 
 import (
@@ -30,19 +9,34 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type comparer func(i, j goldsmith.File) (less bool)
+// Collection chainable plugin context.
+type Collection interface {
+	// CollectionKey sets the metadata key used to access the collection name.
+	// The default key is "collection".
+	CollectionKey(collKey string) Collection
 
-type collection struct {
-	collKey, groupsKey string
+	// GroupsKey sets the metadata key used to store information about collection groups.
+	// The default key is "groups".
+	GroupsKey(groupsKey string) Collection
 
-	comp   comparer
-	groups map[string][]goldsmith.File
-	files  []goldsmith.File
+	// Comparer sets the function used to sort files in collection groups.
+	Comparer(comp comparer) Collection
 
-	mtx sync.Mutex
+	// Name implements goldsmith.Plugin.
+	Name() string
+
+	// Initialize implements goldsmith.Initializer.
+	Initialize(ctx goldsmith.Context) ([]string, error)
+
+	// Process implements goldsmith.Processor.
+	Process(ctx goldsmith.Context, f goldsmith.File) error
+
+	// Process implements goldsmith.Finalizer.
+	Finalize(ctx goldsmith.Context) error
 }
 
-func New() *collection {
+// New creates a new instance of the collection plugin.
+func New() Collection {
 	return &collection{
 		collKey:   "Collection",
 		groupsKey: "Groups",
@@ -51,17 +45,30 @@ func New() *collection {
 	}
 }
 
-func (c *collection) CollectionKey(collKey string) *collection {
+type comparer func(i, j goldsmith.File) (less bool)
+
+type collection struct {
+	collKey   string
+	groupsKey string
+
+	comp   comparer
+	groups map[string][]goldsmith.File
+	files  []goldsmith.File
+
+	mtx sync.Mutex
+}
+
+func (c *collection) CollectionKey(collKey string) Collection {
 	c.collKey = collKey
 	return c
 }
 
-func (c *collection) GroupsKey(groupsKey string) *collection {
+func (c *collection) GroupsKey(groupsKey string) Collection {
 	c.groupsKey = groupsKey
 	return c
 }
 
-func (c *collection) Comparer(comp comparer) *collection {
+func (c *collection) Comparer(comp comparer) Collection {
 	c.comp = comp
 	return c
 }

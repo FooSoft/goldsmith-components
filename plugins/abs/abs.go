@@ -1,4 +1,4 @@
-// Abs converts relative file references in HTML documents to absolute paths.
+// Package abs converts relative file references in HTML documents to absolute paths.
 package abs
 
 import (
@@ -13,12 +13,12 @@ import (
 
 // Abs chainable plugin context.
 type Abs interface {
-	// BaseURL sets the base path to which relative URLs are joined. The
-	// default value is root ("/").
+	// BaseURL sets the base path to which relative URLs are joined.
+	// The default value is root ("/").
 	BaseURL(root string) Abs
 
-	// Attrs sets the attributes which are scanned for relative URLs. The
-	// default attributes include "href" and "src".
+	// Attrs sets the attributes which are scanned for relative URLs.
+	// The default attributes are "href" and "src".
 	Attrs(attrs ...string) Abs
 
 	// Name implements goldsmith.Plugin.

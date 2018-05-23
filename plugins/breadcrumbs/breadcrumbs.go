@@ -11,16 +11,17 @@ import (
 
 // Breadcrumbs chainable plugin context.
 type Breadcrumbs interface {
-	// NameKey sets the metadata key used to access the crumb name. The default
-	// key is "name".
+	// NameKey sets the metadata key used to access the crumb name.
+	// The default key is "name".
 	NameKey(key string) Breadcrumbs
 
-	// ParentKey sets the metadata key used to access the parent name. The
-	// default key is "parent".
+	// ParentKey sets the metadata key used to access the parent name.
+	// The default key is "parent".
 	ParentKey(key string) Breadcrumbs
 
-	// CrumbsKey sets the metadata key used to access information about crumbs.
-	// The default key is "crumbs'.  defaults to "crumbs".
+	// CrumbsKey sets the metadata key used to store information about crumbs.
+	// The default key is "crumbs'.
+	CrumbsKey(key string) Breadcrumbs
 
 	// Name implements goldsmith.Plugin.
 	Name() string
@@ -33,6 +34,16 @@ type Breadcrumbs interface {
 
 	// Process implements goldsmith.Finalizer.
 	Finalize(ctx goldsmith.Context) error
+}
+
+// New creates a new instance of the breadcrumbs plugin.
+func New() Breadcrumbs {
+	return &breadcrumbs{
+		nameKey:    "CrumbName",
+		parentKey:  "CrumbParent",
+		crumbsKey:  "Crumbs",
+		namedNodes: make(map[string]*node),
+	}
 }
 
 type crumbs struct {
@@ -57,16 +68,6 @@ type breadcrumbs struct {
 	namedNodes map[string]*node
 
 	mtx sync.Mutex
-}
-
-// New creates a new instance of the BreadCrumbs plugin.
-func New() Breadcrumbs {
-	return &breadcrumbs{
-		nameKey:    "CrumbName",
-		parentKey:  "CrumbParent",
-		crumbsKey:  "Crumbs",
-		namedNodes: make(map[string]*node),
-	}
 }
 
 func (b *breadcrumbs) NameKey(key string) Breadcrumbs {
