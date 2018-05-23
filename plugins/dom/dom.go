@@ -17,7 +17,7 @@ type Dom interface {
 // A Processor callback function is used to modify documents.
 type Processor func(*goquery.Document) error
 
-// New creates a new instance of the dom plugin.
+// New creates a new instance of the Dom plugin.
 func New(callback Processor) Dom {
 	return &dom{callback}
 }

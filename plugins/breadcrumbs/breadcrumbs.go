@@ -41,7 +41,7 @@ type Node struct {
 	parentName string
 }
 
-// New creates a new instance of the breadcrumbs plugin.
+// New creates a new instance of the Breadcrumbs plugin.
 func New() Breadcrumbs {
 	return &breadcrumbs{
 		nameKey:    "CrumbName",
