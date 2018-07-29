@@ -1,25 +1,4 @@
-/*
- * Copyright (c) 2016 Alex Yatskov <alex@foosoft.net>
- * Author: Alex Yatskov <alex@foosoft.net>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
+// Package livejs injects code to reload the current page when it is modified.
 package livejs
 
 import (
@@ -34,12 +13,20 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type livejs struct {
-	js string
+// LiveJs chainable context.
+type LiveJs interface {
+	goldsmith.Plugin
+	goldsmith.Initializer
+	goldsmith.Processor
 }
 
-func New() goldsmith.Plugin {
+// New creates a new instance of the LiveJs plugin.
+func New() LiveJs {
 	return new(livejs)
+}
+
+type livejs struct {
+	js string
 }
 
 func (*livejs) Name() string {

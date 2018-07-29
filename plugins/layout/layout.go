@@ -1,25 +1,4 @@
-/*
- * Copyright (c) 2015 Alex Yatskov <alex@foosoft.net>
- * Author: Alex Yatskov <alex@foosoft.net>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
+// Package layout transforms content with Go templates.
 package layout
 
 import (
@@ -32,18 +11,25 @@ import (
 	"github.com/bmatcuk/doublestar"
 )
 
-type layout struct {
-	layoutKey, contentKey string
+// Layout chainable context.
+type Layout interface {
+	goldsmith.Plugin
+	goldsmith.Initializer
+	goldsmith.Processor
+	goldsmith.Finalizer
 
-	files    []goldsmith.File
-	filesMtx sync.Mutex
+	// LayoutKey sets the metadata key used to access the layout identifier (default: "Layout").
+	LayoutKey(layoutKey string) Layout
 
-	paths   []string
-	helpers template.FuncMap
-	tmpl    *template.Template
+	// ContentKey sets the metadata key used to access the source content (default: "Content").
+	ContentKey(key string) Layout
+
+	// Helpers sets the function map used to lookup template helper functions.
+	Helpers(helpers template.FuncMap) Layout
 }
 
-func New(globs ...string) *layout {
+// New creates a new instance of the Layout plugin.
+func New(globs ...string) Layout {
 	var paths []string
 	for _, glob := range globs {
 		matches, _ := doublestar.Glob(glob)
@@ -58,17 +44,28 @@ func New(globs ...string) *layout {
 	}
 }
 
-func (lay *layout) LayoutKey(key string) *layout {
+type layout struct {
+	layoutKey, contentKey string
+
+	files    []goldsmith.File
+	filesMtx sync.Mutex
+
+	paths   []string
+	helpers template.FuncMap
+	tmpl    *template.Template
+}
+
+func (lay *layout) LayoutKey(key string) Layout {
 	lay.layoutKey = key
 	return lay
 }
 
-func (lay *layout) ContentKey(key string) *layout {
+func (lay *layout) ContentKey(key string) Layout {
 	lay.contentKey = key
 	return lay
 }
 
-func (lay *layout) Helpers(helpers template.FuncMap) *layout {
+func (lay *layout) Helpers(helpers template.FuncMap) Layout {
 	lay.helpers = helpers
 	return lay
 }
