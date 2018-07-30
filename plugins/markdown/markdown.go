@@ -1,3 +1,4 @@
+// Package markdown renders markdown documents to HTML with the blackfriday markdown processor.
 package markdown
 
 import (
@@ -10,15 +11,22 @@ import (
 	"github.com/russross/blackfriday"
 )
 
+// Markdown chainable context.
 type Markdown interface {
 	goldsmith.Plugin
 	goldsmith.Initializer
 	goldsmith.Processor
 
-	HtmlFlags(flags int) Markdown
+	// HTMLFlags sets the HTML flags used by the blackfriday markdown processor;
+	// see https://github.com/russross/blackfriday/blob/master/html.go for options.
+	HTMLFlags(flags int) Markdown
+
+	// MarkdownFlags sets the markdown flags used by the blackfriday markdown processor;
+	// see https://github.com/russross/blackfriday/blob/master/markdown.go for options.
 	MarkdownFlags(flags int) Markdown
 }
 
+// New create a new instance of the Markdown plugin.
 func New() Markdown {
 	htmlFlags := blackfriday.HTML_USE_XHTML |
 		blackfriday.HTML_USE_SMARTYPANTS |
@@ -44,7 +52,7 @@ type markdown struct {
 	markdownFlags int
 }
 
-func (m *markdown) HtmlFlags(flags int) Markdown {
+func (m *markdown) HTMLFlags(flags int) Markdown {
 	m.htmlFlags = flags
 	return m
 }
