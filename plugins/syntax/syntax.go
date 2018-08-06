@@ -1,25 +1,3 @@
-/*
- * Copyright (c) 2016 Alex Yatskov <alex@foosoft.net>
- * Author: Alex Yatskov <alex@foosoft.net>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
 package syntax
 
 import (
@@ -41,14 +19,18 @@ const (
 	PlaceInline
 )
 
-type syntax struct {
-	style     string
-	numbers   bool
-	prefix    string
-	placement Placement
+type Syntax interface {
+	goldsmith.Plugin
+	goldsmith.Initializer
+	goldsmith.Processor
+
+	Style(style string) Syntax
+	LineNumbers(numbers bool) Syntax
+	Prefix(prefix string) Syntax
+	Placement(placement Placement) Syntax
 }
 
-func New() *syntax {
+func New() Syntax {
 	return &syntax{
 		style:     "github",
 		numbers:   false,
@@ -57,22 +39,29 @@ func New() *syntax {
 	}
 }
 
-func (s *syntax) Style(style string) *syntax {
+type syntax struct {
+	style     string
+	numbers   bool
+	prefix    string
+	placement Placement
+}
+
+func (s *syntax) Style(style string) Syntax {
 	s.style = style
 	return s
 }
 
-func (s *syntax) LineNumbers(numbers bool) *syntax {
+func (s *syntax) LineNumbers(numbers bool) Syntax {
 	s.numbers = numbers
 	return s
 }
 
-func (s *syntax) Prefix(prefix string) *syntax {
+func (s *syntax) Prefix(prefix string) Syntax {
 	s.prefix = prefix
 	return s
 }
 
-func (s *syntax) Placement(placement Placement) *syntax {
+func (s *syntax) Placement(placement Placement) Syntax {
 	s.placement = placement
 	return s
 }

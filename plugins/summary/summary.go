@@ -1,25 +1,3 @@
-/*
- * Copyright (c) 2018 Alex Yatskov <alex@foosoft.net>
- * Author: Alex Yatskov <alex@foosoft.net>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
 package summary
 
 import (
@@ -30,13 +8,17 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-type summary struct {
-	key         string
-	titlePath   string
-	summaryPath string
+type Summary interface {
+	goldsmith.Plugin
+	goldsmith.Initializer
+	goldsmith.Processor
+
+	Key(key string) Summary
+	TitlePath(path string) Summary
+	SummaryPath(path string) Summary
 }
 
-func New() *summary {
+func New() Summary {
 	return &summary{
 		key:         "Summary",
 		titlePath:   "h1",
@@ -44,17 +26,23 @@ func New() *summary {
 	}
 }
 
-func (s *summary) Key(key string) *summary {
+type summary struct {
+	key         string
+	titlePath   string
+	summaryPath string
+}
+
+func (s *summary) Key(key string) Summary {
 	s.key = key
 	return s
 }
 
-func (s *summary) TitlePath(path string) *summary {
+func (s *summary) TitlePath(path string) Summary {
 	s.titlePath = path
 	return s
 }
 
-func (s *summary) SummaryPath(path string) *summary {
+func (s *summary) SummaryPath(path string) Summary {
 	s.summaryPath = path
 	return s
 }

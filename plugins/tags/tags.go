@@ -1,25 +1,3 @@
-/*
- * Copyright (c) 2015 Alex Yatskov <alex@foosoft.net>
- * Author: Alex Yatskov <alex@foosoft.net>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
 package tags
 
 import (
@@ -31,6 +9,29 @@ import (
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/extension"
 )
+
+type Tags interface {
+	goldsmith.Plugin
+	goldsmith.Initializer
+	goldsmith.Processor
+	goldsmith.Finalizer
+
+	TagsKey(key string) Tags
+	StateKey(key string) Tags
+	IndexName(name string) Tags
+	IndexMeta(meta map[string]interface{}) Tags
+	BaseDir(dir string) Tags
+}
+
+func New() Tags {
+	return &tags{
+		tagsKey:   "Tags",
+		stateKey:  "TagState",
+		baseDir:   "tags",
+		indexName: "index.html",
+		info:      make(map[string]tagInfo),
+	}
+}
 
 type tags struct {
 	tagsKey, stateKey string
@@ -57,37 +58,27 @@ type tagState struct {
 	Info  map[string]tagInfo
 }
 
-func New() *tags {
-	return &tags{
-		tagsKey:   "Tags",
-		stateKey:  "TagState",
-		baseDir:   "tags",
-		indexName: "index.html",
-		info:      make(map[string]tagInfo),
-	}
-}
-
-func (t *tags) TagsKey(key string) *tags {
+func (t *tags) TagsKey(key string) Tags {
 	t.tagsKey = key
 	return t
 }
 
-func (t *tags) StateKey(key string) *tags {
+func (t *tags) StateKey(key string) Tags {
 	t.stateKey = key
 	return t
 }
 
-func (t *tags) IndexName(name string) *tags {
+func (t *tags) IndexName(name string) Tags {
 	t.indexName = name
 	return t
 }
 
-func (t *tags) IndexMeta(meta map[string]interface{}) *tags {
+func (t *tags) IndexMeta(meta map[string]interface{}) Tags {
 	t.indexMeta = meta
 	return t
 }
 
-func (t *tags) BaseDir(dir string) *tags {
+func (t *tags) BaseDir(dir string) Tags {
 	t.baseDir = dir
 	return t
 }

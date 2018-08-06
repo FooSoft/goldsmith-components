@@ -1,25 +1,3 @@
-/*
- * Copyright (c) 2015 Alex Yatskov <alex@foosoft.net>
- * Author: Alex Yatskov <alex@foosoft.net>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of
- * this software and associated documentation files (the "Software"), to deal in
- * the Software without restriction, including without limitation the rights to
- * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
- * the Software, and to permit persons to whom the Software is furnished to do so,
- * subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
- * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
- * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
- * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
- * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
 package thumbnail
 
 import (
@@ -38,30 +16,39 @@ import (
 	"github.com/nfnt/resize"
 )
 
-type namer func(string, uint) (string, bool)
+type Namer func(string, uint) (string, bool)
 
-type thumbnail struct {
-	dims     uint
-	callback namer
+type Thumbnail interface {
+	goldsmith.Plugin
+	goldsmith.Initializer
+	goldsmith.Processor
+
+	Dims(dims uint) Thumbnail
+	Namer(namer Namer) Thumbnail
 }
 
-func New() *thumbnail {
-	callback := func(path string, dims uint) (string, bool) {
+func New() Thumbnail {
+	namer := func(path string, dims uint) (string, bool) {
 		ext := filepath.Ext(path)
 		body := strings.TrimSuffix(path, ext)
 		return fmt.Sprintf("%s-thumb.png", body), true
 	}
 
-	return &thumbnail{128, callback}
+	return &thumbnail{128, namer}
 }
 
-func (t *thumbnail) Dims(dims uint) *thumbnail {
+type thumbnail struct {
+	dims  uint
+	namer Namer
+}
+
+func (t *thumbnail) Dims(dims uint) Thumbnail {
 	t.dims = dims
 	return t
 }
 
-func (t *thumbnail) Namer(callback namer) *thumbnail {
-	t.callback = callback
+func (t *thumbnail) Namer(namer Namer) Thumbnail {
+	t.namer = namer
 	return t
 }
 
@@ -76,7 +63,7 @@ func (*thumbnail) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) 
 func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	defer ctx.DispatchFile(f)
 
-	thumbPath, create := t.callback(f.Path(), t.dims)
+	thumbPath, create := t.namer(f.Path(), t.dims)
 	if !create {
 		return nil
 	}
