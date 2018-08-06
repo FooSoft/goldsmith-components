@@ -26,7 +26,7 @@ type Markdown interface {
 	MarkdownFlags(flags int) Markdown
 }
 
-// New create a new instance of the Markdown plugin.
+// New creates a new instance of the Markdown plugin.
 func New() Markdown {
 	htmlFlags := blackfriday.HTML_USE_XHTML |
 		blackfriday.HTML_USE_SMARTYPANTS |
