@@ -1,25 +1,4 @@
-/*
-* Copyright (c) 2016 Alex Yatskov <alex@foosoft.net>
-* Author: Alex Yatskov <alex@foosoft.net>
-*
-* Permission is hereby granted, free of charge, to any person obtaining a copy of
-* this software and associated documentation files (the "Software"), to deal in
-* the Software without restriction, including without limitation the rights to
-* use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
-* the Software, and to permit persons to whom the Software is furnished to do so,
-* subject to the following conditions:
-*
-* The above copyright notice and this permission notice shall be included in all
-* copies or substantial portions of the Software.
-*
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
-* FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
-* COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
-* IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
-* CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
-
+// Package paginate splits arrays of metadata into standalone pages.
 package paginate
 
 import (
@@ -35,7 +14,39 @@ import (
 	"github.com/FooSoft/goldsmith-components/filters/extension"
 )
 
-type namer func(path string, index int) string
+// The Namer callback allows the user to generate custom filenames for generated pages.
+type Namer func(path string, index int) string
+
+// Paginate chainable context.
+type Paginate interface {
+	goldsmith.Plugin
+	goldsmith.Initializer
+	goldsmith.Processor
+	goldsmith.Finalizer
+
+	PagerKey(key string) Paginate
+	PaginateKey(key string) Paginate
+	ItemsPerPage(limit int) Paginate
+	Namer(namer Namer) Paginate
+	InheritKeys(keys ...string) Paginate
+}
+
+// New creates a new instance of the Paginate plugin.
+func New(key string) Paginate {
+	namer := func(path string, index int) string {
+		ext := filepath.Ext(path)
+		body := strings.TrimSuffix(path, ext)
+		return fmt.Sprintf("%s-%d%s", body, index, ext)
+	}
+
+	return &paginate{
+		key:          key,
+		pagerKey:     "Pager",
+		paginateKey:  "Paginate",
+		itemsPerPage: 10,
+		namer:        namer,
+	}
+}
 
 type page struct {
 	Index int
@@ -56,50 +67,34 @@ type paginate struct {
 	key, pagerKey, paginateKey string
 
 	itemsPerPage int
-	callback     namer
+	namer        Namer
 	inheritKeys  []string
 
 	files []goldsmith.File
 	mtx   sync.Mutex
 }
 
-func New(key string) *paginate {
-	callback := func(path string, index int) string {
-		ext := filepath.Ext(path)
-		body := strings.TrimSuffix(path, ext)
-		return fmt.Sprintf("%s-%d%s", body, index, ext)
-	}
-
-	return &paginate{
-		key:          key,
-		pagerKey:     "Pager",
-		paginateKey:  "Paginate",
-		itemsPerPage: 10,
-		callback:     callback,
-	}
-}
-
-func (p *paginate) PagerKey(key string) *paginate {
+func (p *paginate) PagerKey(key string) Paginate {
 	p.pagerKey = key
 	return p
 }
 
-func (p *paginate) PaginateKey(key string) *paginate {
+func (p *paginate) PaginateKey(key string) Paginate {
 	p.paginateKey = key
 	return p
 }
 
-func (p *paginate) ItemsPerPage(limit int) *paginate {
+func (p *paginate) ItemsPerPage(limit int) Paginate {
 	p.itemsPerPage = limit
 	return p
 }
 
-func (p *paginate) Namer(callback namer) *paginate {
-	p.callback = callback
+func (p *paginate) Namer(namer Namer) Paginate {
+	p.namer = namer
 	return p
 }
 
-func (p *paginate) InheritKeys(keys ...string) *paginate {
+func (p *paginate) InheritKeys(keys ...string) Paginate {
 	p.inheritKeys = keys
 	return p
 }
@@ -144,7 +139,7 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 
 	pageCount := valueCount / p.itemsPerPage
 	if valueCount%p.itemsPerPage > 0 {
-		pageCount += 1
+		pageCount++
 	}
 
 	pages := make([]page, pageCount, pageCount)
@@ -172,7 +167,7 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		if i == 0 {
 			page.File = f
 		} else {
-			page.File = goldsmith.NewFileFromData(p.callback(f.Path(), page.Index), buff.Bytes())
+			page.File = goldsmith.NewFileFromData(p.namer(f.Path(), page.Index), buff.Bytes())
 			if len(p.inheritKeys) == 0 {
 				page.File.InheritValues(f)
 			} else {
