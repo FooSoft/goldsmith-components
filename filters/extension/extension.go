@@ -6,12 +6,16 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type extension struct {
-	extensions []string
+type Extension interface {
+	goldsmith.Filter
 }
 
-func New(extensions ...string) *extension {
+func New(extensions ...string) Extension {
 	return &extension{extensions}
+}
+
+type extension struct {
+	extensions []string
 }
 
 func (*extension) Name() string {

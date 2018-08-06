@@ -4,12 +4,16 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type or struct {
-	filters []goldsmith.Filter
+type Or interface {
+	goldsmith.Plugin
 }
 
-func New(filters ...goldsmith.Filter) *or {
+func New(filters ...goldsmith.Filter) Or {
 	return &or{filters}
+}
+
+type or struct {
+	filters []goldsmith.Filter
 }
 
 func (*or) Name() string {

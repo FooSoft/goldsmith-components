@@ -4,12 +4,16 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type not struct {
-	filter goldsmith.Filter
+type Not interface {
+	goldsmith.Filter
 }
 
-func New(filter goldsmith.Filter) *not {
+func New(filter goldsmith.Filter) Not {
 	return &not{filter}
+}
+
+type not struct {
+	filter goldsmith.Filter
 }
 
 func (*not) Name() string {

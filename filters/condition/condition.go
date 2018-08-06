@@ -4,12 +4,16 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type condition struct {
-	accept bool
+type Condition interface {
+	goldsmith.Filter
 }
 
-func New(accept bool) *condition {
+func New(accept bool) Condition {
 	return &condition{accept}
+}
+
+type condition struct {
+	accept bool
 }
 
 func (*condition) Name() string {

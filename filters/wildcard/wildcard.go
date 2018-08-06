@@ -5,12 +5,16 @@ import (
 	"github.com/bmatcuk/doublestar"
 )
 
-type wildcard struct {
-	wildcards []string
+type Wildcard interface {
+	goldsmith.Filter
 }
 
-func New(wildcards ...string) *wildcard {
+func New(wildcards ...string) Wildcard {
 	return &wildcard{wildcards}
+}
+
+type wildcard struct {
+	wildcards []string
 }
 
 func (*wildcard) Name() string {

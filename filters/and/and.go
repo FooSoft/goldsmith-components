@@ -4,12 +4,16 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type and struct {
-	filters []goldsmith.Filter
+type And interface {
+	goldsmith.Filter
 }
 
-func New(filters ...goldsmith.Filter) *and {
+func New(filters ...goldsmith.Filter) And {
 	return &and{filters}
+}
+
+type and struct {
+	filters []goldsmith.Filter
 }
 
 func (*and) Name() string {
