@@ -31,7 +31,7 @@ type Syntax interface {
 }
 
 func New() Syntax {
-	return &syntax{
+	return &syntaxPlugin{
 		style:     "github",
 		numbers:   false,
 		prefix:    "language-",
@@ -39,51 +39,51 @@ func New() Syntax {
 	}
 }
 
-type syntax struct {
+type syntaxPlugin struct {
 	style     string
 	numbers   bool
 	prefix    string
 	placement Placement
 }
 
-func (s *syntax) Style(style string) Syntax {
-	s.style = style
-	return s
+func (plugin *syntaxPlugin) Style(style string) Syntax {
+	plugin.style = style
+	return plugin
 }
 
-func (s *syntax) LineNumbers(numbers bool) Syntax {
-	s.numbers = numbers
-	return s
+func (plugin *syntaxPlugin) LineNumbers(numbers bool) Syntax {
+	plugin.numbers = numbers
+	return plugin
 }
 
-func (s *syntax) Prefix(prefix string) Syntax {
-	s.prefix = prefix
-	return s
+func (plugin *syntaxPlugin) Prefix(prefix string) Syntax {
+	plugin.prefix = prefix
+	return plugin
 }
 
-func (s *syntax) Placement(placement Placement) Syntax {
-	s.placement = placement
-	return s
+func (plugin *syntaxPlugin) Placement(placement Placement) Syntax {
+	plugin.placement = placement
+	return plugin
 }
 
-func (*syntax) Name() string {
+func (*syntaxPlugin) Name() string {
 	return "syntax"
 }
 
-func (*syntax) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*syntaxPlugin) Initialize(context goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (plugin *syntaxPlugin) Process(context goldsmith.Context, f goldsmith.File) error {
 	doc, err := goquery.NewDocumentFromReader(f)
 	if err != nil {
 		return err
 	}
 
 	var errs []error
-	doc.Find(fmt.Sprintf("[class*=%s]", s.prefix)).Each(func(i int, sel *goquery.Selection) {
+	doc.Find(fmt.Sprintf("[class*=%s]", plugin.prefix)).Each(func(i int, sel *goquery.Selection) {
 		class := sel.AttrOr("class", "")
-		language := class[len(s.prefix):len(class)]
+		language := class[len(plugin.prefix):len(class)]
 		lexer := lexers.Get(language)
 		if lexer == nil {
 			lexer = lexers.Fallback
@@ -95,13 +95,13 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			return
 		}
 
-		style := styles.Get(s.style)
+		style := styles.Get(plugin.style)
 		if style == nil {
 			style = styles.Fallback
 		}
 
 		var options []html.Option
-		if s.numbers {
+		if plugin.numbers {
 			options = append(options, html.WithLineNumbers())
 		}
 
@@ -112,7 +112,7 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			return
 		}
 
-		switch s.placement {
+		switch plugin.placement {
 		case PlaceInside:
 			sel.SetHtml(string(buff.Bytes()))
 		case PlaceInline:
@@ -138,8 +138,8 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
-	ctx.DispatchFile(nf)
+	nf := goldsmith.NewFileFromData(f.Path(), []byte(html), f.ModTime())
+	context.DispatchFile(nf)
 
 	return nil
 }
