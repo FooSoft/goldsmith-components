@@ -44,45 +44,45 @@ func New() Markdown {
 		blackfriday.EXTENSION_BACKSLASH_LINE_BREAK |
 		blackfriday.EXTENSION_DEFINITION_LISTS
 
-	return &markdown{htmlFlags: htmlFlags, markdownFlags: markdownFlags}
+	return &markdownPlugin{htmlFlags: htmlFlags, markdownFlags: markdownFlags}
 }
 
-type markdown struct {
+type markdownPlugin struct {
 	htmlFlags     int
 	markdownFlags int
 }
 
-func (m *markdown) HTMLFlags(flags int) Markdown {
-	m.htmlFlags = flags
-	return m
+func (plugin *markdownPlugin) HTMLFlags(flags int) Markdown {
+	plugin.htmlFlags = flags
+	return plugin
 }
 
-func (m *markdown) MarkdownFlags(flags int) Markdown {
-	m.markdownFlags = flags
-	return m
+func (plugin *markdownPlugin) MarkdownFlags(flags int) Markdown {
+	plugin.markdownFlags = flags
+	return plugin
 }
 
-func (*markdown) Name() string {
+func (*markdownPlugin) Name() string {
 	return "markdown"
 }
 
-func (*markdown) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*markdownPlugin) Initialize(context goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".md", ".markdown")}, nil
 }
 
-func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (plugin *markdownPlugin) Process(context goldsmith.Context, f goldsmith.File) error {
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(f); err != nil {
 		return err
 	}
 
-	renderer := blackfriday.HtmlRenderer(m.htmlFlags, "", "")
-	data := blackfriday.Markdown(buff.Bytes(), renderer, m.markdownFlags)
+	renderer := blackfriday.HtmlRenderer(plugin.htmlFlags, "", "")
+	data := blackfriday.Markdown(buff.Bytes(), renderer, plugin.markdownFlags)
 	name := strings.TrimSuffix(f.Path(), path.Ext(f.Path())) + ".html"
 
-	nf := goldsmith.NewFileFromData(name, data)
+	nf := goldsmith.NewFileFromData(name, data, f.ModTime())
 	nf.InheritValues(f)
-	ctx.DispatchFile(nf)
+	context.DispatchFile(nf)
 
 	return nil
 }
