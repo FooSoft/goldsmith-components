@@ -2,10 +2,12 @@
 package index
 
 import (
+	"os"
 	"path"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/FooSoft/goldsmith"
 )
@@ -25,106 +27,119 @@ type Index interface {
 
 // New creates a new instance of the Index plugin.
 func New(meta map[string]interface{}) Index {
-	return &index{
-		filename: "index.html",
-		filesKey: "Files",
-		meta:     meta,
-		handled:  make(map[string]bool),
-		dirs:     make(map[string]*dirSummary),
+	return &indexPlugin{
+		filename:     "index.html",
+		filesKey:     "Files",
+		meta:         meta,
+		pathsHandled: make(map[string]bool),
+		dirIndices:   make(map[string]*dirIndex),
 	}
 }
 
-type index struct {
+type indexPlugin struct {
 	filename string
 	filesKey string
 	meta     map[string]interface{}
 
-	dirs    map[string]*dirSummary
-	handled map[string]bool
-	dirsMtx sync.Mutex
+	dirIndices   map[string]*dirIndex
+	pathsHandled map[string]bool
+
+	mutex sync.Mutex
 }
 
-func (idx *index) IndexFilename(filename string) Index {
-	idx.filename = filename
-	return idx
+func (plugin *indexPlugin) IndexFilename(filename string) Index {
+	plugin.filename = filename
+	return plugin
 }
 
-func (idx *index) FilesKey(key string) Index {
-	idx.filesKey = key
-	return idx
+func (plugin *indexPlugin) FilesKey(key string) Index {
+	plugin.filesKey = key
+	return plugin
 }
 
-func (*index) Name() string {
+func (*indexPlugin) Name() string {
 	return "index"
 }
 
-func (idx *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	idx.dirsMtx.Lock()
-	defer idx.dirsMtx.Unlock()
+func (plugin *indexPlugin) Process(context goldsmith.Context, f goldsmith.File) error {
+	plugin.mutex.Lock()
+	defer plugin.mutex.Unlock()
 
-	curr := f.Path()
-	leaf := true
+	currPath := f.Path()
+	currIsLeaf := true
 
 	for {
-		if handled, _ := idx.handled[curr]; handled {
+		if handled, _ := plugin.pathsHandled[currPath]; handled {
 			break
 		}
 
-		idx.handled[curr] = true
+		plugin.pathsHandled[currPath] = true
 
-		dir := path.Dir(curr)
-		base := path.Base(curr)
+		currDir := path.Dir(currPath)
+		currBase := path.Base(currPath)
 
-		summary, ok := idx.dirs[dir]
+		currDirIndex, ok := plugin.dirIndices[currDir]
 		if !ok {
-			summary = new(dirSummary)
-			idx.dirs[dir] = summary
+			currDirInfo, err := os.Stat(currDir)
+			if err != nil {
+				return err
+			}
+
+			plugin.dirIndices[currDir] = &dirIndex{modTime: currDirInfo.ModTime()}
 		}
 
-		if leaf {
-			if base == idx.filename {
-				summary.index = f
+		if currIsLeaf {
+			if currBase == plugin.filename {
+				currDirIndex.indexFile = f
 			} else {
-				ctx.DispatchFile(f)
+				context.DispatchFile(f)
 			}
 		}
 
-		entry := dirEntry{Name: base, Path: curr, IsDir: !leaf, File: f}
-		summary.entries = append(summary.entries, entry)
+		currDirIndex.entries = append(
+			currDirIndex.entries,
+			dirEntry{
+				Name:  currBase,
+				Path:  currPath,
+				IsDir: !currIsLeaf,
+				File:  f,
+			},
+		)
 
-		if dir == "." {
+		if currDir == "." {
 			break
 		}
 
-		curr = dir
-		leaf = false
+		currPath = currDir
+		currIsLeaf = false
 	}
 
 	return nil
 }
 
-func (idx *index) Finalize(ctx goldsmith.Context) error {
-	for name, summary := range idx.dirs {
-		sort.Sort(summary.entries)
+func (plugin *indexPlugin) Finalize(context goldsmith.Context) error {
+	for name, index := range plugin.dirIndices {
+		sort.Sort(index.entries)
 
-		f := summary.index
+		f := index.indexFile
 		if f == nil {
-			f = goldsmith.NewFileFromData(path.Join(name, idx.filename), make([]byte, 0))
-			for name, value := range idx.meta {
+			f = goldsmith.NewFileFromData(path.Join(name, plugin.filename), make([]byte, 0), index.modTime)
+			for name, value := range plugin.meta {
 				f.SetValue(name, value)
 			}
 		}
 
-		f.SetValue(idx.filesKey, summary.entries)
-		ctx.DispatchFile(f)
+		f.SetValue(plugin.filesKey, index.entries)
+		context.DispatchFile(f)
 	}
 
 	return nil
 }
 
-type dirSummary struct {
-	entries dirEntries
-	index   goldsmith.File
+type dirIndex struct {
+	entries   dirIndices
+	modTime   time.Time
+	indexFile goldsmith.File
 }
 
 type dirEntry struct {
@@ -134,13 +149,13 @@ type dirEntry struct {
 	File  goldsmith.File
 }
 
-type dirEntries []dirEntry
+type dirIndices []dirEntry
 
-func (d dirEntries) Len() int {
+func (d dirIndices) Len() int {
 	return len(d)
 }
 
-func (d dirEntries) Less(i, j int) bool {
+func (d dirIndices) Less(i, j int) bool {
 	d1, d2 := d[i], d[j]
 
 	if d1.IsDir && !d2.IsDir {
@@ -153,6 +168,6 @@ func (d dirEntries) Less(i, j int) bool {
 	return strings.Compare(d1.Name, d2.Name) == -1
 }
 
-func (d dirEntries) Swap(i, j int) {
+func (d dirIndices) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }
