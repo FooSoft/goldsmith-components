@@ -16,32 +16,32 @@ type Frontmatter interface {
 
 // New creates a new instance of the Frontmatter plugin.
 func New() Frontmatter {
-	return new(frontmatter)
+	return new(frontmatterPlugin)
 }
 
-type frontmatter struct {
+type frontmatterPlugin struct {
 }
 
-func (*frontmatter) Name() string {
+func (*frontmatterPlugin) Name() string {
 	return "frontmatter"
 }
 
-func (*frontmatter) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*frontmatterPlugin) Initialize(context goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".md", ".markdown", ".rst", ".html", ".htm")}, nil
 }
 
-func (*frontmatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (*frontmatterPlugin) Process(context goldsmith.Context, f goldsmith.File) error {
 	meta, body, err := fm.Parse(f)
 	if err != nil {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), body.Bytes())
+	nf := goldsmith.NewFileFromData(f.Path(), body.Bytes(), f.ModTime())
 	nf.InheritValues(f)
 	for name, value := range meta {
 		nf.SetValue(name, value)
 	}
-	ctx.DispatchFile(nf)
+	context.DispatchFile(nf)
 
 	return nil
 }
