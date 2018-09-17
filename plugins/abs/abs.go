@@ -26,39 +26,39 @@ type Abs interface {
 
 // New creates a new instance of the Abs plugin.
 func New() Abs {
-	return &abs{attrs: []string{"href", "src"}}
+	return &absPlugin{attrs: []string{"href", "src"}}
 }
 
-type abs struct {
+type absPlugin struct {
 	attrs   []string
 	baseURL *url.URL
 }
 
-func (a *abs) BaseURL(root string) Abs {
-	a.baseURL, _ = url.Parse(root)
-	return a
+func (plugin *absPlugin) BaseURL(root string) Abs {
+	plugin.baseURL, _ = url.Parse(root)
+	return plugin
 }
 
-func (a *abs) Attrs(attrs ...string) Abs {
-	a.attrs = attrs
-	return a
+func (plugin *absPlugin) Attrs(attrs ...string) Abs {
+	plugin.attrs = attrs
+	return plugin
 }
 
-func (*abs) Name() string {
+func (*absPlugin) Name() string {
 	return "abs"
 }
 
-func (*abs) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*absPlugin) Initialize(context goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (plugin *absPlugin) Process(context goldsmith.Context, f goldsmith.File) error {
 	doc, err := goquery.NewDocumentFromReader(f)
 	if err != nil {
 		return err
 	}
 
-	for _, attr := range a.attrs {
+	for _, attr := range plugin.attrs {
 		path := fmt.Sprintf("*[%s]", attr)
 		doc.Find(path).Each(func(index int, sel *goquery.Selection) {
 			baseURL, err := url.Parse(f.Path())
@@ -72,8 +72,8 @@ func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 			if !currURL.IsAbs() {
 				currURL = baseURL.ResolveReference(currURL)
 			}
-			if a.baseURL != nil {
-				currURL.Path = filepath.Join(a.baseURL.Path, currURL.Path)
+			if plugin.baseURL != nil {
+				currURL.Path = filepath.Join(plugin.baseURL.Path, currURL.Path)
 			}
 
 			sel.SetAttr(attr, currURL.String())
@@ -85,9 +85,9 @@ func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
+	nf := goldsmith.NewFileFromData(f.Path(), []byte(html), f.ModTime())
 	nf.InheritValues(f)
-	ctx.DispatchFile(nf)
+	context.DispatchFile(nf)
 
 	return nil
 }
