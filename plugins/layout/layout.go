@@ -4,7 +4,9 @@ package layout
 import (
 	"bytes"
 	"html/template"
+	"os"
 	"sync"
+	"time"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/extension"
@@ -30,21 +32,34 @@ type Layout interface {
 
 // New creates a new instance of the Layout plugin.
 func New(globs ...string) Layout {
-	var paths []string
+	var (
+		paths   []string
+		modTime time.Time
+	)
+
 	for _, glob := range globs {
 		matches, _ := doublestar.Glob(glob)
-		paths = append(paths, matches...)
+		for _, match := range matches {
+			matchInfo, err := os.Stat(match)
+			if err == nil {
+				paths = append(paths, match)
+				if matchModTime := matchInfo.ModTime(); matchModTime.Unix() > modTime.Unix() {
+					modTime = matchModTime
+				}
+			}
+		}
 	}
 
-	return &layout{
+	return &layoutPlugin{
 		layoutKey:  "Layout",
 		contentKey: "Content",
 		paths:      paths,
 		helpers:    nil,
+		modTime:    modTime,
 	}
 }
 
-type layout struct {
+type layoutPlugin struct {
 	layoutKey, contentKey string
 
 	files    []goldsmith.File
@@ -53,77 +68,84 @@ type layout struct {
 	paths   []string
 	helpers template.FuncMap
 	tmpl    *template.Template
+
+	modTime time.Time
 }
 
-func (lay *layout) LayoutKey(key string) Layout {
-	lay.layoutKey = key
-	return lay
+func (plugin *layoutPlugin) LayoutKey(key string) Layout {
+	plugin.layoutKey = key
+	return plugin
 }
 
-func (lay *layout) ContentKey(key string) Layout {
-	lay.contentKey = key
-	return lay
+func (plugin *layoutPlugin) ContentKey(key string) Layout {
+	plugin.contentKey = key
+	return plugin
 }
 
-func (lay *layout) Helpers(helpers template.FuncMap) Layout {
-	lay.helpers = helpers
-	return lay
+func (plugin *layoutPlugin) Helpers(helpers template.FuncMap) Layout {
+	plugin.helpers = helpers
+	return plugin
 }
 
-func (*layout) Name() string {
+func (*layoutPlugin) Name() string {
 	return "layout"
 }
 
-func (lay *layout) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (plugin *layoutPlugin) Initialize(context goldsmith.Context) ([]goldsmith.Filter, error) {
 	var err error
-	if lay.tmpl, err = template.New("").Funcs(lay.helpers).ParseFiles(lay.paths...); err != nil {
+	if plugin.tmpl, err = template.New("").Funcs(plugin.helpers).ParseFiles(plugin.paths...); err != nil {
 		return nil, err
 	}
 
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (lay *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (plugin *layoutPlugin) Process(context goldsmith.Context, f goldsmith.File) error {
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(f); err != nil {
 		return err
 	}
 
-	if _, ok := f.Value(lay.layoutKey); ok {
-		f.SetValue(lay.contentKey, template.HTML(buff.Bytes()))
+	if _, ok := f.Value(plugin.layoutKey); ok {
+		f.SetValue(plugin.contentKey, template.HTML(buff.Bytes()))
 
-		lay.filesMtx.Lock()
-		lay.files = append(lay.files, f)
-		lay.filesMtx.Unlock()
+		plugin.filesMtx.Lock()
+		plugin.files = append(plugin.files, f)
+		plugin.filesMtx.Unlock()
 	} else {
-		ctx.DispatchFile(f)
+		context.DispatchFile(f)
 	}
 
 	return nil
 }
 
-func (lay *layout) Finalize(ctx goldsmith.Context) error {
-	for _, f := range lay.files {
-		name, ok := f.Value(lay.layoutKey)
+func (plugin *layoutPlugin) Finalize(context goldsmith.Context) error {
+	for _, f := range plugin.files {
+		name, ok := f.Value(plugin.layoutKey)
 		if !ok {
-			ctx.DispatchFile(f)
+			context.DispatchFile(f)
 			continue
 		}
 
 		nameStr, ok := name.(string)
 		if !ok {
-			ctx.DispatchFile(f)
+			context.DispatchFile(f)
 			continue
 		}
 
 		var buff bytes.Buffer
-		if err := lay.tmpl.ExecuteTemplate(&buff, nameStr, f); err != nil {
+		if err := plugin.tmpl.ExecuteTemplate(&buff, nameStr, f); err != nil {
 			return err
 		}
 
-		nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
+		modTime := f.ModTime()
+		if plugin.modTime.Unix() > modTime.Unix() {
+			modTime = plugin.modTime
+		}
+
+		nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes(), modTime)
 		nf.InheritValues(f)
-		ctx.DispatchFile(nf)
+		context.DispatchFile(nf)
 	}
 
 	return nil
