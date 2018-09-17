@@ -19,28 +19,28 @@ type Processor func(*goquery.Document) error
 
 // New creates a new instance of the Dom plugin.
 func New(callback Processor) Dom {
-	return &dom{callback}
+	return &domPlugin{callback}
 }
 
-type dom struct {
+type domPlugin struct {
 	callback Processor
 }
 
-func (*dom) Name() string {
+func (*domPlugin) Name() string {
 	return "dom"
 }
 
-func (*dom) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*domPlugin) Initialize(context goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (d *dom) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (plugin *domPlugin) Process(context goldsmith.Context, f goldsmith.File) error {
 	doc, err := goquery.NewDocumentFromReader(f)
 	if err != nil {
 		return err
 	}
 
-	if err := d.callback(doc); err != nil {
+	if err := plugin.callback(doc); err != nil {
 		return err
 	}
 
@@ -49,8 +49,8 @@ func (d *dom) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
+	nf := goldsmith.NewFileFromData(f.Path(), []byte(html), f.ModTime())
 	nf.InheritValues(f)
-	ctx.DispatchFile(nf)
+	context.DispatchFile(nf)
 	return nil
 }
