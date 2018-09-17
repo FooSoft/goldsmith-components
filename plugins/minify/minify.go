@@ -26,21 +26,21 @@ type Minify interface {
 
 // New creates a new instance of the Minify plugin
 func New() Minify {
-	return new(minify)
+	return new(minifyPlugin)
 }
 
-type minify struct {
+type minifyPlugin struct {
 }
 
-func (*minify) Name() string {
+func (*minifyPlugin) Name() string {
 	return "minify"
 }
 
-func (*minify) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*minifyPlugin) Initialize(context goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".css", ".html", ".htm", ".js", ".svg", ".json", ".xml")}, nil
 }
 
-func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (*minifyPlugin) Process(context goldsmith.Context, f goldsmith.File) error {
 	var (
 		buff bytes.Buffer
 		err  error
@@ -65,9 +65,9 @@ func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
+	nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes(), f.ModTime())
 	nf.InheritValues(f)
-	ctx.DispatchFile(nf)
+	context.DispatchFile(nf)
 
 	return nil
 }
