@@ -22,50 +22,49 @@ type LiveJs interface {
 
 // New creates a new instance of the LiveJs plugin.
 func New() LiveJs {
-	return new(livejs)
+	return new(liveJsPlugin)
 }
 
-type livejs struct {
-	js string
+type liveJsPlugin struct {
+	code string
 }
 
-func (*livejs) Name() string {
+func (*liveJsPlugin) Name() string {
 	return "livejs"
 }
 
-func (l *livejs) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (plugin *liveJsPlugin) Initialize(context goldsmith.Context) ([]goldsmith.Filter, error) {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		return nil, errors.New("unable to get livejs path")
 	}
 
 	baseDir := path.Dir(filename)
-	jsPath := path.Join(baseDir, "live.js")
-
-	data, err := ioutil.ReadFile(jsPath)
+	scriptPath := path.Join(baseDir, "live.js")
+	scriptData, err := ioutil.ReadFile(scriptPath)
 	if err != nil {
 		return nil, err
 	}
 
-	l.js = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", data)
+	plugin.code = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", scriptData)
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (l *livejs) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (plugin *liveJsPlugin) Process(context goldsmith.Context, f goldsmith.File) error {
 	doc, err := goquery.NewDocumentFromReader(f)
 	if err != nil {
 		return err
 	}
 
-	doc.Find("body").AppendHtml(l.js)
+	doc.Find("body").AppendHtml(plugin.code)
 
 	html, err := doc.Html()
 	if err != nil {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
-	ctx.DispatchFile(nf)
+	nf := goldsmith.NewFileFromData(f.Path(), []byte(html), f.ModTime())
+	context.DispatchFile(nf)
 
 	return nil
 }
