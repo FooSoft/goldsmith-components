@@ -2,7 +2,6 @@
 package index
 
 import (
-	"os"
 	"path"
 	"sort"
 	"strings"
@@ -80,12 +79,8 @@ func (plugin *indexPlugin) Process(context goldsmith.Context, f goldsmith.File) 
 
 		currDirIndex, ok := plugin.dirIndices[currDir]
 		if !ok {
-			currDirInfo, err := os.Stat(currDir)
-			if err != nil {
-				return err
-			}
-
-			plugin.dirIndices[currDir] = &dirIndex{modTime: currDirInfo.ModTime()}
+			currDirIndex = &dirIndex{modTime: time.Now()}
+			plugin.dirIndices[currDir] = currDirIndex
 		}
 
 		if currIsLeaf {

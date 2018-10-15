@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/extension"
@@ -167,7 +168,7 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		if i == 0 {
 			page.File = f
 		} else {
-			page.File = goldsmith.NewFileFromData(p.namer(f.Path(), page.Index), buff.Bytes())
+			page.File = goldsmith.NewFileFromData(p.namer(f.Path(), page.Index), buff.Bytes(), time.Now())
 			if len(p.inheritKeys) == 0 {
 				page.File.InheritValues(f)
 			} else {
