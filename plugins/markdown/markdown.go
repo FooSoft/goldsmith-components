@@ -66,11 +66,11 @@ func (*markdown) Name() string {
 	return "markdown"
 }
 
-func (*markdown) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*markdown) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".md", ".markdown")}, nil
 }
 
-func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (m *markdown) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(f); err != nil {
 		return err
@@ -80,7 +80,7 @@ func (m *markdown) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	data := blackfriday.Markdown(buff.Bytes(), renderer, m.markdownFlags)
 	name := strings.TrimSuffix(f.Path(), path.Ext(f.Path())) + ".html"
 
-	nf := goldsmith.NewFileFromData(name, data)
+	nf := goldsmith.NewFileFromData(name, data, f.ModTime())
 	nf.InheritValues(f)
 	ctx.DispatchFile(nf)
 

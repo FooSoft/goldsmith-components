@@ -33,7 +33,7 @@ func (*livejs) Name() string {
 	return "livejs"
 }
 
-func (l *livejs) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (l *livejs) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		return nil, errors.New("unable to get livejs path")
@@ -51,7 +51,7 @@ func (l *livejs) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (l *livejs) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (l *livejs) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	doc, err := goquery.NewDocumentFromReader(f)
 	if err != nil {
 		return err
@@ -64,7 +64,7 @@ func (l *livejs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
+	nf := goldsmith.NewFileFromData(f.Path(), []byte(html), f.ModTime())
 	ctx.DispatchFile(nf)
 
 	return nil

@@ -51,11 +51,11 @@ func (*summary) Name() string {
 	return "summary"
 }
 
-func (*summary) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*summary) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (s *summary) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (s *summary) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	defer ctx.DispatchFile(f)
 
 	doc, err := goquery.NewDocumentFromReader(f)

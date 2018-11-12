@@ -34,7 +34,7 @@ type Crumb struct {
 
 // A Node represents information about a specific file in the site's structure.
 type Node struct {
-	File     goldsmith.File
+	File     *goldsmith.File
 	Parent   *Node
 	Children []*Node
 
@@ -81,11 +81,11 @@ func (*breadcrumbs) Name() string {
 	return "breadcrumbs"
 }
 
-func (*breadcrumbs) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*breadcrumbs) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (b *breadcrumbs) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (b *breadcrumbs) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	var parentNameStr string
 	if parentName, ok := f.Value(b.parentKey); ok {
 		parentNameStr, _ = parentName.(string)
@@ -113,7 +113,7 @@ func (b *breadcrumbs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	return nil
 }
 
-func (b *breadcrumbs) Finalize(ctx goldsmith.Context) error {
+func (b *breadcrumbs) Finalize(ctx *goldsmith.Context) error {
 	for _, n := range b.allNodes {
 		if len(n.parentName) == 0 {
 			continue

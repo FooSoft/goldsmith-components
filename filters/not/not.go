@@ -20,7 +20,7 @@ func (*not) Name() string {
 	return "not"
 }
 
-func (n *not) Accept(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
-	accept, err := n.filter.Accept(ctx, f)
+func (n *not) Accept(ctx *goldsmith.Context, file *goldsmith.File) (bool, error) {
+	accept, err := n.filter.Accept(ctx, file)
 	return !accept, err
 }

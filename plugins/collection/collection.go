@@ -29,7 +29,7 @@ type Collection interface {
 }
 
 // A Comparer callback function is used to sort files within a collection group.
-type Comparer func(i, j goldsmith.File) (less bool)
+type Comparer func(i, j *goldsmith.File) (less bool)
 
 // New creates a new instance of the Collection plugin.
 func New() Collection {
@@ -37,7 +37,7 @@ func New() Collection {
 		collKey:   "Collection",
 		groupsKey: "Groups",
 		comp:      nil,
-		groups:    make(map[string][]goldsmith.File),
+		groups:    make(map[string][]*goldsmith.File),
 	}
 }
 
@@ -46,8 +46,8 @@ type collection struct {
 	groupsKey string
 
 	comp   Comparer
-	groups map[string][]goldsmith.File
-	files  []goldsmith.File
+	groups map[string][]*goldsmith.File
+	files  []*goldsmith.File
 
 	mtx sync.Mutex
 }
@@ -71,11 +71,11 @@ func (*collection) Name() string {
 	return "collection"
 }
 
-func (*collection) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*collection) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (c *collection) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	c.mtx.Lock()
 	defer func() {
 		f.SetValue(c.groupsKey, c.groups)
@@ -105,7 +105,7 @@ func (c *collection) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	return nil
 }
 
-func (c *collection) Finalize(ctx goldsmith.Context) error {
+func (c *collection) Finalize(ctx *goldsmith.Context) error {
 	for _, files := range c.groups {
 		fg := &fileGroup{files, c.comp}
 		sort.Sort(fg)
@@ -119,7 +119,7 @@ func (c *collection) Finalize(ctx goldsmith.Context) error {
 }
 
 type fileGroup struct {
-	Files []goldsmith.File
+	Files []*goldsmith.File
 	comp  Comparer
 }
 

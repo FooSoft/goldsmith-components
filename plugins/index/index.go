@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/FooSoft/goldsmith"
 )
@@ -58,7 +59,7 @@ func (*index) Name() string {
 	return "index"
 }
 
-func (idx *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (idx *index) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	idx.dirsMtx.Lock()
 	defer idx.dirsMtx.Unlock()
 
@@ -103,13 +104,13 @@ func (idx *index) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	return nil
 }
 
-func (idx *index) Finalize(ctx goldsmith.Context) error {
+func (idx *index) Finalize(ctx *goldsmith.Context) error {
 	for name, summary := range idx.dirs {
 		sort.Sort(summary.entries)
 
 		f := summary.index
 		if f == nil {
-			f = goldsmith.NewFileFromData(path.Join(name, idx.filename), make([]byte, 0))
+			f = goldsmith.NewFileFromData(path.Join(name, idx.filename), make([]byte, 0), time.Now())
 			for name, value := range idx.meta {
 				f.SetValue(name, value)
 			}
@@ -124,14 +125,14 @@ func (idx *index) Finalize(ctx goldsmith.Context) error {
 
 type dirSummary struct {
 	entries dirEntries
-	index   goldsmith.File
+	index   *goldsmith.File
 }
 
 type dirEntry struct {
 	Name  string
 	Path  string
 	IsDir bool
-	File  goldsmith.File
+	File  *goldsmith.File
 }
 
 type dirEntries []dirEntry

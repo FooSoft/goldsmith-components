@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"html/template"
 	"sync"
+	"time"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/extension"
@@ -47,7 +48,7 @@ func New(globs ...string) Layout {
 type layout struct {
 	layoutKey, contentKey string
 
-	files    []goldsmith.File
+	files    []*goldsmith.File
 	filesMtx sync.Mutex
 
 	paths   []string
@@ -74,7 +75,7 @@ func (*layout) Name() string {
 	return "layout"
 }
 
-func (lay *layout) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (lay *layout) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	var err error
 	if lay.tmpl, err = template.New("").Funcs(lay.helpers).ParseFiles(lay.paths...); err != nil {
 		return nil, err
@@ -83,7 +84,7 @@ func (lay *layout) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error)
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (lay *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (lay *layout) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(f); err != nil {
 		return err
@@ -102,7 +103,7 @@ func (lay *layout) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	return nil
 }
 
-func (lay *layout) Finalize(ctx goldsmith.Context) error {
+func (lay *layout) Finalize(ctx *goldsmith.Context) error {
 	for _, f := range lay.files {
 		name, ok := f.Value(lay.layoutKey)
 		if !ok {
@@ -121,7 +122,7 @@ func (lay *layout) Finalize(ctx goldsmith.Context) error {
 			return err
 		}
 
-		nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
+		nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes(), time.Now())
 		nf.InheritValues(f)
 		ctx.DispatchFile(nf)
 	}

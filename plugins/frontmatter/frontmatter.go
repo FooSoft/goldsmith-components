@@ -26,22 +26,22 @@ func (*frontmatter) Name() string {
 	return "frontmatter"
 }
 
-func (*frontmatter) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*frontmatter) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".md", ".markdown", ".rst", ".html", ".htm")}, nil
 }
 
-func (*frontmatter) Process(ctx goldsmith.Context, f goldsmith.File) error {
-	meta, body, err := fm.Parse(f)
+func (*frontmatter) Process(ctx *goldsmith.Context, file *goldsmith.File) error {
+	meta, body, err := fm.Parse(file)
 	if err != nil {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), body.Bytes())
-	nf.InheritValues(f)
+	newFile := goldsmith.NewFileFromData(file.Path(), body.Bytes(), file.ModTime())
+	newFile.InheritValues(file)
 	for name, value := range meta {
-		nf.SetValue(name, value)
+		newFile.SetValue(name, value)
 	}
-	ctx.DispatchFile(nf)
+	ctx.DispatchFile(newFile)
 
 	return nil
 }

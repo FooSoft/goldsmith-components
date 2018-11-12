@@ -21,8 +21,8 @@ func (*wildcard) Name() string {
 	return "wildcard"
 }
 
-func (e *wildcard) Accept(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
-	filePath := f.Path()
+func (e *wildcard) Accept(ctx *goldsmith.Context, file *goldsmith.File) (bool, error) {
+	filePath := file.Path()
 
 	for _, wildcard := range e.wildcards {
 		matched, err := doublestar.PathMatch(wildcard, filePath)

@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/extension"
@@ -51,7 +52,7 @@ func New(key string) Paginate {
 type page struct {
 	Index int
 	Items interface{}
-	File  goldsmith.File
+	File  *goldsmith.File
 
 	Next *page
 	Prev *page
@@ -70,7 +71,7 @@ type paginate struct {
 	namer        Namer
 	inheritKeys  []string
 
-	files []goldsmith.File
+	files []*goldsmith.File
 	mtx   sync.Mutex
 }
 
@@ -103,11 +104,11 @@ func (*paginate) Name() string {
 	return "paginate"
 }
 
-func (*paginate) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*paginate) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (p *paginate) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	p.mtx.Lock()
 	defer p.mtx.Unlock()
 
@@ -167,7 +168,7 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		if i == 0 {
 			page.File = f
 		} else {
-			page.File = goldsmith.NewFileFromData(p.namer(f.Path(), page.Index), buff.Bytes())
+			page.File = goldsmith.NewFileFromData(p.namer(f.Path(), page.Index), buff.Bytes(), time.Now())
 			if len(p.inheritKeys) == 0 {
 				page.File.InheritValues(f)
 			} else {
@@ -186,7 +187,7 @@ func (p *paginate) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	return nil
 }
 
-func (p *paginate) Finalize(ctx goldsmith.Context) error {
+func (p *paginate) Finalize(ctx *goldsmith.Context) error {
 	for _, f := range p.files {
 		ctx.DispatchFile(f)
 	}

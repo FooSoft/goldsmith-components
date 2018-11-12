@@ -70,11 +70,11 @@ func (*syntax) Name() string {
 	return "syntax"
 }
 
-func (*syntax) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*syntax) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (s *syntax) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	doc, err := goquery.NewDocumentFromReader(f)
 	if err != nil {
 		return err
@@ -138,7 +138,7 @@ func (s *syntax) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
+	nf := goldsmith.NewFileFromData(f.Path(), []byte(html), f.ModTime())
 	ctx.DispatchFile(nf)
 
 	return nil

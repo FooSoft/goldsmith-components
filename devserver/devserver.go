@@ -36,12 +36,12 @@ import (
 )
 
 type Builder interface {
-	Build(srcDir, dstDir string)
+	Build(srcDir, dstDir, cacheDir string)
 }
 
-func DevServe(builder Builder, port int, srcDir, dstDir string, watchDirs ...string) {
+func DevServe(builder Builder, port int, srcDir, dstDir, cacheDir string, watchDirs ...string) {
 	dirs := append(watchDirs, srcDir)
-	build(dirs, func() { builder.Build(srcDir, dstDir) })
+	build(dirs, func() { builder.Build(srcDir, dstDir, cacheDir) })
 
 	httpAddr := fmt.Sprintf(":%d", port)
 	httpHandler := http.FileServer(http.Dir(dstDir))

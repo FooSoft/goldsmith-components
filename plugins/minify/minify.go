@@ -36,11 +36,11 @@ func (*minify) Name() string {
 	return "minify"
 }
 
-func (*minify) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*minify) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".css", ".html", ".htm", ".js", ".svg", ".json", ".xml")}, nil
 }
 
-func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (*minify) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	var (
 		buff bytes.Buffer
 		err  error
@@ -65,7 +65,7 @@ func (*minify) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
+	nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes(), f.ModTime())
 	nf.InheritValues(f)
 	ctx.DispatchFile(nf)
 

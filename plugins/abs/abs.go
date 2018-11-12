@@ -48,11 +48,11 @@ func (*abs) Name() string {
 	return "abs"
 }
 
-func (*abs) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*abs) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (a *abs) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	doc, err := goquery.NewDocumentFromReader(f)
 	if err != nil {
 		return err
@@ -85,7 +85,7 @@ func (a *abs) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
+	nf := goldsmith.NewFileFromData(f.Path(), []byte(html), f.ModTime())
 	nf.InheritValues(f)
 	ctx.DispatchFile(nf)
 

@@ -7,7 +7,6 @@ import (
 	"image/gif"
 	"image/jpeg"
 	"image/png"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -56,11 +55,11 @@ func (*thumbnail) Name() string {
 	return "thumbnail"
 }
 
-func (*thumbnail) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*thumbnail) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".jpg", ".jpeg", ".gif", ".png")}, nil
 }
 
-func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (t *thumbnail) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	defer ctx.DispatchFile(f)
 
 	thumbPath, create := t.namer(f.Path(), t.dims)
@@ -68,30 +67,16 @@ func (t *thumbnail) Process(ctx goldsmith.Context, f goldsmith.File) error {
 		return nil
 	}
 
-	var (
-		fn  goldsmith.File
-		err error
-	)
-
-	if cached(ctx, f.Path(), thumbPath) {
-		thumbPathDst := filepath.Join(ctx.DstDir(), thumbPath)
-		fn, err = goldsmith.NewFileFromAsset(thumbPath, thumbPathDst)
-		if err != nil {
-			return err
-		}
-	} else {
-		var err error
-		fn, err = t.thumbnail(f, thumbPath)
-		if err != nil {
-			return err
-		}
+	fn, err := t.thumbnail(f, thumbPath)
+	if err != nil {
+		return err
 	}
 
 	ctx.DispatchFile(fn)
 	return nil
 }
 
-func (t *thumbnail) thumbnail(f goldsmith.File, thumbPath string) (goldsmith.File, error) {
+func (t *thumbnail) thumbnail(f *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
 	origImg, _, err := image.Decode(f)
 	if err != nil {
 		return nil, err
@@ -109,21 +94,5 @@ func (t *thumbnail) thumbnail(f goldsmith.File, thumbPath string) (goldsmith.Fil
 		err = png.Encode(&thumbBuff, thumbImg)
 	}
 
-	return goldsmith.NewFileFromData(thumbPath, thumbBuff.Bytes()), nil
-}
-
-func cached(ctx goldsmith.Context, srcPath, dstPath string) bool {
-	srcPathFull := filepath.Join(ctx.SrcDir(), srcPath)
-	srcStat, err := os.Stat(srcPathFull)
-	if err != nil {
-		return false
-	}
-
-	dstPathFull := filepath.Join(ctx.DstDir(), dstPath)
-	dstStat, err := os.Stat(dstPathFull)
-	if err != nil {
-		return false
-	}
-
-	return dstStat.ModTime().Unix() >= srcStat.ModTime().Unix()
+	return goldsmith.NewFileFromData(thumbPath, thumbBuff.Bytes(), f.ModTime()), nil
 }

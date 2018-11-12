@@ -20,6 +20,6 @@ func (*condition) Name() string {
 	return "condition"
 }
 
-func (c *condition) Accept(ctx goldsmith.Context, f goldsmith.File) (bool, error) {
+func (c *condition) Accept(ctx *goldsmith.Context, file *goldsmith.File) (bool, error) {
 	return c.accept, nil
 }

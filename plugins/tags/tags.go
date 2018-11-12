@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/extension"
@@ -41,7 +42,7 @@ type tags struct {
 	indexMeta map[string]interface{}
 
 	info  map[string]tagInfo
-	files []goldsmith.File
+	files []*goldsmith.File
 	mtx   sync.Mutex
 }
 
@@ -87,11 +88,11 @@ func (*tags) Name() string {
 	return "tags"
 }
 
-func (*tags) Initialize(ctx goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*tags) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
+func (t *tags) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	tagState := &tagState{Info: t.info}
 
 	t.mtx.Lock()
@@ -134,7 +135,7 @@ func (t *tags) Process(ctx goldsmith.Context, f goldsmith.File) error {
 	return nil
 }
 
-func (t *tags) Finalize(ctx goldsmith.Context) error {
+func (t *tags) Finalize(ctx *goldsmith.Context) error {
 	for _, meta := range t.info {
 		sort.Sort(meta.Files)
 	}
@@ -152,9 +153,9 @@ func (t *tags) Finalize(ctx goldsmith.Context) error {
 	return nil
 }
 
-func (t *tags) buildPages(ctx goldsmith.Context, info map[string]tagInfo) (files []goldsmith.File) {
+func (t *tags) buildPages(ctx *goldsmith.Context, info map[string]tagInfo) (files []*goldsmith.File) {
 	for tag := range info {
-		f := goldsmith.NewFileFromData(t.tagPagePath(tag), nil)
+		f := goldsmith.NewFileFromData(t.tagPagePath(tag), nil, time.Now())
 		f.SetValue(t.tagsKey, tagState{Index: tag, Info: t.info})
 		for name, value := range t.indexMeta {
 			f.SetValue(name, value)
@@ -174,7 +175,7 @@ func safeTag(tag string) string {
 	return strings.ToLower(strings.Replace(tag, " ", "-", -1))
 }
 
-type files []goldsmith.File
+type files []*goldsmith.File
 
 func (f files) Len() int {
 	return len(f)
