@@ -72,6 +72,7 @@ func (t *thumbnail) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 		return err
 	}
 
+	ctx.CacheFile(f, fn)
 	ctx.DispatchFile(fn)
 	return nil
 }
