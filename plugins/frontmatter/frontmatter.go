@@ -41,7 +41,7 @@ func (*frontmatter) Process(ctx *goldsmith.Context, file *goldsmith.File) error 
 	for name, value := range meta {
 		newFile.SetValue(name, value)
 	}
-	ctx.DispatchFile(newFile)
+	ctx.DispatchFileAndCache(newFile, file)
 
 	return nil
 }

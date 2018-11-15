@@ -56,7 +56,7 @@ func (*summary) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
 }
 
 func (s *summary) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
-	defer ctx.DispatchFile(f)
+	defer ctx.DispatchFileAndCache(f, f)
 
 	doc, err := goquery.NewDocumentFromReader(f)
 	if err != nil {

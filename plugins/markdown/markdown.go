@@ -82,8 +82,7 @@ func (m *markdown) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 
 	nf := goldsmith.NewFileFromData(name, data, f.ModTime())
 	nf.InheritValues(f)
-	ctx.CacheFile(f, nf)
-	ctx.DispatchFile(nf)
+	ctx.DispatchFileAndCache(nf, f)
 
 	return nil
 }
