@@ -17,9 +17,9 @@ type Markdown interface {
 	goldsmith.Initializer
 	goldsmith.Processor
 
-	// HTMLFlags sets the HTML flags used by the blackfriday markdown processor;
+	// HtmlFlags sets the HTML flags used by the blackfriday markdown processor;
 	// see https://github.com/russross/blackfriday/blob/master/html.go for options.
-	HTMLFlags(flags int) Markdown
+	HtmlFlags(flags int) Markdown
 
 	// MarkdownFlags sets the markdown flags used by the blackfriday markdown processor;
 	// see https://github.com/russross/blackfriday/blob/master/markdown.go for options.
@@ -52,7 +52,7 @@ type markdown struct {
 	markdownFlags int
 }
 
-func (m *markdown) HTMLFlags(flags int) Markdown {
+func (m *markdown) HtmlFlags(flags int) Markdown {
 	m.htmlFlags = flags
 	return m
 }
