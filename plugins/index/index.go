@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/FooSoft/goldsmith"
 )
@@ -27,26 +26,26 @@ type Index interface {
 // New creates a new instance of the Index plugin.
 func New(meta map[string]interface{}) Index {
 	return &index{
-		filename: "index.html",
-		filesKey: "Files",
-		meta:     meta,
-		handled:  make(map[string]bool),
-		dirs:     make(map[string]*dirSummary),
+		indexName:   "index.html",
+		indexMeta:   meta,
+		filesKey:    "Files",
+		dirsHandled: make(map[string]bool),
+		dirLists:    make(map[string]*dirList),
 	}
 }
 
 type index struct {
-	filename string
-	filesKey string
-	meta     map[string]interface{}
+	indexName string
+	filesKey  string
+	indexMeta map[string]interface{}
 
-	dirs    map[string]*dirSummary
-	handled map[string]bool
-	dirsMtx sync.Mutex
+	dirLists    map[string]*dirList
+	dirsHandled map[string]bool
+	dirsMutex   sync.Mutex
 }
 
 func (idx *index) IndexFilename(filename string) Index {
-	idx.filename = filename
+	idx.indexName = filename
 	return idx
 }
 
@@ -59,71 +58,71 @@ func (*index) Name() string {
 	return "index"
 }
 
-func (idx *index) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
-	idx.dirsMtx.Lock()
-	defer idx.dirsMtx.Unlock()
+func (idx *index) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	idx.dirsMutex.Lock()
+	defer idx.dirsMutex.Unlock()
 
-	curr := f.Path()
-	leaf := true
+	currentPath := inputFile.Path()
+	currentIsDir := false
 
 	for {
-		if handled, _ := idx.handled[curr]; handled {
+		if handled, _ := idx.dirsHandled[currentPath]; handled {
 			break
 		}
 
-		idx.handled[curr] = true
+		idx.dirsHandled[currentPath] = true
 
-		dir := path.Dir(curr)
-		base := path.Base(curr)
+		currentDir := path.Dir(currentPath)
+		currentBase := path.Base(currentPath)
 
-		summary, ok := idx.dirs[dir]
+		list, ok := idx.dirLists[currentDir]
 		if !ok {
-			summary = new(dirSummary)
-			idx.dirs[dir] = summary
+			list = new(dirList)
+			idx.dirLists[currentDir] = list
 		}
 
-		if leaf {
-			if base == idx.filename {
-				summary.index = f
+		if !currentIsDir {
+			if currentBase == idx.indexName {
+				list.index = inputFile
 			} else {
-				ctx.DispatchFile(f)
+				context.DispatchFile(inputFile)
 			}
 		}
 
-		entry := dirEntry{Name: base, Path: curr, IsDir: !leaf, File: f}
-		summary.entries = append(summary.entries, entry)
+		entry := dirEntry{Name: currentBase, Path: currentPath, IsDir: currentIsDir, File: inputFile}
+		list.entries = append(list.entries, entry)
 
-		if dir == "." {
+		if currentDir == "." {
 			break
 		}
 
-		curr = dir
-		leaf = false
+		currentPath = currentDir
+		currentIsDir = true
 	}
 
 	return nil
 }
 
-func (idx *index) Finalize(ctx *goldsmith.Context) error {
-	for name, summary := range idx.dirs {
-		sort.Sort(summary.entries)
+func (idx *index) Finalize(context *goldsmith.Context) error {
+	for name, list := range idx.dirLists {
+		sort.Sort(list.entries)
 
-		f := summary.index
-		if f == nil {
-			f = goldsmith.NewFileFromData(path.Join(name, idx.filename), make([]byte, 0), time.Now())
-			for name, value := range idx.meta {
-				f.SetValue(name, value)
+		indexFile := list.index
+		if indexFile == nil {
+			indexFile = goldsmith.NewFileFromData(path.Join(name, idx.indexName), make([]byte, 0))
+			for name, value := range idx.indexMeta {
+				indexFile.SetValue(name, value)
 			}
 		}
 
-		f.SetValue(idx.filesKey, summary.entries)
-		ctx.DispatchFile(f)
+		indexFile.SetValue(idx.filesKey, list.entries)
+		context.DispatchFile(indexFile)
 	}
 
 	return nil
 }
 
-type dirSummary struct {
+type dirList struct {
 	entries dirEntries
 	index   *goldsmith.File
 }

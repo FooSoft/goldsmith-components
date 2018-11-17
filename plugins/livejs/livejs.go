@@ -64,7 +64,7 @@ func (l *livejs) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html), f.ModTime())
+	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
 	ctx.DispatchFile(nf)
 
 	return nil

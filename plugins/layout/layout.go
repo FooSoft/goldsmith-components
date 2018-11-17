@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"html/template"
 	"sync"
-	"time"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/extension"
@@ -122,7 +121,7 @@ func (lay *layout) Finalize(ctx *goldsmith.Context) error {
 			return err
 		}
 
-		nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes(), time.Now())
+		nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
 		nf.InheritValues(f)
 		ctx.DispatchFile(nf)
 	}

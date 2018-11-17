@@ -56,6 +56,11 @@ func (*summary) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, erro
 }
 
 func (s *summary) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	if outputFile := context.RetrieveCachedFile(inputFile); outputFile != nil {
+		context.DispatchFile(outputFile)
+		return nil
+	}
+
 	defer context.DispatchFileAndCache(inputFile, inputFile)
 
 	doc, err := goquery.NewDocumentFromReader(inputFile)

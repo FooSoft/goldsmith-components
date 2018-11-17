@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/extension"
@@ -155,7 +154,7 @@ func (t *tags) Finalize(ctx *goldsmith.Context) error {
 
 func (t *tags) buildPages(ctx *goldsmith.Context, info map[string]tagInfo) (files []*goldsmith.File) {
 	for tag := range info {
-		f := goldsmith.NewFileFromData(t.tagPagePath(tag), nil, time.Now())
+		f := goldsmith.NewFileFromData(t.tagPagePath(tag), nil)
 		f.SetValue(t.tagsKey, tagState{Index: tag, Info: t.info})
 		for name, value := range t.indexMeta {
 			f.SetValue(name, value)

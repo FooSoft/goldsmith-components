@@ -22,7 +22,7 @@ type Thumbnail interface {
 	goldsmith.Initializer
 	goldsmith.Processor
 
-	Dims(dims uint) Thumbnail
+	Size(size uint) Thumbnail
 	Namer(namer Namer) Thumbnail
 }
 
@@ -37,12 +37,12 @@ func New() Thumbnail {
 }
 
 type thumbnail struct {
-	dims  uint
+	size  uint
 	namer Namer
 }
 
-func (t *thumbnail) Dims(dims uint) Thumbnail {
-	t.dims = dims
+func (t *thumbnail) Size(dims uint) Thumbnail {
+	t.size = dims
 	return t
 }
 
@@ -55,44 +55,49 @@ func (*thumbnail) Name() string {
 	return "thumbnail"
 }
 
-func (*thumbnail) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*thumbnail) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".jpg", ".jpeg", ".gif", ".png")}, nil
 }
 
-func (t *thumbnail) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
-	defer ctx.DispatchFile(f)
+func (t *thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	defer context.DispatchFile(inputFile)
 
-	thumbPath, create := t.namer(f.Path(), t.dims)
+	thumbPath, create := t.namer(inputFile.Path(), t.size)
 	if !create {
 		return nil
 	}
 
-	fn, err := t.thumbnail(f, thumbPath)
+	if outputFile := context.RetrieveCachedFile(inputFile); outputFile != nil {
+		context.DispatchFile(outputFile)
+		return nil
+	}
+
+	outputFile, err := t.thumbnail(inputFile, thumbPath)
 	if err != nil {
 		return err
 	}
 
-	ctx.DispatchFileAndCache(fn, f)
+	context.DispatchFileAndCache(outputFile, inputFile)
 	return nil
 }
 
-func (t *thumbnail) thumbnail(f *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
-	origImg, _, err := image.Decode(f)
+func (t *thumbnail) thumbnail(inputFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
+	inputImage, _, err := image.Decode(inputFile)
 	if err != nil {
 		return nil, err
 	}
 
 	var thumbBuff bytes.Buffer
-	thumbImg := resize.Thumbnail(t.dims, t.dims, origImg, resize.Bicubic)
+	thumbImage := resize.Thumbnail(t.size, t.size, inputImage, resize.Bicubic)
 
 	switch filepath.Ext(thumbPath) {
 	case ".jpg", ".jpeg":
-		err = jpeg.Encode(&thumbBuff, thumbImg, nil)
+		err = jpeg.Encode(&thumbBuff, thumbImage, nil)
 	case ".gif":
-		err = gif.Encode(&thumbBuff, thumbImg, nil)
+		err = gif.Encode(&thumbBuff, thumbImage, nil)
 	case ".png":
-		err = png.Encode(&thumbBuff, thumbImg)
+		err = png.Encode(&thumbBuff, thumbImage)
 	}
 
-	return goldsmith.NewFileFromData(thumbPath, thumbBuff.Bytes(), f.ModTime()), nil
+	return goldsmith.NewFileFromData(thumbPath, thumbBuff.Bytes()), nil
 }

@@ -65,7 +65,7 @@ func (*minify) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes(), f.ModTime())
+	nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
 	nf.InheritValues(f)
 	ctx.DispatchFile(nf)
 

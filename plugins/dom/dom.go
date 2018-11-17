@@ -49,7 +49,7 @@ func (d *dom) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html), f.ModTime())
+	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
 	nf.InheritValues(f)
 	ctx.DispatchFile(nf)
 	return nil
