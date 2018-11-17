@@ -76,6 +76,9 @@ func (s *summary) Process(context *goldsmith.Context, inputFile *goldsmith.File)
 		}
 	}
 
-	inputFile.SetValue(s.summaryKey, meta)
+	for key, value := range meta {
+		inputFile.SetValue(key, value)
+	}
+
 	return nil
 }
