@@ -66,23 +66,23 @@ func (*markdown) Name() string {
 	return "markdown"
 }
 
-func (*markdown) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*markdown) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".md", ".markdown")}, nil
 }
 
-func (m *markdown) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
+func (m *markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	var buff bytes.Buffer
-	if _, err := buff.ReadFrom(f); err != nil {
+	if _, err := buff.ReadFrom(inputFile); err != nil {
 		return err
 	}
 
 	renderer := blackfriday.HtmlRenderer(m.htmlFlags, "", "")
-	data := blackfriday.Markdown(buff.Bytes(), renderer, m.markdownFlags)
-	name := strings.TrimSuffix(f.Path(), path.Ext(f.Path())) + ".html"
+	html := blackfriday.Markdown(buff.Bytes(), renderer, m.markdownFlags)
+	name := strings.TrimSuffix(inputFile.Path(), path.Ext(inputFile.Path())) + ".html"
 
-	nf := goldsmith.NewFileFromData(name, data, f.ModTime())
-	nf.InheritValues(f)
-	ctx.DispatchFileAndCache(nf, f)
+	outputFile := goldsmith.NewFileFromData(name, html, inputFile.ModTime())
+	outputFile.InheritValues(inputFile)
+	context.DispatchFileAndCache(outputFile, inputFile)
 
 	return nil
 }

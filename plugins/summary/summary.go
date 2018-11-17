@@ -13,27 +13,27 @@ type Summary interface {
 	goldsmith.Initializer
 	goldsmith.Processor
 
-	Key(key string) Summary
+	SummaryKey(key string) Summary
 	TitlePath(path string) Summary
 	SummaryPath(path string) Summary
 }
 
 func New() Summary {
 	return &summary{
-		key:         "Summary",
+		summaryKey:  "Summary",
 		titlePath:   "h1",
 		summaryPath: "p",
 	}
 }
 
 type summary struct {
-	key         string
+	summaryKey  string
 	titlePath   string
 	summaryPath string
 }
 
-func (s *summary) Key(key string) Summary {
-	s.key = key
+func (s *summary) SummaryKey(key string) Summary {
+	s.summaryKey = key
 	return s
 }
 
@@ -51,14 +51,14 @@ func (*summary) Name() string {
 	return "summary"
 }
 
-func (*summary) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*summary) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (s *summary) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
-	defer ctx.DispatchFileAndCache(f, f)
+func (s *summary) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	defer context.DispatchFileAndCache(inputFile, inputFile)
 
-	doc, err := goquery.NewDocumentFromReader(f)
+	doc, err := goquery.NewDocumentFromReader(inputFile)
 	if err != nil {
 		return err
 	}
@@ -76,6 +76,6 @@ func (s *summary) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 		}
 	}
 
-	f.SetValue(s.key, meta)
+	inputFile.SetValue(s.summaryKey, meta)
 	return nil
 }

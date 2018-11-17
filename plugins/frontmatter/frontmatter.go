@@ -19,29 +19,28 @@ func New() Frontmatter {
 	return new(frontmatter)
 }
 
-type frontmatter struct {
-}
+type frontmatter struct{}
 
 func (*frontmatter) Name() string {
 	return "frontmatter"
 }
 
-func (*frontmatter) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*frontmatter) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".md", ".markdown", ".rst", ".html", ".htm")}, nil
 }
 
-func (*frontmatter) Process(ctx *goldsmith.Context, file *goldsmith.File) error {
-	meta, body, err := fm.Parse(file)
+func (*frontmatter) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	meta, body, err := fm.Parse(inputFile)
 	if err != nil {
 		return err
 	}
 
-	newFile := goldsmith.NewFileFromData(file.Path(), body.Bytes(), file.ModTime())
-	newFile.InheritValues(file)
+	outputFile := goldsmith.NewFileFromData(inputFile.Path(), body.Bytes(), inputFile.ModTime())
+	outputFile.InheritValues(inputFile)
 	for name, value := range meta {
-		newFile.SetValue(name, value)
+		outputFile.SetValue(name, value)
 	}
-	ctx.DispatchFileAndCache(newFile, file)
+	context.DispatchFileAndCache(outputFile, inputFile)
 
 	return nil
 }
