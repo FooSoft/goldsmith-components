@@ -34,7 +34,8 @@ func New() Tags {
 }
 
 type tags struct {
-	tagsKey, stateKey string
+	tagsKey  string
+	stateKey string
 
 	baseDir   string
 	indexName string
@@ -42,7 +43,7 @@ type tags struct {
 
 	info  map[string]tagInfo
 	files []*goldsmith.File
-	mtx   sync.Mutex
+	mutex sync.Mutex
 }
 
 type tagInfo struct {
@@ -87,21 +88,21 @@ func (*tags) Name() string {
 	return "tags"
 }
 
-func (*tags) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*tags) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (t *tags) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
+func (t *tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	tagState := &tagState{Info: t.info}
 
-	t.mtx.Lock()
+	t.mutex.Lock()
 	defer func() {
-		f.SetValue(t.stateKey, tagState)
-		t.files = append(t.files, f)
-		t.mtx.Unlock()
+		inputFile.SetValue(t.stateKey, tagState)
+		t.files = append(t.files, inputFile)
+		t.mutex.Unlock()
 	}()
 
-	tags, ok := f.Value(t.tagsKey)
+	tags, ok := inputFile.Value(t.tagsKey)
 	if !ok {
 		return nil
 	}
@@ -119,48 +120,48 @@ func (t *tags) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 
 		tagState.Tags = append(tagState.Tags, tagStr)
 
-		item, ok := t.info[tagStr]
-		item.Files = append(item.Files, f)
+		info, ok := t.info[tagStr]
+		info.Files = append(info.Files, inputFile)
 		if !ok {
-			item.SafeName = safeTag(tagStr)
-			item.RawName = tagStr
-			item.Path = t.tagPagePath(tagStr)
+			info.SafeName = safeTag(tagStr)
+			info.RawName = tagStr
+			info.Path = t.tagPagePath(tagStr)
 		}
 
-		t.info[tagStr] = item
+		t.info[tagStr] = info
 	}
 
 	sort.Strings(tagState.Tags)
 	return nil
 }
 
-func (t *tags) Finalize(ctx *goldsmith.Context) error {
+func (t *tags) Finalize(context *goldsmith.Context) error {
 	for _, meta := range t.info {
 		sort.Sort(meta.Files)
 	}
 
 	if t.indexMeta != nil {
-		for _, f := range t.buildPages(ctx, t.info) {
-			ctx.DispatchFile(f)
+		for _, file := range t.buildPages(context, t.info) {
+			context.DispatchFile(file)
 		}
 	}
 
-	for _, f := range t.files {
-		ctx.DispatchFile(f)
+	for _, file := range t.files {
+		context.DispatchFile(file)
 	}
 
 	return nil
 }
 
-func (t *tags) buildPages(ctx *goldsmith.Context, info map[string]tagInfo) (files []*goldsmith.File) {
+func (t *tags) buildPages(context *goldsmith.Context, info map[string]tagInfo) (files []*goldsmith.File) {
 	for tag := range info {
-		f := goldsmith.NewFileFromData(t.tagPagePath(tag), nil)
-		f.SetValue(t.tagsKey, tagState{Index: tag, Info: t.info})
+		tagFile := goldsmith.NewFileFromData(t.tagPagePath(tag), nil)
+		tagFile.SetValue(t.tagsKey, tagState{Index: tag, Info: t.info})
 		for name, value := range t.indexMeta {
-			f.SetValue(name, value)
+			tagFile.SetValue(name, value)
 		}
 
-		files = append(files, f)
+		files = append(files, tagFile)
 	}
 
 	return
