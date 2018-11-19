@@ -96,7 +96,7 @@ func (lay *layout) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 		lay.files = append(lay.files, f)
 		lay.filesMtx.Unlock()
 	} else {
-		ctx.DispatchFile(f)
+		ctx.DispatchFile(f, false)
 	}
 
 	return nil
@@ -106,13 +106,13 @@ func (lay *layout) Finalize(ctx *goldsmith.Context) error {
 	for _, f := range lay.files {
 		name, ok := f.Value(lay.layoutKey)
 		if !ok {
-			ctx.DispatchFile(f)
+			ctx.DispatchFile(f, false)
 			continue
 		}
 
 		nameStr, ok := name.(string)
 		if !ok {
-			ctx.DispatchFile(f)
+			ctx.DispatchFile(f, false)
 			continue
 		}
 
@@ -123,7 +123,7 @@ func (lay *layout) Finalize(ctx *goldsmith.Context) error {
 
 		nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
 		nf.InheritValues(f)
-		ctx.DispatchFile(nf)
+		ctx.DispatchFile(nf, false)
 	}
 
 	return nil

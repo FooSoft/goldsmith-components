@@ -30,8 +30,20 @@ func New(meta map[string]interface{}) Index {
 		indexMeta:   meta,
 		filesKey:    "Files",
 		dirsHandled: make(map[string]bool),
-		dirLists:    make(map[string]*dirList),
+		dirLists:    make(map[string]*dirIndex),
 	}
+}
+
+type dirIndex struct {
+	entries   dirEntries
+	indexFile *goldsmith.File
+}
+
+type dirEntry struct {
+	Name  string
+	Path  string
+	IsDir bool
+	File  *goldsmith.File
 }
 
 type index struct {
@@ -39,9 +51,10 @@ type index struct {
 	filesKey  string
 	indexMeta map[string]interface{}
 
-	dirLists    map[string]*dirList
+	dirLists    map[string]*dirIndex
 	dirsHandled map[string]bool
-	dirsMutex   sync.Mutex
+
+	mutex sync.Mutex
 }
 
 func (idx *index) IndexFilename(filename string) Index {
@@ -59,8 +72,8 @@ func (*index) Name() string {
 }
 
 func (idx *index) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	idx.dirsMutex.Lock()
-	defer idx.dirsMutex.Unlock()
+	idx.mutex.Lock()
+	defer idx.mutex.Unlock()
 
 	currentPath := inputFile.Path()
 	currentIsDir := false
@@ -77,15 +90,15 @@ func (idx *index) Process(context *goldsmith.Context, inputFile *goldsmith.File)
 
 		list, ok := idx.dirLists[currentDir]
 		if !ok {
-			list = new(dirList)
+			list = new(dirIndex)
 			idx.dirLists[currentDir] = list
 		}
 
 		if !currentIsDir {
 			if currentBase == idx.indexName {
-				list.index = inputFile
+				list.indexFile = inputFile
 			} else {
-				context.DispatchFile(inputFile)
+				context.DispatchFile(inputFile, false)
 			}
 		}
 
@@ -107,7 +120,7 @@ func (idx *index) Finalize(context *goldsmith.Context) error {
 	for name, list := range idx.dirLists {
 		sort.Sort(list.entries)
 
-		indexFile := list.index
+		indexFile := list.indexFile
 		if indexFile == nil {
 			indexFile = goldsmith.NewFileFromData(path.Join(name, idx.indexName), make([]byte, 0))
 			for name, value := range idx.indexMeta {
@@ -116,22 +129,10 @@ func (idx *index) Finalize(context *goldsmith.Context) error {
 		}
 
 		indexFile.SetValue(idx.filesKey, list.entries)
-		context.DispatchFile(indexFile)
+		context.DispatchFile(indexFile, false)
 	}
 
 	return nil
-}
-
-type dirList struct {
-	entries dirEntries
-	index   *goldsmith.File
-}
-
-type dirEntry struct {
-	Name  string
-	Path  string
-	IsDir bool
-	File  *goldsmith.File
 }
 
 type dirEntries []dirEntry

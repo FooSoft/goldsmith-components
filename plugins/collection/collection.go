@@ -111,7 +111,7 @@ func (c *collection) Finalize(context *goldsmith.Context) error {
 	}
 
 	for _, file := range c.files {
-		context.DispatchFile(file)
+		context.DispatchFile(file, false)
 	}
 
 	return nil

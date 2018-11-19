@@ -30,8 +30,8 @@ func (*frontmatter) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, 
 }
 
 func (*frontmatter) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	if outputFile := context.RetrieveCachedFile(inputFile); outputFile != nil {
-		context.DispatchFile(outputFile)
+	if outputFile := context.RetrieveCachedFile(inputFile.Path()); outputFile != nil {
+		context.DispatchFile(outputFile, false)
 		return nil
 	}
 
@@ -47,6 +47,6 @@ func (*frontmatter) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 		outputFile.SetValue(name, value)
 	}
 
-	context.DispatchFileAndCache(outputFile, inputFile)
+	context.DispatchFile(outputFile, true)
 	return nil
 }

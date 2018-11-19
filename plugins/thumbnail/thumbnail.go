@@ -60,15 +60,15 @@ func (*thumbnail) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, er
 }
 
 func (t *thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	defer context.DispatchFile(inputFile)
+	defer context.DispatchFile(inputFile, false)
 
 	thumbPath, create := t.namer(inputFile.Path(), t.size)
 	if !create {
 		return nil
 	}
 
-	if outputFile := context.RetrieveCachedFile(inputFile); outputFile != nil {
-		context.DispatchFile(outputFile)
+	if outputFile := context.RetrieveCachedFile(thumbPath, inputFile.Path()); outputFile != nil {
+		context.DispatchFile(outputFile, false)
 		return nil
 	}
 
@@ -77,7 +77,7 @@ func (t *thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 		return err
 	}
 
-	context.DispatchFileAndCache(outputFile, inputFile)
+	context.DispatchFile(outputFile, true)
 	return nil
 }
 

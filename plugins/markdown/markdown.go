@@ -66,13 +66,14 @@ func (*markdown) Name() string {
 	return "markdown"
 }
 
-func (*markdown) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (m *markdown) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".md", ".markdown")}, nil
 }
 
 func (m *markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	if outputFile := context.RetrieveCachedFile(inputFile); outputFile != nil {
-		context.DispatchFile(outputFile)
+	outputPath := strings.TrimSuffix(inputFile.Path(), path.Ext(inputFile.Path())) + ".html"
+	if outputFile := context.RetrieveCachedFile(outputPath, inputFile.Path()); outputFile != nil {
+		context.DispatchFile(outputFile, false)
 		return nil
 	}
 
@@ -82,12 +83,11 @@ func (m *markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File
 	}
 
 	renderer := blackfriday.HtmlRenderer(m.htmlFlags, "", "")
-	html := blackfriday.Markdown(buff.Bytes(), renderer, m.markdownFlags)
-	name := strings.TrimSuffix(inputFile.Path(), path.Ext(inputFile.Path())) + ".html"
+	data := blackfriday.Markdown(buff.Bytes(), renderer, m.markdownFlags)
 
-	outputFile := goldsmith.NewFileFromData(name, html)
+	outputFile := goldsmith.NewFileFromData(outputPath, data)
 	outputFile.InheritValues(inputFile)
-	context.DispatchFileAndCache(outputFile, inputFile)
+	context.DispatchFile(outputFile, true)
 
 	return nil
 }
