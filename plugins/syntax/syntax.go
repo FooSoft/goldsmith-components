@@ -70,12 +70,17 @@ func (*syntax) Name() string {
 	return "syntax"
 }
 
-func (*syntax) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*syntax) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (s *syntax) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
-	doc, err := goquery.NewDocumentFromReader(f)
+func (s *syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
+		context.DispatchFile(outputFile)
+		return nil
+	}
+
+	doc, err := goquery.NewDocumentFromReader(inputFile)
 	if err != nil {
 		return err
 	}
@@ -138,8 +143,9 @@ func (s *syntax) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
-	ctx.DispatchFile(nf)
+	outputFile := goldsmith.NewFileFromData(inputFile.Path(), []byte(html))
+	outputFile.InheritValues(inputFile)
+	context.DispatchAndCacheFile(outputFile)
 
 	return nil
 }
