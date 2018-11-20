@@ -36,38 +36,43 @@ func (*minify) Name() string {
 	return "minify"
 }
 
-func (*minify) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*minify) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".css", ".html", ".htm", ".js", ".svg", ".json", ".xml")}, nil
 }
 
-func (*minify) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
+func (*minify) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
+		context.DispatchFile(outputFile)
+		return nil
+	}
+
 	var (
 		buff bytes.Buffer
 		err  error
 	)
 
-	switch m := min.New(); filepath.Ext(f.Path()) {
+	switch m := min.New(); filepath.Ext(inputFile.Path()) {
 	case ".css":
-		err = css.Minify(m, &buff, f, nil)
+		err = css.Minify(m, &buff, inputFile, nil)
 	case ".html", ".htm":
-		err = html.Minify(m, &buff, f, nil)
+		err = html.Minify(m, &buff, inputFile, nil)
 	case ".js":
-		err = js.Minify(m, &buff, f, nil)
+		err = js.Minify(m, &buff, inputFile, nil)
 	case ".json":
-		err = json.Minify(m, &buff, f, nil)
+		err = json.Minify(m, &buff, inputFile, nil)
 	case ".svg":
-		err = svg.Minify(m, &buff, f, nil)
+		err = svg.Minify(m, &buff, inputFile, nil)
 	case ".xml":
-		err = xml.Minify(m, &buff, f, nil)
+		err = xml.Minify(m, &buff, inputFile, nil)
 	}
 
 	if err != nil {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), buff.Bytes())
-	nf.InheritValues(f)
-	ctx.DispatchFile(nf)
+	outputFile := goldsmith.NewFileFromData(inputFile.Path(), buff.Bytes())
+	outputFile.InheritValues(inputFile)
+	context.DispatchAndCacheFile(outputFile)
 
 	return nil
 }

@@ -26,14 +26,14 @@ func New() LiveJs {
 }
 
 type livejs struct {
-	js string
+	html string
 }
 
 func (*livejs) Name() string {
 	return "livejs"
 }
 
-func (l *livejs) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (l *livejs) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		return nil, errors.New("unable to get livejs path")
@@ -42,30 +42,36 @@ func (l *livejs) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) 
 	baseDir := path.Dir(filename)
 	jsPath := path.Join(baseDir, "live.js")
 
-	data, err := ioutil.ReadFile(jsPath)
+	js, err := ioutil.ReadFile(jsPath)
 	if err != nil {
 		return nil, err
 	}
 
-	l.js = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", data)
+	l.html = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", js)
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (l *livejs) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
-	doc, err := goquery.NewDocumentFromReader(f)
+func (l *livejs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
+		context.DispatchFile(outputFile)
+		return nil
+	}
+
+	doc, err := goquery.NewDocumentFromReader(inputFile)
 	if err != nil {
 		return err
 	}
 
-	doc.Find("body").AppendHtml(l.js)
+	doc.Find("body").AppendHtml(l.html)
 
 	html, err := doc.Html()
 	if err != nil {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
-	ctx.DispatchFile(nf)
+	outputFile := goldsmith.NewFileFromData(inputFile.Path(), []byte(html))
+	outputFile.InheritValues(inputFile)
+	context.DispatchAndCacheFile(outputFile)
 
 	return nil
 }
