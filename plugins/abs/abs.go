@@ -17,30 +17,30 @@ type Abs interface {
 	goldsmith.Initializer
 	goldsmith.Processor
 
-	// BaseURL sets the base path to which relative URLs are joined (default: "/").
-	BaseURL(root string) Abs
+	// BaseUrl sets the base path to which relative URLs are joined (default: "/").
+	BaseUrl(root string) Abs
 
-	// Attrs sets the attributes which are scanned for relative URLs (default: "href", "src").
-	Attrs(attrs ...string) Abs
+	// Attributes sets the attributes which are scanned for relative URLs (default: "href", "src").
+	Attributes(attributes ...string) Abs
 }
 
 // New creates a new instance of the Abs plugin.
 func New() Abs {
-	return &abs{attrs: []string{"href", "src"}}
+	return &abs{attributes: []string{"href", "src"}}
 }
 
 type abs struct {
-	attrs   []string
-	baseURL *url.URL
+	attributes []string
+	baseUrl    *url.URL
 }
 
-func (a *abs) BaseURL(root string) Abs {
-	a.baseURL, _ = url.Parse(root)
+func (a *abs) BaseUrl(root string) Abs {
+	a.baseUrl, _ = url.Parse(root)
 	return a
 }
 
-func (a *abs) Attrs(attrs ...string) Abs {
-	a.attrs = attrs
+func (a *abs) Attributes(attrs ...string) Abs {
+	a.attributes = attrs
 	return a
 }
 
@@ -48,35 +48,40 @@ func (*abs) Name() string {
 	return "abs"
 }
 
-func (*abs) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*abs) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (a *abs) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
-	doc, err := goquery.NewDocumentFromReader(f)
+func (a *abs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
+		context.DispatchFile(outputFile)
+		return nil
+	}
+
+	doc, err := goquery.NewDocumentFromReader(inputFile)
 	if err != nil {
 		return err
 	}
 
-	for _, attr := range a.attrs {
-		path := fmt.Sprintf("*[%s]", attr)
-		doc.Find(path).Each(func(index int, sel *goquery.Selection) {
-			baseURL, err := url.Parse(f.Path())
-			val, _ := sel.Attr(attr)
+	for _, attribute := range a.attributes {
+		cssPath := fmt.Sprintf("*[%s]", attribute)
+		doc.Find(cssPath).Each(func(index int, sel *goquery.Selection) {
+			baseUrl, err := url.Parse(inputFile.Path())
+			value, _ := sel.Attr(attribute)
 
-			currURL, err := url.Parse(val)
+			currUrl, err := url.Parse(value)
 			if err != nil {
 				return
 			}
 
-			if !currURL.IsAbs() {
-				currURL = baseURL.ResolveReference(currURL)
+			if !currUrl.IsAbs() {
+				currUrl = baseUrl.ResolveReference(currUrl)
 			}
-			if a.baseURL != nil {
-				currURL.Path = filepath.Join(a.baseURL.Path, currURL.Path)
+			if a.baseUrl != nil {
+				currUrl.Path = filepath.Join(a.baseUrl.Path, currUrl.Path)
 			}
 
-			sel.SetAttr(attr, currURL.String())
+			sel.SetAttr(attribute, currUrl.String())
 		})
 	}
 
@@ -85,9 +90,9 @@ func (a *abs) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 		return err
 	}
 
-	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
-	nf.InheritValues(f)
-	ctx.DispatchFile(nf)
+	outputFile := goldsmith.NewFileFromData(inputFile.Path(), []byte(html))
+	outputFile.InheritValues(inputFile)
+	context.DispatchAndCacheFile(outputFile)
 
 	return nil
 }
