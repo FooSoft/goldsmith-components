@@ -51,6 +51,6 @@ func (d *dom) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 
 	nf := goldsmith.NewFileFromData(f.Path(), []byte(html))
 	nf.InheritValues(f)
-	ctx.DispatchFile(nf, false)
+	ctx.DispatchFile(nf)
 	return nil
 }

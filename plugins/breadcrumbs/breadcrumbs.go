@@ -134,7 +134,7 @@ func (b *breadcrumbs) Finalize(ctx *goldsmith.Context) error {
 		}
 
 		n.File.SetValue(b.crumbsKey, Crumb{ancestors, n})
-		ctx.DispatchFile(n.File, false)
+		ctx.DispatchFile(n.File)
 	}
 
 	return nil

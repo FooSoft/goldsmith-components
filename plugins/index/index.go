@@ -98,7 +98,7 @@ func (idx *index) Process(context *goldsmith.Context, inputFile *goldsmith.File)
 			if currentBase == idx.indexName {
 				list.indexFile = inputFile
 			} else {
-				context.DispatchFile(inputFile, false)
+				context.DispatchFile(inputFile)
 			}
 		}
 
@@ -129,7 +129,7 @@ func (idx *index) Finalize(context *goldsmith.Context) error {
 		}
 
 		indexFile.SetValue(idx.filesKey, list.entries)
-		context.DispatchFile(indexFile, false)
+		context.DispatchFile(indexFile)
 	}
 
 	return nil

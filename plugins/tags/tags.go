@@ -142,12 +142,12 @@ func (t *tags) Finalize(context *goldsmith.Context) error {
 
 	if t.indexMeta != nil {
 		for _, file := range t.buildPages(context, t.info) {
-			context.DispatchFile(file, false)
+			context.DispatchFile(file)
 		}
 	}
 
 	for _, file := range t.files {
-		context.DispatchFile(file, false)
+		context.DispatchFile(file)
 	}
 
 	return nil
