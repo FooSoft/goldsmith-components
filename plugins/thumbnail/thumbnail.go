@@ -68,6 +68,7 @@ func (t *thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 	}
 
 	if outputFile := context.RetrieveCachedFile(thumbPath, inputFile); outputFile != nil {
+		outputFile.InheritValues(inputFile)
 		context.DispatchFile(outputFile)
 		return nil
 	}

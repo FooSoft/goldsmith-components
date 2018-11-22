@@ -54,6 +54,7 @@ func (*abs) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 
 func (a *abs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
+		outputFile.InheritValues(inputFile)
 		context.DispatchFile(outputFile)
 		return nil
 	}
@@ -93,6 +94,5 @@ func (a *abs) Process(context *goldsmith.Context, inputFile *goldsmith.File) err
 	outputFile := goldsmith.NewFileFromData(inputFile.Path(), []byte(html))
 	outputFile.InheritValues(inputFile)
 	context.DispatchAndCacheFile(outputFile)
-
 	return nil
 }

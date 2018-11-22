@@ -35,11 +35,6 @@ func (*dom) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 }
 
 func (d *dom) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
-		context.DispatchFile(outputFile)
-		return nil
-	}
-
 	doc, err := goquery.NewDocumentFromReader(inputFile)
 	if err != nil {
 		return err
@@ -56,7 +51,6 @@ func (d *dom) Process(context *goldsmith.Context, inputFile *goldsmith.File) err
 
 	outputFile := goldsmith.NewFileFromData(inputFile.Path(), []byte(html))
 	outputFile.InheritValues(inputFile)
-	context.DispatchAndCacheFile(outputFile)
-
+	context.DispatchFile(outputFile)
 	return nil
 }

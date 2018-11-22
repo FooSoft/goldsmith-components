@@ -85,11 +85,6 @@ func (lay *layout) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, e
 }
 
 func (lay *layout) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile, lay.templatePaths...); outputFile != nil {
-		context.DispatchFile(outputFile)
-		return nil
-	}
-
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(inputFile); err != nil {
 		return err
@@ -102,7 +97,7 @@ func (lay *layout) Process(context *goldsmith.Context, inputFile *goldsmith.File
 		lay.files = append(lay.files, inputFile)
 		lay.filesMutex.Unlock()
 	} else {
-		context.DispatchAndCacheFile(inputFile)
+		context.DispatchFile(inputFile)
 	}
 
 	return nil
@@ -112,13 +107,13 @@ func (lay *layout) Finalize(context *goldsmith.Context) error {
 	for _, inputFile := range lay.files {
 		name, ok := inputFile.Value(lay.layoutKey)
 		if !ok {
-			context.DispatchAndCacheFile(inputFile)
+			context.DispatchFile(inputFile)
 			continue
 		}
 
 		nameStr, ok := name.(string)
 		if !ok {
-			context.DispatchAndCacheFile(inputFile)
+			context.DispatchFile(inputFile)
 			continue
 		}
 
@@ -129,7 +124,7 @@ func (lay *layout) Finalize(context *goldsmith.Context) error {
 
 		outputFile := goldsmith.NewFileFromData(inputFile.Path(), buff.Bytes())
 		outputFile.InheritValues(inputFile)
-		context.DispatchAndCacheFile(outputFile)
+		context.DispatchFile(outputFile)
 	}
 
 	return nil
