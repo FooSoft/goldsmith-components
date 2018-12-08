@@ -75,7 +75,7 @@ func (s *summary) Process(context *goldsmith.Context, inputFile *goldsmith.File)
 	}
 
 	for key, value := range meta {
-		inputFile.SetValue(key, value)
+		inputFile.Meta[key] = value
 	}
 
 	context.DispatchFile(inputFile)

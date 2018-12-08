@@ -53,8 +53,7 @@ type index struct {
 
 	dirLists    map[string]*dirIndex
 	dirsHandled map[string]bool
-
-	mutex sync.Mutex
+	mutex       sync.Mutex
 }
 
 func (idx *index) IndexFilename(filename string) Index {
@@ -122,13 +121,13 @@ func (idx *index) Finalize(context *goldsmith.Context) error {
 
 		indexFile := list.indexFile
 		if indexFile == nil {
-			indexFile = goldsmith.NewFileFromData(path.Join(name, idx.indexName), make([]byte, 0))
+			indexFile = context.CreateFileFromData(path.Join(name, idx.indexName), make([]byte, 0))
 			for name, value := range idx.indexMeta {
-				indexFile.SetValue(name, value)
+				indexFile.Meta[name] = value
 			}
 		}
 
-		indexFile.SetValue(idx.filesKey, list.entries)
+		indexFile.Meta[idx.filesKey] = list.entries
 		context.DispatchFile(indexFile)
 	}
 

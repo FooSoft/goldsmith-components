@@ -68,12 +68,12 @@ func (t *thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 	}
 
 	if outputFile := context.RetrieveCachedFile(thumbPath, inputFile); outputFile != nil {
-		outputFile.InheritValues(inputFile)
+		outputFile.Meta = inputFile.Meta
 		context.DispatchFile(outputFile)
 		return nil
 	}
 
-	outputFile, err := t.thumbnail(inputFile, thumbPath)
+	outputFile, err := t.thumbnail(context, inputFile, thumbPath)
 	if err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (t *thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 	return nil
 }
 
-func (t *thumbnail) thumbnail(inputFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
+func (t *thumbnail) thumbnail(context *goldsmith.Context, inputFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
 	inputImage, _, err := image.Decode(inputFile)
 	if err != nil {
 		return nil, err
@@ -100,5 +100,5 @@ func (t *thumbnail) thumbnail(inputFile *goldsmith.File, thumbPath string) (*gol
 		err = png.Encode(&thumbBuff, thumbImage)
 	}
 
-	return goldsmith.NewFileFromData(thumbPath, thumbBuff.Bytes()), nil
+	return context.CreateFileFromData(thumbPath, thumbBuff.Bytes()), nil
 }

@@ -73,7 +73,7 @@ func (m *markdown) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, e
 func (m *markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	outputPath := strings.TrimSuffix(inputFile.Path(), path.Ext(inputFile.Path())) + ".html"
 	if outputFile := context.RetrieveCachedFile(outputPath, inputFile); outputFile != nil {
-		outputFile.InheritValues(inputFile)
+		outputFile.Meta = inputFile.Meta
 		context.DispatchFile(outputFile)
 		return nil
 	}
@@ -88,8 +88,8 @@ func (m *markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File
 		data     = blackfriday.Markdown(buff.Bytes(), renderer, m.markdownFlags)
 	)
 
-	outputFile := goldsmith.NewFileFromData(outputPath, data)
-	outputFile.InheritValues(inputFile)
+	outputFile := context.CreateFileFromData(outputPath, data)
+	outputFile.Meta = inputFile.Meta
 	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
 }

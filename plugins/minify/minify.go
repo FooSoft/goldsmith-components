@@ -42,7 +42,7 @@ func (*minify) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error
 
 func (*minify) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
-		outputFile.InheritValues(inputFile)
+		outputFile.Meta = inputFile.Meta
 		context.DispatchFile(outputFile)
 		return nil
 	}
@@ -71,8 +71,8 @@ func (*minify) Process(context *goldsmith.Context, inputFile *goldsmith.File) er
 		return err
 	}
 
-	outputFile := goldsmith.NewFileFromData(inputFile.Path(), buff.Bytes())
-	outputFile.InheritValues(inputFile)
+	outputFile := context.CreateFileFromData(inputFile.Path(), buff.Bytes())
+	outputFile.Meta = inputFile.Meta
 	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
 }

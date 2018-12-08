@@ -76,7 +76,7 @@ func (*syntax) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error
 
 func (s *syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
-		outputFile.InheritValues(inputFile)
+		outputFile.Meta = inputFile.Meta
 		context.DispatchFile(outputFile)
 		return nil
 	}
@@ -144,8 +144,8 @@ func (s *syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) 
 		return err
 	}
 
-	outputFile := goldsmith.NewFileFromData(inputFile.Path(), []byte(html))
-	outputFile.InheritValues(inputFile)
+	outputFile := context.CreateFileFromData(inputFile.Path(), []byte(html))
+	outputFile.Meta = inputFile.Meta
 	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
 }

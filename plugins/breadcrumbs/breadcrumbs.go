@@ -58,8 +58,7 @@ type breadcrumbs struct {
 
 	allNodes   []*Node
 	namedNodes map[string]*Node
-
-	mtx sync.Mutex
+	mutex      sync.Mutex
 }
 
 func (b *breadcrumbs) NameKey(key string) Breadcrumbs {
@@ -81,25 +80,25 @@ func (*breadcrumbs) Name() string {
 	return "breadcrumbs"
 }
 
-func (*breadcrumbs) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*breadcrumbs) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (b *breadcrumbs) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
+func (b *breadcrumbs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	var parentNameStr string
-	if parentName, ok := f.Value(b.parentKey); ok {
+	if parentName, ok := inputFile.Meta[b.parentKey]; ok {
 		parentNameStr, _ = parentName.(string)
 	}
 
 	var nodeNameStr string
-	if nodeName, ok := f.Value(b.nameKey); ok {
+	if nodeName, ok := inputFile.Meta[b.nameKey]; ok {
 		nodeNameStr, _ = nodeName.(string)
 	}
 
-	b.mtx.Lock()
-	defer b.mtx.Unlock()
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
 
-	node := &Node{File: f, parentName: parentNameStr}
+	node := &Node{File: inputFile, parentName: parentNameStr}
 	b.allNodes = append(b.allNodes, node)
 
 	if len(nodeNameStr) > 0 {
@@ -113,28 +112,28 @@ func (b *breadcrumbs) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 	return nil
 }
 
-func (b *breadcrumbs) Finalize(ctx *goldsmith.Context) error {
-	for _, n := range b.allNodes {
-		if len(n.parentName) == 0 {
+func (b *breadcrumbs) Finalize(context *goldsmith.Context) error {
+	for _, node := range b.allNodes {
+		if len(node.parentName) == 0 {
 			continue
 		}
 
-		if parent, ok := b.namedNodes[n.parentName]; ok {
-			parent.Children = append(parent.Children, n)
-			n.Parent = parent
+		if parentNode, ok := b.namedNodes[node.parentName]; ok {
+			parentNode.Children = append(parentNode.Children, node)
+			node.Parent = parentNode
 		} else {
-			return fmt.Errorf("undefined parent: %s", n.parentName)
+			return fmt.Errorf("undefined parent: %s", node.parentName)
 		}
 	}
 
-	for _, n := range b.allNodes {
+	for _, node := range b.allNodes {
 		var ancestors []*Node
-		for c := n.Parent; c != nil; c = c.Parent {
-			ancestors = append([]*Node{c}, ancestors...)
+		for currentNode := node.Parent; currentNode != nil; currentNode = currentNode.Parent {
+			ancestors = append([]*Node{currentNode}, ancestors...)
 		}
 
-		n.File.SetValue(b.crumbsKey, Crumb{ancestors, n})
-		ctx.DispatchFile(n.File)
+		node.File.Meta[b.crumbsKey] = Crumb{ancestors, node}
+		context.DispatchFile(node.File)
 	}
 
 	return nil

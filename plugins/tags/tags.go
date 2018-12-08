@@ -97,12 +97,12 @@ func (t *tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) er
 
 	t.mutex.Lock()
 	defer func() {
-		inputFile.SetValue(t.stateKey, tagState)
+		inputFile.Meta[t.stateKey] = tagState
 		t.files = append(t.files, inputFile)
 		t.mutex.Unlock()
 	}()
 
-	tags, ok := inputFile.Value(t.tagsKey)
+	tags, ok := inputFile.Meta[t.tagsKey]
 	if !ok {
 		return nil
 	}
@@ -155,10 +155,10 @@ func (t *tags) Finalize(context *goldsmith.Context) error {
 
 func (t *tags) buildPages(context *goldsmith.Context, info map[string]tagInfo) (files []*goldsmith.File) {
 	for tag := range info {
-		tagFile := goldsmith.NewFileFromData(t.tagPagePath(tag), nil)
-		tagFile.SetValue(t.tagsKey, tagState{Index: tag, Info: t.info})
+		tagFile := context.CreateFileFromData(t.tagPagePath(tag), nil)
+		tagFile.Meta[t.tagsKey] = tagState{Index: tag, Info: t.info}
 		for name, value := range t.indexMeta {
-			tagFile.SetValue(name, value)
+			tagFile.Meta[name] = value
 		}
 
 		files = append(files, tagFile)

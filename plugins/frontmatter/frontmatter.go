@@ -35,11 +35,10 @@ func (*frontmatter) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 		return err
 	}
 
-	outputFile := goldsmith.NewFileFromData(inputFile.Path(), body.Bytes())
-	outputFile.InheritValues(inputFile)
-
+	outputFile := context.CreateFileFromData(inputFile.Path(), body.Bytes())
+	outputFile.Meta = inputFile.Meta
 	for name, value := range meta {
-		outputFile.SetValue(name, value)
+		outputFile.Meta[name] = value
 	}
 
 	context.DispatchFile(outputFile)

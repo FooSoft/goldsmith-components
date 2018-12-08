@@ -90,8 +90,8 @@ func (lay *layout) Process(context *goldsmith.Context, inputFile *goldsmith.File
 		return err
 	}
 
-	if _, ok := inputFile.Value(lay.layoutKey); ok {
-		inputFile.SetValue(lay.contentKey, template.HTML(buff.Bytes()))
+	if _, ok := inputFile.Meta[lay.layoutKey]; ok {
+		inputFile.Meta[lay.contentKey] = template.HTML(buff.Bytes())
 
 		lay.filesMutex.Lock()
 		lay.files = append(lay.files, inputFile)
@@ -105,7 +105,7 @@ func (lay *layout) Process(context *goldsmith.Context, inputFile *goldsmith.File
 
 func (lay *layout) Finalize(context *goldsmith.Context) error {
 	for _, inputFile := range lay.files {
-		name, ok := inputFile.Value(lay.layoutKey)
+		name, ok := inputFile.Meta[lay.layoutKey]
 		if !ok {
 			context.DispatchFile(inputFile)
 			continue
@@ -122,8 +122,8 @@ func (lay *layout) Finalize(context *goldsmith.Context) error {
 			return err
 		}
 
-		outputFile := goldsmith.NewFileFromData(inputFile.Path(), buff.Bytes())
-		outputFile.InheritValues(inputFile)
+		outputFile := context.CreateFileFromData(inputFile.Path(), buff.Bytes())
+		outputFile.Meta = inputFile.Meta
 		context.DispatchFile(outputFile)
 	}
 

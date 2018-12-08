@@ -49,8 +49,8 @@ func (d *dom) Process(context *goldsmith.Context, inputFile *goldsmith.File) err
 		return err
 	}
 
-	outputFile := goldsmith.NewFileFromData(inputFile.Path(), []byte(html))
-	outputFile.InheritValues(inputFile)
+	outputFile := context.CreateFileFromData(inputFile.Path(), []byte(html))
+	outputFile.Meta = inputFile.Meta
 	context.DispatchFile(outputFile)
 	return nil
 }

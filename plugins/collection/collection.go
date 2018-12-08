@@ -77,12 +77,12 @@ func (*collection) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, e
 func (c *collection) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	c.mutex.Lock()
 	defer func() {
-		inputFile.SetValue(c.groupsKey, c.groups)
+		inputFile.Meta[c.groupsKey] = c.groups
 		c.files = append(c.files, inputFile)
 		c.mutex.Unlock()
 	}()
 
-	collection, ok := inputFile.Value(c.collectionKey)
+	collection, ok := inputFile.Meta[c.collectionKey]
 	if !ok {
 		return nil
 	}

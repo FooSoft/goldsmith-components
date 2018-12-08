@@ -9,7 +9,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/extension"
@@ -72,7 +71,7 @@ type paginate struct {
 	inheritKeys  []string
 
 	files []*goldsmith.File
-	mtx   sync.Mutex
+	mutex sync.Mutex
 }
 
 func (p *paginate) PagerKey(key string) Paginate {
@@ -104,22 +103,22 @@ func (*paginate) Name() string {
 	return "paginate"
 }
 
-func (*paginate) Initialize(ctx *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (*paginate) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
 	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
 }
 
-func (p *paginate) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
-	p.mtx.Lock()
-	defer p.mtx.Unlock()
+func (p *paginate) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 
 	var buff bytes.Buffer
-	if _, err := buff.ReadFrom(f); err != nil {
+	if _, err := buff.ReadFrom(inputFile); err != nil {
 		return err
 	}
 
-	paginate, ok := f.Value(p.paginateKey)
+	paginate, ok := inputFile.Meta[p.paginateKey]
 	if !ok {
-		p.files = append(p.files, f)
+		p.files = append(p.files, inputFile)
 		return nil
 	}
 
@@ -127,9 +126,9 @@ func (p *paginate) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 		return errors.New("invalid pagination setting")
 	}
 
-	values, ok := f.Value(p.key)
+	values, ok := inputFile.Meta[p.key]
 	if !ok {
-		p.files = append(p.files, f)
+		p.files = append(p.files, inputFile)
 		return nil
 	}
 
@@ -166,21 +165,21 @@ func (p *paginate) Process(ctx *goldsmith.Context, f *goldsmith.File) error {
 		}
 
 		if i == 0 {
-			page.File = f
+			page.File = inputFile
 		} else {
-			page.File = goldsmith.NewFileFromData(p.namer(f.Path(), page.Index), buff.Bytes(), time.Now())
+			page.File = context.CreateFileFromData(p.namer(inputFile.Path(), page.Index), buff.Bytes())
 			if len(p.inheritKeys) == 0 {
-				page.File.InheritValues(f)
+				page.File.Meta = inputFile.Meta
 			} else {
 				for _, key := range p.inheritKeys {
-					if value, ok := f.Value(key); ok {
-						page.File.SetValue(key, value)
+					if value, ok := inputFile.Meta[key]; ok {
+						page.File.Meta[key] = value
 					}
 				}
 			}
 		}
-		page.File.SetValue(p.pagerKey, pager{pages, page, pageCount > 1})
 
+		page.File.Meta[p.pagerKey] = pager{pages, page, pageCount > 1}
 		p.files = append(p.files, page.File)
 	}
 
