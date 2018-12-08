@@ -17,8 +17,8 @@ type Abs interface {
 	goldsmith.Initializer
 	goldsmith.Processor
 
-	// BaseUrl sets the base path to which relative URLs are joined (default: "/").
-	BaseUrl(root string) Abs
+	// BaseUrl sets the base directory to which relative URLs are joined (default: "/").
+	BaseUrl(baseDir string) Abs
 
 	// Attributes sets the attributes which are scanned for relative URLs (default: "href", "src").
 	Attributes(attributes ...string) Abs
@@ -34,13 +34,13 @@ type abs struct {
 	baseUrl    *url.URL
 }
 
-func (a *abs) BaseUrl(root string) Abs {
-	a.baseUrl, _ = url.Parse(root)
+func (a *abs) BaseUrl(baseDir string) Abs {
+	a.baseUrl, _ = url.Parse(baseDir)
 	return a
 }
 
-func (a *abs) Attributes(attrs ...string) Abs {
-	a.attributes = attrs
+func (a *abs) Attributes(attributes ...string) Abs {
+	a.attributes = attributes
 	return a
 }
 
@@ -59,6 +59,11 @@ func (a *abs) Process(context *goldsmith.Context, inputFile *goldsmith.File) err
 		return nil
 	}
 
+	baseUrl, err := url.Parse(inputFile.Path())
+	if err != nil {
+		return err
+	}
+
 	doc, err := goquery.NewDocumentFromReader(inputFile)
 	if err != nil {
 		return err
@@ -66,23 +71,25 @@ func (a *abs) Process(context *goldsmith.Context, inputFile *goldsmith.File) err
 
 	for _, attribute := range a.attributes {
 		cssPath := fmt.Sprintf("*[%s]", attribute)
-		doc.Find(cssPath).Each(func(index int, sel *goquery.Selection) {
-			baseUrl, err := url.Parse(inputFile.Path())
-			value, _ := sel.Attr(attribute)
+		doc.Find(cssPath).Each(func(index int, selection *goquery.Selection) {
+			value, exists := selection.Attr(attribute)
+			if !exists {
+				return
+			}
 
 			currUrl, err := url.Parse(value)
 			if err != nil {
 				return
 			}
-
 			if !currUrl.IsAbs() {
 				currUrl = baseUrl.ResolveReference(currUrl)
 			}
+
 			if a.baseUrl != nil {
 				currUrl.Path = filepath.Join(a.baseUrl.Path, currUrl.Path)
 			}
 
-			sel.SetAttr(attribute, currUrl.String())
+			selection.SetAttr(attribute, currUrl.String())
 		})
 	}
 
@@ -93,6 +100,6 @@ func (a *abs) Process(context *goldsmith.Context, inputFile *goldsmith.File) err
 
 	outputFile := goldsmith.NewFileFromData(inputFile.Path(), []byte(html))
 	outputFile.InheritValues(inputFile)
-	context.DispatchAndCacheFile(outputFile)
+	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
 }

@@ -146,6 +146,6 @@ func (s *syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) 
 
 	outputFile := goldsmith.NewFileFromData(inputFile.Path(), []byte(html))
 	outputFile.InheritValues(inputFile)
-	context.DispatchAndCacheFile(outputFile)
+	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
 }

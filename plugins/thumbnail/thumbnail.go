@@ -78,7 +78,7 @@ func (t *thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 		return err
 	}
 
-	context.DispatchAndCacheFile(outputFile)
+	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
 }
 

@@ -73,6 +73,6 @@ func (*minify) Process(context *goldsmith.Context, inputFile *goldsmith.File) er
 
 	outputFile := goldsmith.NewFileFromData(inputFile.Path(), buff.Bytes())
 	outputFile.InheritValues(inputFile)
-	context.DispatchAndCacheFile(outputFile)
+	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
 }

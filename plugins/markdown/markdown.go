@@ -90,6 +90,6 @@ func (m *markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File
 
 	outputFile := goldsmith.NewFileFromData(outputPath, data)
 	outputFile.InheritValues(inputFile)
-	context.DispatchAndCacheFile(outputFile)
+	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
 }
