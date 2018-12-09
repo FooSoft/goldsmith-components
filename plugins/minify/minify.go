@@ -36,8 +36,8 @@ func (*minify) Name() string {
 	return "minify"
 }
 
-func (*minify) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".css", ".html", ".htm", ".js", ".svg", ".json", ".xml")}, nil
+func (*minify) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".css", ".html", ".htm", ".js", ".svg", ".json", ".xml"), nil
 }
 
 func (*minify) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

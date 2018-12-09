@@ -30,8 +30,8 @@ func (*dom) Name() string {
 	return "dom"
 }
 
-func (*dom) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
+func (*dom) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".html", ".htm"), nil
 }
 
 func (d *dom) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

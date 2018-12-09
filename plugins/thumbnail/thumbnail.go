@@ -55,8 +55,8 @@ func (*thumbnail) Name() string {
 	return "thumbnail"
 }
 
-func (*thumbnail) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".jpg", ".jpeg", ".gif", ".png")}, nil
+func (*thumbnail) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".jpg", ".jpeg", ".gif", ".png"), nil
 }
 
 func (t *thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

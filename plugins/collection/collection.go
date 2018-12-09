@@ -70,8 +70,8 @@ func (*collection) Name() string {
 	return "collection"
 }
 
-func (*collection) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
+func (*collection) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".html", ".htm"), nil
 }
 
 func (c *collection) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

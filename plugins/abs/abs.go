@@ -48,8 +48,8 @@ func (*abs) Name() string {
 	return "abs"
 }
 
-func (*abs) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
+func (*abs) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".html", ".htm"), nil
 }
 
 func (a *abs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

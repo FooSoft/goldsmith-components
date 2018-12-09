@@ -103,8 +103,8 @@ func (*paginate) Name() string {
 	return "paginate"
 }
 
-func (*paginate) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
+func (*paginate) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".html", ".htm"), nil
 }
 
 func (p *paginate) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

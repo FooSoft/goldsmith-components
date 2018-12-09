@@ -70,8 +70,8 @@ func (*syntax) Name() string {
 	return "syntax"
 }
 
-func (*syntax) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
+func (*syntax) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".html", ".htm"), nil
 }
 
 func (s *syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

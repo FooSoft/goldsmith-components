@@ -33,7 +33,7 @@ func (*livejs) Name() string {
 	return "livejs"
 }
 
-func (l *livejs) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (l *livejs) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		return nil, errors.New("unable to get livejs path")
@@ -48,7 +48,7 @@ func (l *livejs) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, err
 	}
 
 	l.html = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", js)
-	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
+	return extension.New(".html", ".htm"), nil
 }
 
 func (l *livejs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

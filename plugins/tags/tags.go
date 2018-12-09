@@ -88,8 +88,8 @@ func (*tags) Name() string {
 	return "tags"
 }
 
-func (*tags) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
+func (*tags) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".html", ".htm"), nil
 }
 
 func (t *tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

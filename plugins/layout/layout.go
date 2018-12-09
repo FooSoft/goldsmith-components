@@ -75,13 +75,13 @@ func (*layout) Name() string {
 	return "layout"
 }
 
-func (lay *layout) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
+func (lay *layout) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	var err error
 	if lay.template, err = template.New("").Funcs(lay.templateHelpers).ParseFiles(lay.templatePaths...); err != nil {
 		return nil, err
 	}
 
-	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
+	return extension.New(".html", ".htm"), nil
 }
 
 func (lay *layout) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

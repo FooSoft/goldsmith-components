@@ -25,8 +25,8 @@ func (*frontmatter) Name() string {
 	return "frontmatter"
 }
 
-func (*frontmatter) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".md", ".markdown", ".rst", ".html", ".htm")}, nil
+func (*frontmatter) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".md", ".markdown", ".rst", ".html", ".htm"), nil
 }
 
 func (*frontmatter) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

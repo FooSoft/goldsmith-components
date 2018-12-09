@@ -66,8 +66,8 @@ func (*markdown) Name() string {
 	return "markdown"
 }
 
-func (m *markdown) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".md", ".markdown")}, nil
+func (m *markdown) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".md", ".markdown"), nil
 }
 
 func (m *markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

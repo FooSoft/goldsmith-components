@@ -51,8 +51,8 @@ func (*summary) Name() string {
 	return "summary"
 }
 
-func (*summary) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
+func (*summary) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".html", ".htm"), nil
 }
 
 func (s *summary) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

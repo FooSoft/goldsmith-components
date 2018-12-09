@@ -80,8 +80,8 @@ func (*breadcrumbs) Name() string {
 	return "breadcrumbs"
 }
 
-func (*breadcrumbs) Initialize(context *goldsmith.Context) ([]goldsmith.Filter, error) {
-	return []goldsmith.Filter{extension.New(".html", ".htm")}, nil
+func (*breadcrumbs) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	return extension.New(".html", ".htm"), nil
 }
 
 func (b *breadcrumbs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
