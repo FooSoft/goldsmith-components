@@ -74,7 +74,17 @@ func (layout *layout) Process(context *goldsmith.Context, inputFile *goldsmith.F
 
 	switch inputFile.Ext() {
 	case ".html", ".htm":
-		layout.inputFiles = append(layout.inputFiles, inputFile)
+		if _, ok := inputFile.Meta[layout.layoutKey]; ok {
+			var buff bytes.Buffer
+			if _, err := inputFile.WriteTo(&buff); err != nil {
+				return err
+			}
+
+			inputFile.Meta[layout.contentKey] = template.HTML(buff.Bytes())
+			layout.inputFiles = append(layout.inputFiles, inputFile)
+		} else {
+			context.DispatchFile(inputFile)
+		}
 	case ".tmpl", ".gohtml":
 		layout.templateFiles = append(layout.templateFiles, inputFile)
 	}
@@ -95,30 +105,18 @@ func (layout *layout) Finalize(context *goldsmith.Context) error {
 	}
 
 	for _, inputFile := range layout.inputFiles {
-		name, ok := inputFile.Meta[layout.layoutKey]
+		name, ok := inputFile.Meta[layout.layoutKey].(string)
 		if !ok {
 			context.DispatchFile(inputFile)
 			continue
 		}
 
-		nameStr, ok := name.(string)
-		if !ok {
-			context.DispatchFile(inputFile)
-			continue
-		}
-
-		var inputBuff bytes.Buffer
-		if _, err := inputFile.WriteTo(&inputBuff); err != nil {
+		var buff bytes.Buffer
+		if err := layout.template.ExecuteTemplate(&buff, name, inputFile); err != nil {
 			return err
 		}
 
-		var outputBuff bytes.Buffer
-		inputFile.Meta[layout.contentKey] = template.HTML(inputBuff.Bytes())
-		if err := layout.template.ExecuteTemplate(&outputBuff, nameStr, inputFile); err != nil {
-			return err
-		}
-
-		outputFile := context.CreateFileFromData(inputFile.Path(), outputBuff.Bytes())
+		outputFile := context.CreateFileFromData(inputFile.Path(), buff.Bytes())
 		outputFile.Meta = inputFile.Meta
 		context.DispatchFile(outputFile)
 	}
