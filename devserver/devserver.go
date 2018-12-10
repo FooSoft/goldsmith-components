@@ -36,15 +36,15 @@ import (
 )
 
 type Builder interface {
-	Build(srcDir, dstDir, cacheDir string)
+	Build(sourceDir, targetDir, cacheDir string)
 }
 
-func DevServe(builder Builder, port int, srcDir, dstDir, cacheDir string, watchDirs ...string) {
-	dirs := append(watchDirs, srcDir)
-	build(dirs, func() { builder.Build(srcDir, dstDir, cacheDir) })
+func DevServe(builder Builder, port int, sourceDir, targetDir, cacheDir string, watchDirs ...string) {
+	dirs := append(watchDirs, sourceDir)
+	build(dirs, func() { builder.Build(sourceDir, targetDir, cacheDir) })
 
 	httpAddr := fmt.Sprintf(":%d", port)
-	httpHandler := http.FileServer(http.Dir(dstDir))
+	httpHandler := http.FileServer(http.Dir(targetDir))
 
 	log.Fatal(http.ListenAndServe(httpAddr, httpHandler))
 }
@@ -55,7 +55,7 @@ func build(dirs []string, callback func()) {
 		log.Fatal(err)
 	}
 
-	var mtx sync.Mutex
+	var mutex sync.Mutex
 	timestamp := time.Now()
 	dirty := true
 
@@ -63,10 +63,10 @@ func build(dirs []string, callback func()) {
 		for {
 			select {
 			case event := <-watcher.Events:
-				mtx.Lock()
+				mutex.Lock()
 				timestamp = time.Now()
 				dirty = true
-				mtx.Unlock()
+				mutex.Unlock()
 
 				if event.Op&fsnotify.Create == fsnotify.Create {
 					info, err := os.Stat(event.Name)
@@ -92,9 +92,9 @@ func build(dirs []string, callback func()) {
 	go func() {
 		for range time.Tick(10 * time.Millisecond) {
 			if dirty && time.Now().Sub(timestamp) > 100*time.Millisecond {
-				mtx.Lock()
+				mutex.Lock()
 				dirty = false
-				mtx.Unlock()
+				mutex.Unlock()
 
 				callback()
 			}
