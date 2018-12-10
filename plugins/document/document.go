@@ -1,5 +1,5 @@
-// Package dom makes it easy to modify your document structure.
-package dom
+// Package document allows for modification of HTML document structure.
+package document
 
 import (
 	"github.com/FooSoft/goldsmith"
@@ -7,40 +7,40 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-// Dom plugin context.
-type Dom interface {
+// Document plugin context.
+type Document interface {
 	goldsmith.Plugin
 	goldsmith.Initializer
 	goldsmith.Processor
 }
 
-// A Processor callback function is used to modify documents.
+// Processor callback function to modify documents.
 type Processor func(*goquery.Document) error
 
 // New creates a new instance of the Dom plugin.
-func New(callback Processor) Dom {
-	return &dom{callback}
+func New(callback Processor) Document {
+	return &document{callback}
 }
 
-type dom struct {
+type document struct {
 	callback Processor
 }
 
-func (*dom) Name() string {
-	return "dom"
+func (*document) Name() string {
+	return "document"
 }
 
-func (*dom) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (*document) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return extension.New(".html", ".htm"), nil
 }
 
-func (d *dom) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (document *document) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	doc, err := goquery.NewDocumentFromReader(inputFile)
 	if err != nil {
 		return err
 	}
 
-	if err := d.callback(doc); err != nil {
+	if err := document.callback(doc); err != nil {
 		return err
 	}
 
