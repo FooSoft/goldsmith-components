@@ -8,7 +8,6 @@ import (
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/extension"
-	"github.com/bmatcuk/doublestar"
 )
 
 // Layout chainable context.
@@ -29,83 +28,74 @@ type Layout interface {
 }
 
 // New creates a new instance of the Layout plugin.
-func New(globs ...string) Layout {
-	var paths []string
-	for _, glob := range globs {
-		matches, _ := doublestar.Glob(glob)
-		paths = append(paths, matches...)
-	}
-
-	return &layout{
-		layoutKey:       "Layout",
-		contentKey:      "Content",
-		templatePaths:   paths,
-		templateHelpers: nil,
-	}
+func New() Layout {
+	return &layout{layoutKey: "Layout", contentKey: "Content", helpers: nil}
 }
 
 type layout struct {
 	layoutKey  string
 	contentKey string
+	helpers    template.FuncMap
 
-	files      []*goldsmith.File
-	filesMutex sync.Mutex
+	inputFiles    []*goldsmith.File
+	templateFiles []*goldsmith.File
+	mutex         sync.Mutex
 
-	templatePaths   []string
-	templateHelpers template.FuncMap
-	template        *template.Template
+	template *template.Template
 }
 
-func (lay *layout) LayoutKey(key string) Layout {
-	lay.layoutKey = key
-	return lay
+func (layout *layout) LayoutKey(key string) Layout {
+	layout.layoutKey = key
+	return layout
 }
 
-func (lay *layout) ContentKey(key string) Layout {
-	lay.contentKey = key
-	return lay
+func (layout *layout) ContentKey(key string) Layout {
+	layout.contentKey = key
+	return layout
 }
 
-func (lay *layout) Helpers(helpers template.FuncMap) Layout {
-	lay.templateHelpers = helpers
-	return lay
+func (layout *layout) Helpers(helpers template.FuncMap) Layout {
+	layout.helpers = helpers
+	return layout
 }
 
 func (*layout) Name() string {
 	return "layout"
 }
 
-func (lay *layout) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	var err error
-	if lay.template, err = template.New("").Funcs(lay.templateHelpers).ParseFiles(lay.templatePaths...); err != nil {
-		return nil, err
-	}
-
-	return extension.New(".html", ".htm"), nil
+func (layout *layout) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	layout.template = template.New("").Funcs(layout.helpers)
+	return extension.New(".html", ".htm", ".tmpl", ".gohtml"), nil
 }
 
-func (lay *layout) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	var buff bytes.Buffer
-	if _, err := buff.ReadFrom(inputFile); err != nil {
-		return err
-	}
+func (layout *layout) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	layout.mutex.Lock()
+	defer layout.mutex.Unlock()
 
-	if _, ok := inputFile.Meta[lay.layoutKey]; ok {
-		inputFile.Meta[lay.contentKey] = template.HTML(buff.Bytes())
-
-		lay.filesMutex.Lock()
-		lay.files = append(lay.files, inputFile)
-		lay.filesMutex.Unlock()
-	} else {
-		context.DispatchFile(inputFile)
+	switch inputFile.Ext() {
+	case ".html", ".htm":
+		layout.inputFiles = append(layout.inputFiles, inputFile)
+	case ".tmpl", ".gohtml":
+		layout.templateFiles = append(layout.templateFiles, inputFile)
 	}
 
 	return nil
 }
 
-func (lay *layout) Finalize(context *goldsmith.Context) error {
-	for _, inputFile := range lay.files {
-		name, ok := inputFile.Meta[lay.layoutKey]
+func (layout *layout) Finalize(context *goldsmith.Context) error {
+	for _, templateFile := range layout.templateFiles {
+		var buff bytes.Buffer
+		if _, err := templateFile.WriteTo(&buff); err != nil {
+			return err
+		}
+
+		if _, err := layout.template.Parse(string(buff.Bytes())); err != nil {
+			return err
+		}
+	}
+
+	for _, inputFile := range layout.inputFiles {
+		name, ok := inputFile.Meta[layout.layoutKey]
 		if !ok {
 			context.DispatchFile(inputFile)
 			continue
@@ -117,12 +107,18 @@ func (lay *layout) Finalize(context *goldsmith.Context) error {
 			continue
 		}
 
-		var buff bytes.Buffer
-		if err := lay.template.ExecuteTemplate(&buff, nameStr, inputFile); err != nil {
+		var inputBuff bytes.Buffer
+		if _, err := inputFile.WriteTo(&inputBuff); err != nil {
 			return err
 		}
 
-		outputFile := context.CreateFileFromData(inputFile.Path(), buff.Bytes())
+		var outputBuff bytes.Buffer
+		inputFile.Meta[layout.contentKey] = template.HTML(inputBuff.Bytes())
+		if err := layout.template.ExecuteTemplate(&outputBuff, nameStr, inputFile); err != nil {
+			return err
+		}
+
+		outputFile := context.CreateFileFromData(inputFile.Path(), outputBuff.Bytes())
 		outputFile.Meta = inputFile.Meta
 		context.DispatchFile(outputFile)
 	}
