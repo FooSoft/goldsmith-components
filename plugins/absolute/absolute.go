@@ -12,47 +12,37 @@ import (
 )
 
 // Absolute chainable plugin context.
-type Absolute interface {
-	goldsmith.Plugin
-	goldsmith.Initializer
-	goldsmith.Processor
-
-	// BaseUrl sets the base directory to which relative URLs are joined (default: "/").
-	BaseUrl(baseDir string) Absolute
-
-	// Attributes sets the attributes which are scanned for relative URLs (default: "href", "src").
-	Attributes(attributes ...string) Absolute
-}
-
-// New creates absolute new instance of the Abs plugin.
-func New() Absolute {
-	return &absolute{attributes: []string{"href", "src"}}
-}
-
-type absolute struct {
+type Absolute struct {
 	attributes []string
 	baseUrl    *url.URL
 }
 
-func (absolute *absolute) BaseUrl(baseDir string) Absolute {
+// New creates absolute new instance of the Abs plugin.
+func New() *Absolute {
+	return &Absolute{attributes: []string{"href", "src"}}
+}
+
+// BaseUrl sets the base directory to which relative URLs are joined (default: "/").
+func (absolute *Absolute) BaseUrl(baseDir string) *Absolute {
 	absolute.baseUrl, _ = url.Parse(baseDir)
 	return absolute
 }
 
-func (absolute *absolute) Attributes(attributes ...string) Absolute {
+// Attributes sets the attributes which are scanned for relative URLs (default: "href", "src").
+func (absolute *Absolute) Attributes(attributes ...string) *Absolute {
 	absolute.attributes = attributes
 	return absolute
 }
 
-func (*absolute) Name() string {
+func (*Absolute) Name() string {
 	return "absolute"
 }
 
-func (*absolute) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (*Absolute) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return extension.New(".html", ".htm"), nil
 }
 
-func (absolute *absolute) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (absolute *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
 		outputFile.Meta = inputFile.Meta
 		context.DispatchFile(outputFile)
