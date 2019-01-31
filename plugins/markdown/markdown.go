@@ -12,22 +12,13 @@ import (
 )
 
 // Markdown chainable context.
-type Markdown interface {
-	goldsmith.Plugin
-	goldsmith.Initializer
-	goldsmith.Processor
-
-	// HtmlFlags sets the HTML flags used by the blackfriday markdown processor;
-	// see https://github.com/russross/blackfriday/blob/master/html.go for options.
-	HtmlFlags(flags int) Markdown
-
-	// MarkdownFlags sets the markdown flags used by the blackfriday markdown processor;
-	// see https://github.com/russross/blackfriday/blob/master/markdown.go for options.
-	MarkdownFlags(flags int) Markdown
+type Markdown struct {
+	htmlFlags     int
+	markdownFlags int
 }
 
 // New creates a new instance of the Markdown plugin.
-func New() Markdown {
+func New() *Markdown {
 	htmlFlags := blackfriday.HTML_USE_XHTML |
 		blackfriday.HTML_USE_SMARTYPANTS |
 		blackfriday.HTML_SMARTYPANTS_FRACTIONS |
@@ -44,33 +35,32 @@ func New() Markdown {
 		blackfriday.EXTENSION_BACKSLASH_LINE_BREAK |
 		blackfriday.EXTENSION_DEFINITION_LISTS
 
-	return &markdown{htmlFlags: htmlFlags, markdownFlags: markdownFlags}
+	return &Markdown{htmlFlags: htmlFlags, markdownFlags: markdownFlags}
 }
 
-type markdown struct {
-	htmlFlags     int
-	markdownFlags int
+// HtmlFlags sets the HTML flags used by the blackfriday markdown processor;
+// see https://github.com/russross/blackfriday/blob/master/html.go for options.
+func (plugin *Markdown) HtmlFlags(flags int) *Markdown {
+	plugin.htmlFlags = flags
+	return plugin
 }
 
-func (m *markdown) HtmlFlags(flags int) Markdown {
-	m.htmlFlags = flags
-	return m
+// MarkdownFlags sets the markdown flags used by the blackfriday markdown processor;
+// see https://github.com/russross/blackfriday/blob/master/markdown.go for options.
+func (plugin *Markdown) MarkdownFlags(flags int) *Markdown {
+	plugin.markdownFlags = flags
+	return plugin
 }
 
-func (m *markdown) MarkdownFlags(flags int) Markdown {
-	m.markdownFlags = flags
-	return m
-}
-
-func (*markdown) Name() string {
+func (*Markdown) Name() string {
 	return "markdown"
 }
 
-func (m *markdown) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (plugin *Markdown) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return extension.New(".md", ".markdown"), nil
 }
 
-func (m *markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (m *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	outputPath := strings.TrimSuffix(inputFile.Path(), path.Ext(inputFile.Path())) + ".html"
 	if outputFile := context.RetrieveCachedFile(outputPath, inputFile); outputFile != nil {
 		outputFile.Meta = inputFile.Meta

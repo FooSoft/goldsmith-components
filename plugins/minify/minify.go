@@ -18,29 +18,22 @@ import (
 )
 
 // Minify chainable context.
-type Minify interface {
-	goldsmith.Plugin
-	goldsmith.Initializer
-	goldsmith.Processor
-}
+type Minify struct{}
 
 // New creates a new instance of the Minify plugin
-func New() Minify {
-	return new(minify)
+func New() *Minify {
+	return new(Minify)
 }
 
-type minify struct {
-}
-
-func (*minify) Name() string {
+func (*Minify) Name() string {
 	return "minify"
 }
 
-func (*minify) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (*Minify) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return extension.New(".css", ".html", ".htm", ".js", ".svg", ".json", ".xml"), nil
 }
 
-func (*minify) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (*Minify) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
 		outputFile.Meta = inputFile.Meta
 		context.DispatchFile(outputFile)
