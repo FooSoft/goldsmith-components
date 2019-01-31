@@ -17,37 +17,6 @@ import (
 // The Namer callback allows the user to generate custom filenames for generated pages.
 type Namer func(path string, index int) string
 
-// Paginate chainable context.
-type Paginate interface {
-	goldsmith.Plugin
-	goldsmith.Initializer
-	goldsmith.Processor
-	goldsmith.Finalizer
-
-	PagerKey(key string) Paginate
-	PaginateKey(key string) Paginate
-	ItemsPerPage(limit int) Paginate
-	Namer(namer Namer) Paginate
-	InheritKeys(keys ...string) Paginate
-}
-
-// New creates a new instance of the Paginate plugin.
-func New(key string) Paginate {
-	namer := func(path string, index int) string {
-		ext := filepath.Ext(path)
-		body := strings.TrimSuffix(path, ext)
-		return fmt.Sprintf("%s-%d%s", body, index, ext)
-	}
-
-	return &paginate{
-		key:          key,
-		pagerKey:     "Pager",
-		paginateKey:  "Paginate",
-		itemsPerPage: 10,
-		namer:        namer,
-	}
-}
-
 type page struct {
 	Index int
 	Items interface{}
@@ -63,7 +32,7 @@ type pager struct {
 	Paged    bool
 }
 
-type paginate struct {
+type Paginate struct {
 	key, pagerKey, paginateKey string
 
 	itemsPerPage int
@@ -74,51 +43,68 @@ type paginate struct {
 	mutex sync.Mutex
 }
 
-func (p *paginate) PagerKey(key string) Paginate {
-	p.pagerKey = key
-	return p
+// New creates a new instance of the Paginate plugin.
+func New(key string) *Paginate {
+	namer := func(path string, index int) string {
+		ext := filepath.Ext(path)
+		body := strings.TrimSuffix(path, ext)
+		return fmt.Sprintf("%s-%d%s", body, index, ext)
+	}
+
+	return &Paginate{
+		key:          key,
+		pagerKey:     "Pager",
+		paginateKey:  "Paginate",
+		itemsPerPage: 10,
+		namer:        namer,
+	}
 }
 
-func (p *paginate) PaginateKey(key string) Paginate {
-	p.paginateKey = key
-	return p
+func (plugin *Paginate) PagerKey(key string) *Paginate {
+	plugin.pagerKey = key
+	return plugin
 }
 
-func (p *paginate) ItemsPerPage(limit int) Paginate {
-	p.itemsPerPage = limit
-	return p
+func (plugin *Paginate) PaginateKey(key string) *Paginate {
+	plugin.paginateKey = key
+	return plugin
 }
 
-func (p *paginate) Namer(namer Namer) Paginate {
-	p.namer = namer
-	return p
+func (plugin *Paginate) ItemsPerPage(limit int) *Paginate {
+	plugin.itemsPerPage = limit
+	return plugin
 }
 
-func (p *paginate) InheritKeys(keys ...string) Paginate {
+func (plugin *Paginate) Namer(namer Namer) *Paginate {
+	plugin.namer = namer
+	return plugin
+}
+
+func (p *Paginate) InheritKeys(keys ...string) *Paginate {
 	p.inheritKeys = keys
 	return p
 }
 
-func (*paginate) Name() string {
+func (*Paginate) Name() string {
 	return "paginate"
 }
 
-func (*paginate) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (*Paginate) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return extension.New(".html", ".htm"), nil
 }
 
-func (p *paginate) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
+func (plugin *Paginate) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	plugin.mutex.Lock()
+	defer plugin.mutex.Unlock()
 
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(inputFile); err != nil {
 		return err
 	}
 
-	paginate, ok := inputFile.Meta[p.paginateKey]
+	paginate, ok := inputFile.Meta[plugin.paginateKey]
 	if !ok {
-		p.files = append(p.files, inputFile)
+		plugin.files = append(plugin.files, inputFile)
 		return nil
 	}
 
@@ -126,9 +112,9 @@ func (p *paginate) Process(context *goldsmith.Context, inputFile *goldsmith.File
 		return errors.New("invalid pagination setting")
 	}
 
-	values, ok := inputFile.Meta[p.key]
+	values, ok := inputFile.Meta[plugin.key]
 	if !ok {
-		p.files = append(p.files, inputFile)
+		plugin.files = append(plugin.files, inputFile)
 		return nil
 	}
 
@@ -137,8 +123,8 @@ func (p *paginate) Process(context *goldsmith.Context, inputFile *goldsmith.File
 		return err
 	}
 
-	pageCount := valueCount / p.itemsPerPage
-	if valueCount%p.itemsPerPage > 0 {
+	pageCount := valueCount / plugin.itemsPerPage
+	if valueCount%plugin.itemsPerPage > 0 {
 		pageCount++
 	}
 
@@ -154,8 +140,8 @@ func (p *paginate) Process(context *goldsmith.Context, inputFile *goldsmith.File
 			page.Next = &pages[i+1]
 		}
 
-		indexStart := i * p.itemsPerPage
-		indexEnd := indexStart + p.itemsPerPage
+		indexStart := i * plugin.itemsPerPage
+		indexEnd := indexStart + plugin.itemsPerPage
 		if indexEnd > valueCount {
 			indexEnd = valueCount
 		}
@@ -167,11 +153,11 @@ func (p *paginate) Process(context *goldsmith.Context, inputFile *goldsmith.File
 		if i == 0 {
 			page.File = inputFile
 		} else {
-			page.File = context.CreateFileFromData(p.namer(inputFile.Path(), page.Index), buff.Bytes())
-			if len(p.inheritKeys) == 0 {
+			page.File = context.CreateFileFromData(plugin.namer(inputFile.Path(), page.Index), buff.Bytes())
+			if len(plugin.inheritKeys) == 0 {
 				page.File.Meta = inputFile.Meta
 			} else {
-				for _, key := range p.inheritKeys {
+				for _, key := range plugin.inheritKeys {
 					if value, ok := inputFile.Meta[key]; ok {
 						page.File.Meta[key] = value
 					}
@@ -179,15 +165,15 @@ func (p *paginate) Process(context *goldsmith.Context, inputFile *goldsmith.File
 			}
 		}
 
-		page.File.Meta[p.pagerKey] = pager{pages, page, pageCount > 1}
-		p.files = append(p.files, page.File)
+		page.File.Meta[plugin.pagerKey] = pager{pages, page, pageCount > 1}
+		plugin.files = append(plugin.files, page.File)
 	}
 
 	return nil
 }
 
-func (p *paginate) Finalize(ctx *goldsmith.Context) error {
-	for _, f := range p.files {
+func (plugin *Paginate) Finalize(ctx *goldsmith.Context) error {
+	for _, f := range plugin.files {
 		ctx.DispatchFile(f)
 	}
 

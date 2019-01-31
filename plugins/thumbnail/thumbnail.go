@@ -17,52 +17,43 @@ import (
 
 type Namer func(string, uint) (string, bool)
 
-type Thumbnail interface {
-	goldsmith.Plugin
-	goldsmith.Initializer
-	goldsmith.Processor
-
-	Size(size uint) Thumbnail
-	Namer(namer Namer) Thumbnail
+type Thumbnail struct {
+	size  uint
+	namer Namer
 }
 
-func New() Thumbnail {
+func New() *Thumbnail {
 	namer := func(path string, dims uint) (string, bool) {
 		ext := filepath.Ext(path)
 		body := strings.TrimSuffix(path, ext)
 		return fmt.Sprintf("%s-thumb.png", body), true
 	}
 
-	return &thumbnail{128, namer}
+	return &Thumbnail{128, namer}
 }
 
-type thumbnail struct {
-	size  uint
-	namer Namer
+func (plugin *Thumbnail) Size(dims uint) *Thumbnail {
+	plugin.size = dims
+	return plugin
 }
 
-func (t *thumbnail) Size(dims uint) Thumbnail {
-	t.size = dims
-	return t
+func (plugin *Thumbnail) Namer(namer Namer) *Thumbnail {
+	plugin.namer = namer
+	return plugin
 }
 
-func (t *thumbnail) Namer(namer Namer) Thumbnail {
-	t.namer = namer
-	return t
-}
-
-func (*thumbnail) Name() string {
+func (*Thumbnail) Name() string {
 	return "thumbnail"
 }
 
-func (*thumbnail) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (*Thumbnail) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return extension.New(".jpg", ".jpeg", ".gif", ".png"), nil
 }
 
-func (t *thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (plugin *Thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	defer context.DispatchFile(inputFile)
 
-	thumbPath, create := t.namer(inputFile.Path(), t.size)
+	thumbPath, create := plugin.namer(inputFile.Path(), plugin.size)
 	if !create {
 		return nil
 	}
@@ -73,7 +64,7 @@ func (t *thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 		return nil
 	}
 
-	outputFile, err := t.thumbnail(context, inputFile, thumbPath)
+	outputFile, err := plugin.thumbnail(context, inputFile, thumbPath)
 	if err != nil {
 		return err
 	}
@@ -82,14 +73,14 @@ func (t *thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 	return nil
 }
 
-func (t *thumbnail) thumbnail(context *goldsmith.Context, inputFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
+func (plugin *Thumbnail) thumbnail(context *goldsmith.Context, inputFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
 	inputImage, _, err := image.Decode(inputFile)
 	if err != nil {
 		return nil, err
 	}
 
 	var thumbBuff bytes.Buffer
-	thumbImage := resize.Thumbnail(t.size, t.size, inputImage, resize.Bicubic)
+	thumbImage := resize.Thumbnail(plugin.size, plugin.size, inputImage, resize.Bicubic)
 
 	switch filepath.Ext(thumbPath) {
 	case ".jpg", ".jpeg":

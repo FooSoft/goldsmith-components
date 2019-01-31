@@ -10,30 +10,20 @@ import (
 	"github.com/FooSoft/goldsmith-components/filters/extension"
 )
 
-type Tags interface {
-	goldsmith.Plugin
-	goldsmith.Initializer
-	goldsmith.Processor
-	goldsmith.Finalizer
-
-	TagsKey(key string) Tags
-	StateKey(key string) Tags
-	IndexName(name string) Tags
-	IndexMeta(meta map[string]interface{}) Tags
-	BaseDir(dir string) Tags
+type tagInfo struct {
+	Files    filesByPath
+	SafeName string
+	RawName  string
+	Path     string
 }
 
-func New() Tags {
-	return &tags{
-		tagsKey:   "Tags",
-		stateKey:  "TagState",
-		baseDir:   "tags",
-		indexName: "index.html",
-		info:      make(map[string]tagInfo),
-	}
+type tagState struct {
+	Index string
+	Tags  []string
+	Info  map[string]tagInfo
 }
 
-type tags struct {
+type Tags struct {
 	tagsKey  string
 	stateKey string
 
@@ -46,63 +36,60 @@ type tags struct {
 	mutex sync.Mutex
 }
 
-type tagInfo struct {
-	Files    files
-	SafeName string
-	RawName  string
-	Path     string
+func New() *Tags {
+	return &Tags{
+		tagsKey:   "Tags",
+		stateKey:  "TagState",
+		baseDir:   "tags",
+		indexName: "index.html",
+		info:      make(map[string]tagInfo),
+	}
 }
 
-type tagState struct {
-	Index string
-	Tags  []string
-	Info  map[string]tagInfo
+func (plugin *Tags) TagsKey(key string) *Tags {
+	plugin.tagsKey = key
+	return plugin
 }
 
-func (t *tags) TagsKey(key string) Tags {
-	t.tagsKey = key
-	return t
+func (plugin *Tags) StateKey(key string) *Tags {
+	plugin.stateKey = key
+	return plugin
 }
 
-func (t *tags) StateKey(key string) Tags {
-	t.stateKey = key
-	return t
+func (plugin *Tags) IndexName(name string) *Tags {
+	plugin.indexName = name
+	return plugin
 }
 
-func (t *tags) IndexName(name string) Tags {
-	t.indexName = name
-	return t
+func (plugin *Tags) IndexMeta(meta map[string]interface{}) *Tags {
+	plugin.indexMeta = meta
+	return plugin
 }
 
-func (t *tags) IndexMeta(meta map[string]interface{}) Tags {
-	t.indexMeta = meta
-	return t
+func (plugin *Tags) BaseDir(dir string) *Tags {
+	plugin.baseDir = dir
+	return plugin
 }
 
-func (t *tags) BaseDir(dir string) Tags {
-	t.baseDir = dir
-	return t
-}
-
-func (*tags) Name() string {
+func (*Tags) Name() string {
 	return "tags"
 }
 
-func (*tags) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (*Tags) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return extension.New(".html", ".htm"), nil
 }
 
-func (t *tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	tagState := &tagState{Info: t.info}
+func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	tagState := &tagState{Info: plugin.info}
 
-	t.mutex.Lock()
+	plugin.mutex.Lock()
 	defer func() {
-		inputFile.Meta[t.stateKey] = tagState
-		t.files = append(t.files, inputFile)
-		t.mutex.Unlock()
+		inputFile.Meta[plugin.stateKey] = tagState
+		plugin.files = append(plugin.files, inputFile)
+		plugin.mutex.Unlock()
 	}()
 
-	tags, ok := inputFile.Meta[t.tagsKey]
+	tags, ok := inputFile.Meta[plugin.tagsKey]
 	if !ok {
 		return nil
 	}
@@ -120,44 +107,44 @@ func (t *tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) er
 
 		tagState.Tags = append(tagState.Tags, tagStr)
 
-		info, ok := t.info[tagStr]
+		info, ok := plugin.info[tagStr]
 		info.Files = append(info.Files, inputFile)
 		if !ok {
 			info.SafeName = safeTag(tagStr)
 			info.RawName = tagStr
-			info.Path = t.tagPagePath(tagStr)
+			info.Path = plugin.tagPagePath(tagStr)
 		}
 
-		t.info[tagStr] = info
+		plugin.info[tagStr] = info
 	}
 
 	sort.Strings(tagState.Tags)
 	return nil
 }
 
-func (t *tags) Finalize(context *goldsmith.Context) error {
-	for _, meta := range t.info {
+func (plugin *Tags) Finalize(context *goldsmith.Context) error {
+	for _, meta := range plugin.info {
 		sort.Sort(meta.Files)
 	}
 
-	if t.indexMeta != nil {
-		for _, file := range t.buildPages(context, t.info) {
+	if plugin.indexMeta != nil {
+		for _, file := range plugin.buildPages(context, plugin.info) {
 			context.DispatchFile(file)
 		}
 	}
 
-	for _, file := range t.files {
+	for _, file := range plugin.files {
 		context.DispatchFile(file)
 	}
 
 	return nil
 }
 
-func (t *tags) buildPages(context *goldsmith.Context, info map[string]tagInfo) (files []*goldsmith.File) {
+func (plugin *Tags) buildPages(context *goldsmith.Context, info map[string]tagInfo) (files []*goldsmith.File) {
 	for tag := range info {
-		tagFile := context.CreateFileFromData(t.tagPagePath(tag), nil)
-		tagFile.Meta[t.tagsKey] = tagState{Index: tag, Info: t.info}
-		for name, value := range t.indexMeta {
+		tagFile := context.CreateFileFromData(plugin.tagPagePath(tag), nil)
+		tagFile.Meta[plugin.tagsKey] = tagState{Index: tag, Info: plugin.info}
+		for name, value := range plugin.indexMeta {
 			tagFile.Meta[name] = value
 		}
 
@@ -167,24 +154,24 @@ func (t *tags) buildPages(context *goldsmith.Context, info map[string]tagInfo) (
 	return
 }
 
-func (t *tags) tagPagePath(tag string) string {
-	return filepath.Join(t.baseDir, safeTag(tag), t.indexName)
+func (plugin *Tags) tagPagePath(tag string) string {
+	return filepath.Join(plugin.baseDir, safeTag(tag), plugin.indexName)
 }
 
 func safeTag(tag string) string {
 	return strings.ToLower(strings.Replace(tag, " ", "-", -1))
 }
 
-type files []*goldsmith.File
+type filesByPath []*goldsmith.File
 
-func (f files) Len() int {
+func (f filesByPath) Len() int {
 	return len(f)
 }
 
-func (f files) Swap(i, j int) {
+func (f filesByPath) Swap(i, j int) {
 	f[i], f[j] = f[j], f[i]
 }
 
-func (f files) Less(i, j int) bool {
+func (f filesByPath) Less(i, j int) bool {
 	return strings.Compare(f[i].Path(), f[j].Path()) < 0
 }

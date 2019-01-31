@@ -5,26 +5,22 @@ import (
 	"github.com/bmatcuk/doublestar"
 )
 
-type Wildcard interface {
-	goldsmith.Filter
-}
-
-func New(wildcards ...string) Wildcard {
-	return &wildcard{wildcards}
-}
-
-type wildcard struct {
+type Wildcard struct {
 	wildcards []string
 }
 
-func (*wildcard) Name() string {
+func New(wildcards ...string) *Wildcard {
+	return &Wildcard{wildcards}
+}
+
+func (*Wildcard) Name() string {
 	return "wildcard"
 }
 
-func (e *wildcard) Accept(ctx *goldsmith.Context, file *goldsmith.File) (bool, error) {
+func (filter *Wildcard) Accept(ctx *goldsmith.Context, file *goldsmith.File) (bool, error) {
 	filePath := file.Path()
 
-	for _, wildcard := range e.wildcards {
+	for _, wildcard := range filter.wildcards {
 		matched, err := doublestar.PathMatch(wildcard, filePath)
 		if err != nil {
 			return false, err

@@ -19,19 +19,15 @@ const (
 	PlaceInline
 )
 
-type Syntax interface {
-	goldsmith.Plugin
-	goldsmith.Initializer
-	goldsmith.Processor
-
-	Style(style string) Syntax
-	LineNumbers(numbers bool) Syntax
-	Prefix(prefix string) Syntax
-	Placement(placement Placement) Syntax
+type Syntax struct {
+	style     string
+	numbers   bool
+	prefix    string
+	placement Placement
 }
 
-func New() Syntax {
-	return &syntax{
+func New() *Syntax {
+	return &Syntax{
 		style:     "github",
 		numbers:   false,
 		prefix:    "language-",
@@ -39,42 +35,35 @@ func New() Syntax {
 	}
 }
 
-type syntax struct {
-	style     string
-	numbers   bool
-	prefix    string
-	placement Placement
+func (plugin *Syntax) Style(style string) *Syntax {
+	plugin.style = style
+	return plugin
 }
 
-func (s *syntax) Style(style string) Syntax {
-	s.style = style
-	return s
+func (plugin *Syntax) LineNumbers(numbers bool) *Syntax {
+	plugin.numbers = numbers
+	return plugin
 }
 
-func (s *syntax) LineNumbers(numbers bool) Syntax {
-	s.numbers = numbers
-	return s
+func (plugin *Syntax) Prefix(prefix string) *Syntax {
+	plugin.prefix = prefix
+	return plugin
 }
 
-func (s *syntax) Prefix(prefix string) Syntax {
-	s.prefix = prefix
-	return s
+func (plugin *Syntax) Placement(placement Placement) *Syntax {
+	plugin.placement = placement
+	return plugin
 }
 
-func (s *syntax) Placement(placement Placement) Syntax {
-	s.placement = placement
-	return s
-}
-
-func (*syntax) Name() string {
+func (*Syntax) Name() string {
 	return "syntax"
 }
 
-func (*syntax) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (*Syntax) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return extension.New(".html", ".htm"), nil
 }
 
-func (s *syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (plugin *Syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
 		outputFile.Meta = inputFile.Meta
 		context.DispatchFile(outputFile)
@@ -87,9 +76,9 @@ func (s *syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) 
 	}
 
 	var errs []error
-	doc.Find(fmt.Sprintf("[class*=%s]", s.prefix)).Each(func(i int, sel *goquery.Selection) {
+	doc.Find(fmt.Sprintf("[class*=%s]", plugin.prefix)).Each(func(i int, sel *goquery.Selection) {
 		class := sel.AttrOr("class", "")
-		language := class[len(s.prefix):len(class)]
+		language := class[len(plugin.prefix):len(class)]
 		lexer := lexers.Get(language)
 		if lexer == nil {
 			lexer = lexers.Fallback
@@ -101,13 +90,13 @@ func (s *syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) 
 			return
 		}
 
-		style := styles.Get(s.style)
+		style := styles.Get(plugin.style)
 		if style == nil {
 			style = styles.Fallback
 		}
 
 		var options []html.Option
-		if s.numbers {
+		if plugin.numbers {
 			options = append(options, html.WithLineNumbers())
 		}
 
@@ -118,7 +107,7 @@ func (s *syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) 
 			return
 		}
 
-		switch s.placement {
+		switch plugin.placement {
 		case PlaceInside:
 			sel.SetHtml(string(buff.Bytes()))
 		case PlaceInline:
