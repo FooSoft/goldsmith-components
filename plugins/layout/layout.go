@@ -11,28 +11,7 @@ import (
 )
 
 // Layout chainable context.
-type Layout interface {
-	goldsmith.Plugin
-	goldsmith.Initializer
-	goldsmith.Processor
-	goldsmith.Finalizer
-
-	// LayoutKey sets the metadata key used to access the layout identifier (default: "Layout").
-	LayoutKey(layoutKey string) Layout
-
-	// ContentKey sets the metadata key used to access the source content (default: "Content").
-	ContentKey(key string) Layout
-
-	// Helpers sets the function map used to lookup template helper functions.
-	Helpers(helpers template.FuncMap) Layout
-}
-
-// New creates a new instance of the Layout plugin.
-func New() Layout {
-	return &layout{layoutKey: "Layout", contentKey: "Content", helpers: nil}
-}
-
-type layout struct {
+type Layout struct {
 	layoutKey  string
 	contentKey string
 	helpers    template.FuncMap
@@ -44,75 +23,87 @@ type layout struct {
 	template *template.Template
 }
 
-func (layout *layout) LayoutKey(key string) Layout {
-	layout.layoutKey = key
-	return layout
+// New creates a new instance of the Layout plugin.
+func New() *Layout {
+	return &Layout{
+		layoutKey:  "Layout",
+		contentKey: "Content",
+		helpers:    nil,
+	}
 }
 
-func (layout *layout) ContentKey(key string) Layout {
+// LayoutKey sets the metadata key used to access the layout identifier (default: "Layout").
+func (plugin *Layout) LayoutKey(key string) *Layout {
+	plugin.layoutKey = key
+	return plugin
+}
+
+// ContentKey sets the metadata key used to access the source content (default: "Content").
+func (layout *Layout) ContentKey(key string) *Layout {
 	layout.contentKey = key
 	return layout
 }
 
-func (layout *layout) Helpers(helpers template.FuncMap) Layout {
-	layout.helpers = helpers
-	return layout
+// Helpers sets the function map used to lookup template helper functions.
+func (plugin *Layout) Helpers(helpers template.FuncMap) *Layout {
+	plugin.helpers = helpers
+	return plugin
 }
 
-func (*layout) Name() string {
+func (*Layout) Name() string {
 	return "layout"
 }
 
-func (layout *layout) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	layout.template = template.New("").Funcs(layout.helpers)
+func (plugin *Layout) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+	plugin.template = template.New("").Funcs(plugin.helpers)
 	return extension.New(".html", ".htm", ".tmpl", ".gohtml"), nil
 }
 
-func (layout *layout) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	layout.mutex.Lock()
-	defer layout.mutex.Unlock()
+func (plugin *Layout) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	plugin.mutex.Lock()
+	defer plugin.mutex.Unlock()
 
 	switch inputFile.Ext() {
 	case ".html", ".htm":
-		if _, ok := inputFile.Meta[layout.layoutKey]; ok {
+		if _, ok := inputFile.Meta[plugin.layoutKey]; ok {
 			var buff bytes.Buffer
 			if _, err := inputFile.WriteTo(&buff); err != nil {
 				return err
 			}
 
-			inputFile.Meta[layout.contentKey] = template.HTML(buff.Bytes())
-			layout.inputFiles = append(layout.inputFiles, inputFile)
+			inputFile.Meta[plugin.contentKey] = template.HTML(buff.Bytes())
+			plugin.inputFiles = append(plugin.inputFiles, inputFile)
 		} else {
 			context.DispatchFile(inputFile)
 		}
 	case ".tmpl", ".gohtml":
-		layout.templateFiles = append(layout.templateFiles, inputFile)
+		plugin.templateFiles = append(plugin.templateFiles, inputFile)
 	}
 
 	return nil
 }
 
-func (layout *layout) Finalize(context *goldsmith.Context) error {
-	for _, templateFile := range layout.templateFiles {
+func (plugin *Layout) Finalize(context *goldsmith.Context) error {
+	for _, templateFile := range plugin.templateFiles {
 		var buff bytes.Buffer
 		if _, err := templateFile.WriteTo(&buff); err != nil {
 			return err
 		}
 
-		if _, err := layout.template.Parse(string(buff.Bytes())); err != nil {
+		if _, err := plugin.template.Parse(string(buff.Bytes())); err != nil {
 			return err
 		}
 	}
 
-	for _, inputFile := range layout.inputFiles {
-		name, ok := inputFile.Meta[layout.layoutKey].(string)
+	for _, inputFile := range plugin.inputFiles {
+		name, ok := inputFile.Meta[plugin.layoutKey].(string)
 		if !ok {
 			context.DispatchFile(inputFile)
 			continue
 		}
 
 		var buff bytes.Buffer
-		if err := layout.template.ExecuteTemplate(&buff, name, inputFile); err != nil {
+		if err := plugin.template.ExecuteTemplate(&buff, name, inputFile); err != nil {
 			return err
 		}
 

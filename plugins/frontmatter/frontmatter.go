@@ -8,28 +8,22 @@ import (
 )
 
 // Frontmatter chainable plugin context.
-type Frontmatter interface {
-	goldsmith.Plugin
-	goldsmith.Initializer
-	goldsmith.Processor
-}
+type FrontMatter struct{}
 
 // New creates a new instance of the Frontmatter plugin.
-func New() Frontmatter {
-	return new(frontmatter)
+func New() *FrontMatter {
+	return new(FrontMatter)
 }
 
-type frontmatter struct{}
-
-func (*frontmatter) Name() string {
+func (*FrontMatter) Name() string {
 	return "frontmatter"
 }
 
-func (*frontmatter) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (*FrontMatter) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return extension.New(".md", ".markdown", ".rst", ".html", ".htm"), nil
 }
 
-func (*frontmatter) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (*FrontMatter) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	meta, body, err := fm.Parse(inputFile)
 	if err != nil {
 		return err
