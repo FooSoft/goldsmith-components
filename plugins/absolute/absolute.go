@@ -42,7 +42,7 @@ func (*Absolute) Initialize(context *goldsmith.Context) (goldsmith.Filter, error
 	return extension.New(".html", ".htm"), nil
 }
 
-func (absolute *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (plugin *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
 		outputFile.Meta = inputFile.Meta
 		context.DispatchFile(outputFile)
@@ -59,7 +59,7 @@ func (absolute *Absolute) Process(context *goldsmith.Context, inputFile *goldsmi
 		return err
 	}
 
-	for _, attribute := range absolute.attributes {
+	for _, attribute := range plugin.attributes {
 		cssPath := fmt.Sprintf("*[%s]", attribute)
 		doc.Find(cssPath).Each(func(index int, selection *goquery.Selection) {
 			value, exists := selection.Attr(attribute)
@@ -75,8 +75,8 @@ func (absolute *Absolute) Process(context *goldsmith.Context, inputFile *goldsmi
 				currUrl = baseUrl.ResolveReference(currUrl)
 			}
 
-			if absolute.baseUrl != nil {
-				currUrl.Path = filepath.Join(absolute.baseUrl.Path, currUrl.Path)
+			if plugin.baseUrl != nil {
+				currUrl.Path = filepath.Join(plugin.baseUrl.Path, currUrl.Path)
 			}
 
 			selection.SetAttr(attribute, currUrl.String())

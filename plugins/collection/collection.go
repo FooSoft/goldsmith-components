@@ -10,38 +10,11 @@ import (
 	"github.com/FooSoft/goldsmith-components/filters/extension"
 )
 
-// Collection chainable plugin context.
-type Collection interface {
-	goldsmith.Plugin
-	goldsmith.Initializer
-	goldsmith.Processor
-	goldsmith.Finalizer
-
-	// CollectionKey sets the metadata key used to access the collection name (default: "Collection").
-	CollectionKey(collKey string) Collection
-
-	// GroupsKey sets the metadata key used to store information about collection groups (default: "Groups").
-	// This information is stored as a mapping of group names to contained files (map[string][]goldsmith.File).
-	GroupsKey(groupsKey string) Collection
-
-	// Comparer sets the function used to sort files in collection groups (default: sort by filenames).
-	Comparer(comp Comparer) Collection
-}
-
 // A Comparer callback function is used to sort files within a collection group.
 type Comparer func(i, j *goldsmith.File) (less bool)
 
-// New creates a new instance of the Collection plugin.
-func New() Collection {
-	return &collection{
-		collectionKey: "Collection",
-		groupsKey:     "Groups",
-		comparer:      nil,
-		groups:        make(map[string][]*goldsmith.File),
-	}
-}
-
-type collection struct {
+// Collection chainable plugin context.
+type Collection struct {
 	collectionKey string
 	groupsKey     string
 	comparer      Comparer
@@ -51,30 +24,44 @@ type collection struct {
 	mutex  sync.Mutex
 }
 
-func (c *collection) CollectionKey(collectionKey string) Collection {
-	c.collectionKey = collectionKey
-	return c
+// New creates a new instance of the Collection plugin.
+func New() *Collection {
+	return &Collection{
+		collectionKey: "Collection",
+		groupsKey:     "Groups",
+		comparer:      nil,
+		groups:        make(map[string][]*goldsmith.File),
+	}
 }
 
-func (c *collection) GroupsKey(groupsKey string) Collection {
-	c.groupsKey = groupsKey
-	return c
+// CollectionKey sets the metadata key used to access the collection name (default: "Collection").
+func (plugin *Collection) CollectionKey(collectionKey string) *Collection {
+	plugin.collectionKey = collectionKey
+	return plugin
 }
 
-func (c *collection) Comparer(comparer Comparer) Collection {
-	c.comparer = comparer
-	return c
+// GroupsKey sets the metadata key used to store information about collection groups (default: "Groups").
+// This information is stored as a mapping of group names to contained files (map[string][]goldsmith.File).
+func (plugin *Collection) GroupsKey(groupsKey string) *Collection {
+	plugin.groupsKey = groupsKey
+	return plugin
 }
 
-func (*collection) Name() string {
+// Comparer sets the function used to sort files in collection groups (default: sort by filenames).
+func (plugin *Collection) Comparer(comparer Comparer) *Collection {
+	plugin.comparer = comparer
+	return plugin
+}
+
+func (*Collection) Name() string {
 	return "collection"
 }
 
-func (*collection) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (*Collection) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return extension.New(".html", ".htm"), nil
 }
 
-func (c *collection) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (c *Collection) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	c.mutex.Lock()
 	defer func() {
 		inputFile.Meta[c.groupsKey] = c.groups
@@ -104,7 +91,7 @@ func (c *collection) Process(context *goldsmith.Context, inputFile *goldsmith.Fi
 	return nil
 }
 
-func (c *collection) Finalize(context *goldsmith.Context) error {
+func (c *Collection) Finalize(context *goldsmith.Context) error {
 	for _, files := range c.groups {
 		fg := &fileSorter{files, c.comparer}
 		sort.Sort(fg)
