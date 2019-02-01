@@ -4,7 +4,9 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type Operator interface{}
+type Operator interface {
+	goldsmith.Filter
+}
 
 func And(filters ...goldsmith.Filter) Operator {
 	return &operatorAnd{filters}
