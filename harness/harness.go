@@ -15,10 +15,11 @@ import (
 
 func Validate(t *testing.T, casePrefix string, plugins ...goldsmith.Plugin) {
 	var (
-		sourceDir    = filepath.Join("testdata", casePrefix, "source")
-		targetDir    = filepath.Join("testdata", casePrefix, "target")
-		cacheDir     = filepath.Join("testdata", casePrefix, "cache")
-		referenceDir = filepath.Join("testdata", casePrefix, "reference")
+		caseDir      = filepath.Join("testdata", casePrefix)
+		sourceDir    = filepath.Join(caseDir, "source")
+		targetDir    = filepath.Join(caseDir, "target")
+		cacheDir     = filepath.Join(caseDir, "cache")
+		referenceDir = filepath.Join(caseDir, "reference")
 	)
 
 	if err := validate(sourceDir, targetDir, cacheDir, referenceDir, plugins); err != nil {
