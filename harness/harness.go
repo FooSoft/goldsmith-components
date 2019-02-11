@@ -36,6 +36,8 @@ func validate(sourceDir, targetDir, cacheDir, referenceDir string, plugins []gol
 		return err
 	}
 
+	defer os.RemoveAll(cacheDir)
+
 	for i := 0; i < 2; i++ {
 		if err := execute(sourceDir, targetDir, cacheDir, plugins); err != nil {
 			return err
@@ -49,6 +51,10 @@ func validate(sourceDir, targetDir, cacheDir, referenceDir string, plugins []gol
 		if !match {
 			return errors.New("directory contents do not match")
 		}
+	}
+
+	if err := os.RemoveAll(targetDir); err != nil {
+		return err
 	}
 
 	return nil
