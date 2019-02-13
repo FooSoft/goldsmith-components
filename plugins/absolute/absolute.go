@@ -4,7 +4,6 @@ package absolute
 import (
 	"fmt"
 	"net/url"
-	"path/filepath"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/extension"
@@ -14,18 +13,11 @@ import (
 // Absolute chainable plugin context.
 type Absolute struct {
 	attributes []string
-	baseUrl    *url.URL
 }
 
-// New creates absolute new instance of the Abs plugin.
+// New creates absolute new instance of the Absolute plugin.
 func New() *Absolute {
 	return &Absolute{attributes: []string{"href", "src"}}
-}
-
-// BaseUrl sets the base directory to which relative URLs are joined (default: "/").
-func (absolute *Absolute) BaseUrl(baseDir string) *Absolute {
-	absolute.baseUrl, _ = url.Parse(baseDir)
-	return absolute
 }
 
 // Attributes sets the attributes which are scanned for relative URLs (default: "href", "src").
@@ -71,14 +63,12 @@ func (plugin *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith
 			if err != nil {
 				return
 			}
-			if !currUrl.IsAbs() {
-				currUrl = baseUrl.ResolveReference(currUrl)
+
+			if currUrl.IsAbs() {
+				return
 			}
 
-			if plugin.baseUrl != nil {
-				currUrl.Path = filepath.Join(plugin.baseUrl.Path, currUrl.Path)
-			}
-
+			currUrl = baseUrl.ResolveReference(currUrl)
 			selection.SetAttr(attribute, currUrl.String())
 		})
 	}
