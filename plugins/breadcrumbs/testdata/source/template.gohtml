@@ -3,20 +3,21 @@
     <body>
         {{.Meta.Content}}
 
+        <h1>{{.Meta.CrumbName}}</h1>
+
         <ul>
-            <li><a href="child_1.html">Child 1</a></li>
-            <li><a href="child_2.html">Child 2</a></li>
-            <li><a href="child_3.html">Child 3</a></li>
-            <li><a href="child_4.html">Child 4</a></li>
-            <li><a href="parent_1.html">Parent 1</a></li>
-            <li><a href="parent_2.html">Parent 2</a></li>
-            <li><a href="root_1.html">Root 1</a></li>
-            <li><a href="root_2.html">Root 2</a></li>
+            <li><a href="child_1.html">child_1</a></li>
+            <li><a href="child_2.html">child_2</a></li>
+            <li><a href="child_3.html">child_3</a></li>
+            <li><a href="child_4.html">child_4</a></li>
+            <li><a href="parent_1.html">parent_1</a></li>
+            <li><a href="parent_2.html">parent_2</a></li>
+            <li><a href="root_1.html">root_1</a></li>
+            <li><a href="root_2.html">root_2</a></li>
         </ul>
 
+        {{if .Meta.CrumbParent}}
         <hr>
-
-        {{if and .Meta.CrumbParent .Meta.Crumbs}}
         <div>
             {{range .Meta.Crumbs.Ancestors}}
             <a href="{{.File.Path}}" class="breadcrumb-item">{{.File.Meta.CrumbName}}</a> &gt;
