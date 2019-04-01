@@ -13,7 +13,9 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-func Validate(t *testing.T, casePrefix string, plugins ...goldsmith.Plugin) {
+type Stager func(gs *goldsmith.Goldsmith)
+
+func Validate(t *testing.T, casePrefix string, stager Stager) {
 	var (
 		caseDir      = filepath.Join("testdata", casePrefix)
 		sourceDir    = filepath.Join(caseDir, "source")
@@ -22,56 +24,52 @@ func Validate(t *testing.T, casePrefix string, plugins ...goldsmith.Plugin) {
 		referenceDir = filepath.Join(caseDir, "reference")
 	)
 
-	if err := validate(sourceDir, targetDir, cacheDir, referenceDir, plugins); err != nil {
-		log.Println(err)
+	if errs := validate(sourceDir, targetDir, cacheDir, referenceDir, stager); len(errs) > 0 {
+		for _, err := range errs {
+			log.Println(err)
+		}
+
 		t.Fail()
 	}
 }
 
-func validate(sourceDir, targetDir, cacheDir, referenceDir string, plugins []goldsmith.Plugin) error {
+func validate(sourceDir, targetDir, cacheDir, referenceDir string, stager Stager) []error {
 	if err := os.RemoveAll(targetDir); err != nil {
-		return err
+		return []error{err}
 	}
 
 	if err := os.RemoveAll(cacheDir); err != nil {
-		return err
+		return []error{err}
 	}
 
 	defer os.RemoveAll(cacheDir)
 
 	for i := 0; i < 2; i++ {
-		if err := execute(sourceDir, targetDir, cacheDir, plugins); err != nil {
-			return err
+		if errs := execute(sourceDir, targetDir, cacheDir, stager); errs != nil {
+			return errs
 		}
 
 		match, err := compareDirs(targetDir, referenceDir)
 		if err != nil {
-			return err
+			return []error{err}
 		}
 
 		if !match {
-			return errors.New("directory contents do not match")
+			return []error{errors.New("directory contents do not match")}
 		}
 	}
 
 	if err := os.RemoveAll(targetDir); err != nil {
-		return err
+		return []error{err}
 	}
 
 	return nil
 }
 
-func execute(sourceDir, targetDir, cacheDir string, plugins []goldsmith.Plugin) error {
+func execute(sourceDir, targetDir, cacheDir string, stager Stager) []error {
 	gs := goldsmith.Begin(sourceDir).Cache(cacheDir)
-	for _, plugin := range plugins {
-		gs = gs.Chain(plugin)
-	}
-
-	if errs := gs.End(targetDir); len(errs) > 0 {
-		return errors.New("errors detected in chain")
-	}
-
-	return nil
+	stager(gs)
+	return gs.End(targetDir)
 }
 
 func hashDirState(dir string) (uint32, error) {

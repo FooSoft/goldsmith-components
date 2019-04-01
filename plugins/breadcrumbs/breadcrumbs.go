@@ -9,13 +9,13 @@ import (
 	"github.com/FooSoft/goldsmith-components/filters/extension"
 )
 
-// A Crumb provides organizational information about this node and ones before it.
+// Crumb provides organizational information about this node and ones before it.
 type Crumb struct {
 	Ancestors []*Node
 	Node      *Node
 }
 
-// A Node represents information about a specific file in the site's structure.
+// Node represents information about a specific file in the site's structure.
 type Node struct {
 	File     *goldsmith.File
 	Parent   *Node
