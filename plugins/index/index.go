@@ -10,36 +10,39 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
-type dirIndex struct {
-	entries   dirEntriesByName
+type directory struct {
+	entries   EntriesByName
 	indexFile *goldsmith.File
 }
 
-type dirEntry struct {
+// Entry contains information about a directory item.
+type Entry struct {
 	Name  string
 	Path  string
 	IsDir bool
 	File  *goldsmith.File
 }
 
+// Index chainable plugin context.
 type Index struct {
 	indexName string
 	filesKey  string
 	indexMeta map[string]interface{}
 
-	dirLists    map[string]*dirIndex
+	dirLists    map[string]*directory
 	dirsHandled map[string]bool
 	mutex       sync.Mutex
 }
 
 // New creates a new instance of the Index plugin.
+// The meta parameter allows additional metadata to be provided for generated indices.
 func New(meta map[string]interface{}) *Index {
 	return &Index{
 		indexName:   "index.html",
 		indexMeta:   meta,
 		filesKey:    "Files",
 		dirsHandled: make(map[string]bool),
-		dirLists:    make(map[string]*dirIndex),
+		dirLists:    make(map[string]*directory),
 	}
 }
 
@@ -78,7 +81,7 @@ func (plugin *Index) Process(context *goldsmith.Context, inputFile *goldsmith.Fi
 
 		list, ok := plugin.dirLists[currentDir]
 		if !ok {
-			list = new(dirIndex)
+			list = new(directory)
 			plugin.dirLists[currentDir] = list
 		}
 
@@ -90,7 +93,7 @@ func (plugin *Index) Process(context *goldsmith.Context, inputFile *goldsmith.Fi
 			}
 		}
 
-		entry := dirEntry{Name: currentBase, Path: currentPath, IsDir: currentIsDir, File: inputFile}
+		entry := Entry{Name: currentBase, Path: currentPath, IsDir: currentIsDir, File: inputFile}
 		list.entries = append(list.entries, entry)
 
 		if currentDir == "." {
@@ -123,13 +126,13 @@ func (plugin *Index) Finalize(context *goldsmith.Context) error {
 	return nil
 }
 
-type dirEntriesByName []dirEntry
+type EntriesByName []Entry
 
-func (d dirEntriesByName) Len() int {
+func (d EntriesByName) Len() int {
 	return len(d)
 }
 
-func (d dirEntriesByName) Less(i, j int) bool {
+func (d EntriesByName) Less(i, j int) bool {
 	d1, d2 := d[i], d[j]
 
 	if d1.IsDir && !d2.IsDir {
@@ -142,6 +145,6 @@ func (d dirEntriesByName) Less(i, j int) bool {
 	return strings.Compare(d1.Name, d2.Name) == -1
 }
 
-func (d dirEntriesByName) Swap(i, j int) {
+func (d EntriesByName) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }

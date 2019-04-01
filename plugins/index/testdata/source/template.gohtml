@@ -1,0 +1,18 @@
+<html>
+    <body>
+        {{define "index"}}
+        <h1>Index of /{{.Dir}}</h1>
+        <hr>
+        <ul class="list-unstyled">
+            {{range .Meta.Files}}
+            {{if .IsDir}}
+            <li><strong><a href="{{.Name}}/index.html">{{.Name}}</a></strong></li>
+            {{else}}
+            <li><a href="{{.Name}}">{{.Name}}</a></li>
+            {{end}}
+            {{end}}
+        </ul>
+        </div>
+        {{end}}
+    </body>
+</html>
