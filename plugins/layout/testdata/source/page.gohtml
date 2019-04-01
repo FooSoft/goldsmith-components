@@ -1,0 +1,12 @@
+{{define "page"}}
+<html>
+    <body>
+        {{template "title" .Meta.Title}}
+        {{template "content" .Meta.Content}}
+    </body>
+</html>
+{{end}}
+
+{{define "content"}}
+<p>{{.}}</p>
+{{end}}
