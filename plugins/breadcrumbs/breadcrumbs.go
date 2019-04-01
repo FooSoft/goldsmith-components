@@ -46,6 +46,7 @@ func New() *Breadcrumbs {
 }
 
 // NameKey sets the metadata key used to access the crumb name (default: "CrumbName").
+// Crumb names must be globally unique within any given website.
 func (plugin *Breadcrumbs) NameKey(key string) *Breadcrumbs {
 	plugin.nameKey = key
 	return plugin

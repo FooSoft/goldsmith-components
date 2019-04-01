@@ -1,0 +1,36 @@
+{{define "page"}}
+<html>
+    <body>
+        <h1>{{.Meta.Title}}</h1>
+    </body>
+</html>
+{{end}}
+
+{{define "item"}}
+{{end}}
+
+{{define "collection"}}
+<ul>
+    {{range .}}
+    <li>
+        <a href="{{.Path}}">{{.Meta.Title}}</a>
+    </li>
+    {{end}}
+</ul>
+{{end}}
+
+{{define "index"}}
+<html>
+    <body>
+        <div>
+            <h1>group_1</h1>
+            {{template "collection" .Meta.Groups.group_1}}
+        </div>
+
+        <div>
+            <h1>group_2</h1>
+            {{template "collection" .Meta.Groups.group_2}}
+        </div>
+    </body>
+</html>
+{{end}}
