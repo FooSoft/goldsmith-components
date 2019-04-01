@@ -12,7 +12,6 @@ import (
 func Test(t *testing.T) {
 	harness.Validate(
 		t,
-		"",
 		func(gs *goldsmith.Goldsmith) {
 			gs.
 				Chain(frontmatter.New()).
