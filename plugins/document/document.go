@@ -1,4 +1,4 @@
-// Package document allows for modification of HTML document structure.
+// Package document enables simple HTML modification via callback.
 package document
 
 import (
@@ -16,6 +16,7 @@ type Document struct {
 }
 
 // New creates a new instance of the Dom plugin.
+// The provided callback will be invoked for all HTML documents.
 func New(callback Processor) *Document {
 	return &Document{callback}
 }
