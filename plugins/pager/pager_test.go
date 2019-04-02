@@ -1,4 +1,4 @@
-package paginate
+package pager
 
 import (
 	"testing"

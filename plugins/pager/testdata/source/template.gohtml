@@ -1,0 +1,42 @@
+{{define "page"}}
+<html>
+    <body>
+        <h1>{{.Meta.Title}}</h1>
+        <p>{{.Meta.Content}}</p>
+    </body>
+</html>
+{{end}}
+
+{{define "index"}}
+<html>
+    <body>
+        <h1>Listing {{.Meta.Pager.CurrPage.Index}} of {{len .Meta.Pager.AllPages}}</h1>
+        <p>
+            {{range .Meta.Pager.CurrPage.Items}}
+            <li>
+                <a href="{{.Path}}">{{.Meta.Title}}</a>
+            </li>
+            {{end}}
+        </p>
+        <p>
+            [
+
+            {{if .Meta.Pager.CurrPage.Prev}}
+            <a href="{{.Meta.Pager.CurrPage.Prev.File.Path}}">Prev</a>
+            {{else}}
+            Prev
+            {{end}}
+
+            |
+
+            {{if .Meta.Pager.CurrPage.Next}}
+            <a href="{{.Meta.Pager.CurrPage.Next.File.Path}}">Next</a>
+            {{else}}
+            Next
+            {{end}}
+
+            ]
+        </p>
+    </body>
+</html>
+{{end}}

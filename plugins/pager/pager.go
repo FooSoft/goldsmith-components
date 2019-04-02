@@ -1,5 +1,5 @@
-// Package paginate splits arrays of metadata into standalone pages.
-package paginate
+// Package pager splits arrays of metadata into standalone pages.
+package pager
 
 import (
 	"bytes"
@@ -17,43 +17,43 @@ import (
 type Namer func(path string, index int) string
 type Lister func(file *goldsmith.File) interface{}
 
-type Page struct {
+type PagerPage struct {
 	Index int
 	Items interface{}
 	File  *goldsmith.File
 
-	Next *Page
-	Prev *Page
+	Next *PagerPage
+	Prev *PagerPage
+}
+
+type PagerIndex struct {
+	AllPages []PagerPage
+	CurrPage *PagerPage
+	Paged    bool
 }
 
 type Pager struct {
-	AllPages    []Page
-	CurrentPage *Page
-	Paged       bool
-}
-
-type Paginate struct {
 	pagerKey  string
 	enableKey string
 
-	namer        Namer
-	lister       Lister
-	inheritKeys  []string
-	itemsPerPage int
+	namer         Namer
+	lister        Lister
+	inheritedKeys []string
+	itemsPerPage  int
 
 	files []*goldsmith.File
 	mutex sync.Mutex
 }
 
-// New creates a new instance of the Paginate plugin.
-func New(lister Lister) *Paginate {
+// New creates a new instance of the Pager plugin.
+func New(lister Lister) *Pager {
 	namer := func(path string, index int) string {
 		ext := filepath.Ext(path)
 		body := strings.TrimSuffix(path, ext)
 		return fmt.Sprintf("%s-%d%s", body, index, ext)
 	}
 
-	return &Paginate{
+	return &Pager{
 		pagerKey:     "Pager",
 		enableKey:    "PagerEnable",
 		namer:        namer,
@@ -62,35 +62,35 @@ func New(lister Lister) *Paginate {
 	}
 }
 
-func (plugin *Paginate) PagerKey(key string) *Paginate {
+func (plugin *Pager) PagerKey(key string) *Pager {
 	plugin.pagerKey = key
 	return plugin
 }
 
-func (plugin *Paginate) ItemsPerPage(limit int) *Paginate {
+func (plugin *Pager) ItemsPerPage(limit int) *Pager {
 	plugin.itemsPerPage = limit
 	return plugin
 }
 
-func (plugin *Paginate) Namer(namer Namer) *Paginate {
+func (plugin *Pager) Namer(namer Namer) *Pager {
 	plugin.namer = namer
 	return plugin
 }
 
-func (p *Paginate) InheritKeys(keys ...string) *Paginate {
-	p.inheritKeys = keys
+func (p *Pager) InheritedKeys(keys ...string) *Pager {
+	p.inheritedKeys = keys
 	return p
 }
 
-func (*Paginate) Name() string {
-	return "paginate"
+func (*Pager) Name() string {
+	return "pager"
 }
 
-func (*Paginate) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (*Pager) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return extension.New(".html", ".htm"), nil
 }
 
-func (plugin *Paginate) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (plugin *Pager) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	plugin.mutex.Lock()
 	defer plugin.mutex.Unlock()
 
@@ -120,7 +120,7 @@ func (plugin *Paginate) Process(context *goldsmith.Context, inputFile *goldsmith
 		pageCount++
 	}
 
-	pages := make([]Page, pageCount, pageCount)
+	pages := make([]PagerPage, pageCount, pageCount)
 	for i := 0; i < pageCount; i++ {
 		page := &pages[i]
 		page.Index = i + 1
@@ -149,12 +149,12 @@ func (plugin *Paginate) Process(context *goldsmith.Context, inputFile *goldsmith
 			page.File = inputFile
 		} else {
 			page.File = context.CreateFileFromData(plugin.namer(inputFile.Path(), page.Index), buff.Bytes())
-			if len(plugin.inheritKeys) == 0 {
+			if len(plugin.inheritedKeys) == 0 {
 				for key, value := range inputFile.Meta {
 					page.File.Meta[key] = value
 				}
 			} else {
-				for _, key := range plugin.inheritKeys {
+				for _, key := range plugin.inheritedKeys {
 					if value, ok := inputFile.Meta[key]; ok {
 						page.File.Meta[key] = value
 					}
@@ -162,10 +162,10 @@ func (plugin *Paginate) Process(context *goldsmith.Context, inputFile *goldsmith
 			}
 		}
 
-		page.File.Meta[plugin.pagerKey] = Pager{
-			AllPages:    pages,
-			CurrentPage: page,
-			Paged:       pageCount > 1,
+		page.File.Meta[plugin.pagerKey] = PagerIndex{
+			AllPages: pages,
+			CurrPage: page,
+			Paged:    pageCount > 1,
 		}
 
 		plugin.files = append(plugin.files, page.File)
@@ -174,7 +174,7 @@ func (plugin *Paginate) Process(context *goldsmith.Context, inputFile *goldsmith
 	return nil
 }
 
-func (plugin *Paginate) Finalize(ctx *goldsmith.Context) error {
+func (plugin *Pager) Finalize(ctx *goldsmith.Context) error {
 	for _, f := range plugin.files {
 		ctx.DispatchFile(f)
 	}
@@ -182,7 +182,7 @@ func (plugin *Paginate) Finalize(ctx *goldsmith.Context) error {
 	return nil
 }
 
-func (plugin *Paginate) isEnabledForFile(file *goldsmith.File) (bool, error) {
+func (plugin *Pager) isEnabledForFile(file *goldsmith.File) (bool, error) {
 	enableRaw, ok := file.Meta[plugin.enableKey]
 	if !ok {
 		return false, nil
@@ -190,7 +190,7 @@ func (plugin *Paginate) isEnabledForFile(file *goldsmith.File) (bool, error) {
 
 	enable, ok := enableRaw.(bool)
 	if !ok {
-		return false, errors.New("invalid paginate enable setting")
+		return false, errors.New("invalid pager enable setting")
 	}
 
 	return enable, nil
