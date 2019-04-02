@@ -14,37 +14,39 @@ import (
 	"github.com/FooSoft/goldsmith-components/filters/extension"
 )
 
-// The Namer callback allows the user to generate custom filenames for generated pages.
 type Namer func(path string, index int) string
+type Lister func(file *goldsmith.File) interface{}
 
-type page struct {
+type Page struct {
 	Index int
 	Items interface{}
 	File  *goldsmith.File
 
-	Next *page
-	Prev *page
+	Next *Page
+	Prev *Page
 }
 
-type pager struct {
-	PagesAll []page
-	PageCurr *page
-	Paged    bool
+type Pager struct {
+	AllPages    []Page
+	CurrentPage *Page
+	Paged       bool
 }
 
 type Paginate struct {
-	key, pagerKey, paginateKey string
+	pagerKey  string
+	enableKey string
 
-	itemsPerPage int
 	namer        Namer
+	lister       Lister
 	inheritKeys  []string
+	itemsPerPage int
 
 	files []*goldsmith.File
 	mutex sync.Mutex
 }
 
 // New creates a new instance of the Paginate plugin.
-func New(key string) *Paginate {
+func New(lister Lister) *Paginate {
 	namer := func(path string, index int) string {
 		ext := filepath.Ext(path)
 		body := strings.TrimSuffix(path, ext)
@@ -52,21 +54,16 @@ func New(key string) *Paginate {
 	}
 
 	return &Paginate{
-		key:          key,
 		pagerKey:     "Pager",
-		paginateKey:  "Paginate",
-		itemsPerPage: 10,
+		enableKey:    "PagerEnable",
 		namer:        namer,
+		lister:       lister,
+		itemsPerPage: 10,
 	}
 }
 
 func (plugin *Paginate) PagerKey(key string) *Paginate {
 	plugin.pagerKey = key
-	return plugin
-}
-
-func (plugin *Paginate) PaginateKey(key string) *Paginate {
-	plugin.paginateKey = key
 	return plugin
 }
 
@@ -97,27 +94,22 @@ func (plugin *Paginate) Process(context *goldsmith.Context, inputFile *goldsmith
 	plugin.mutex.Lock()
 	defer plugin.mutex.Unlock()
 
+	enabled, err := plugin.isEnabledForFile(inputFile)
+	if err != nil {
+		return err
+	}
+
+	if !enabled {
+		plugin.files = append(plugin.files, inputFile)
+		return nil
+	}
+
 	var buff bytes.Buffer
 	if _, err := buff.ReadFrom(inputFile); err != nil {
 		return err
 	}
 
-	paginate, ok := inputFile.Meta[plugin.paginateKey]
-	if !ok {
-		plugin.files = append(plugin.files, inputFile)
-		return nil
-	}
-
-	if paginateBool, ok := paginate.(bool); !ok || !paginateBool {
-		return errors.New("invalid pagination setting")
-	}
-
-	values, ok := inputFile.Meta[plugin.key]
-	if !ok {
-		plugin.files = append(plugin.files, inputFile)
-		return nil
-	}
-
+	values := plugin.lister(inputFile)
 	valueCount, err := sliceLength(values)
 	if err != nil {
 		return err
@@ -128,7 +120,7 @@ func (plugin *Paginate) Process(context *goldsmith.Context, inputFile *goldsmith
 		pageCount++
 	}
 
-	pages := make([]page, pageCount, pageCount)
+	pages := make([]Page, pageCount, pageCount)
 	for i := 0; i < pageCount; i++ {
 		page := &pages[i]
 		page.Index = i + 1
@@ -140,8 +132,11 @@ func (plugin *Paginate) Process(context *goldsmith.Context, inputFile *goldsmith
 			page.Next = &pages[i+1]
 		}
 
-		indexStart := i * plugin.itemsPerPage
-		indexEnd := indexStart + plugin.itemsPerPage
+		var (
+			indexStart = i * plugin.itemsPerPage
+			indexEnd   = indexStart + plugin.itemsPerPage
+		)
+
 		if indexEnd > valueCount {
 			indexEnd = valueCount
 		}
@@ -155,7 +150,9 @@ func (plugin *Paginate) Process(context *goldsmith.Context, inputFile *goldsmith
 		} else {
 			page.File = context.CreateFileFromData(plugin.namer(inputFile.Path(), page.Index), buff.Bytes())
 			if len(plugin.inheritKeys) == 0 {
-				page.File.Meta = inputFile.Meta
+				for key, value := range inputFile.Meta {
+					page.File.Meta[key] = value
+				}
 			} else {
 				for _, key := range plugin.inheritKeys {
 					if value, ok := inputFile.Meta[key]; ok {
@@ -165,7 +162,12 @@ func (plugin *Paginate) Process(context *goldsmith.Context, inputFile *goldsmith
 			}
 		}
 
-		page.File.Meta[plugin.pagerKey] = pager{pages, page, pageCount > 1}
+		page.File.Meta[plugin.pagerKey] = Pager{
+			AllPages:    pages,
+			CurrentPage: page,
+			Paged:       pageCount > 1,
+		}
+
 		plugin.files = append(plugin.files, page.File)
 	}
 
@@ -178,6 +180,20 @@ func (plugin *Paginate) Finalize(ctx *goldsmith.Context) error {
 	}
 
 	return nil
+}
+
+func (plugin *Paginate) isEnabledForFile(file *goldsmith.File) (bool, error) {
+	enableRaw, ok := file.Meta[plugin.enableKey]
+	if !ok {
+		return false, nil
+	}
+
+	enable, ok := enableRaw.(bool)
+	if !ok {
+		return false, errors.New("invalid paginate enable setting")
+	}
+
+	return enable, nil
 }
 
 func sliceLength(slice interface{}) (int, error) {
