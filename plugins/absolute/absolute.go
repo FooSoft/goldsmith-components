@@ -5,7 +5,6 @@
 // posts). This plugin makes it easy to fix incorrect relative file references
 // by making sure all paths are absolute before content is featured on other
 // sections of your site.
-
 package absolute
 
 import (

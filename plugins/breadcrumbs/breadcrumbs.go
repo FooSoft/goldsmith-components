@@ -1,4 +1,6 @@
-// Package breadcrumbs generates metadata required to build navigation breadcrumbs.
+// Package breadcrumbs generates metadata required to enable breadcrumb
+// navigation. This is particularly helpful for sites that have deep
+// hierarchies which may be otherwise confusing to visitors.
 package breadcrumbs
 
 import (
