@@ -1,4 +1,11 @@
-// Package absolute converts relative file references in HTML documents to absolute paths.
+// Package absolute converts relative file references in HTML documents to
+// absolute paths. This is useful when working with plugins like "layout" and
+// "collection", which can render a page’s content from the context of a
+// different directory (imagine an index page showing inline previews of blog
+// posts). This plugin makes it easy to fix incorrect relative file references
+// by making sure all paths are absolute before content is featured on other
+// sections of your site.
+
 package absolute
 
 import (
