@@ -1,4 +1,8 @@
-// Package collection groups related pages into named collections.
+// Package collection groups related pages into named collections. This can be
+// useful for presenting blog posts on your front page, and displaying summary
+// information about other types of content on your website. It can be used in
+// conjunction with the "pager" plugin to create large collections which are
+// split across several pages.
 package collection
 
 import (
@@ -35,13 +39,14 @@ func New() *Collection {
 }
 
 // CollectionKey sets the metadata key used to access the collection name (default: "Collection").
+// The metadata associated with this key can be either a single string or an array of strings.
 func (plugin *Collection) CollectionKey(collectionKey string) *Collection {
 	plugin.collectionKey = collectionKey
 	return plugin
 }
 
 // GroupsKey sets the metadata key used to store information about collection groups (default: "Groups").
-// This information is stored as a mapping of group names to contained files (map[string][]goldsmith.File).
+// This information is stored as a mapping of group names to contained files.
 func (plugin *Collection) GroupsKey(groupsKey string) *Collection {
 	plugin.groupsKey = groupsKey
 	return plugin
@@ -61,43 +66,43 @@ func (*Collection) Initialize(context *goldsmith.Context) (goldsmith.Filter, err
 	return wildcard.New("**/*.html", "**/*.htm"), nil
 }
 
-func (c *Collection) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	c.mutex.Lock()
+func (plugin *Collection) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	plugin.mutex.Lock()
 	defer func() {
-		inputFile.Meta[c.groupsKey] = c.groups
-		c.files = append(c.files, inputFile)
-		c.mutex.Unlock()
+		inputFile.Meta[plugin.groupsKey] = plugin.groups
+		plugin.files = append(plugin.files, inputFile)
+		plugin.mutex.Unlock()
 	}()
 
-	collection, ok := inputFile.Meta[c.collectionKey]
+	collectionRaw, ok := inputFile.Meta[plugin.collectionKey]
 	if !ok {
 		return nil
 	}
 
-	var collections []string
-	switch t := collection.(type) {
+	var collectionNames []string
+	switch t := collectionRaw.(type) {
 	case string:
-		collections = append(collections, t)
+		collectionNames = append(collectionNames, t)
 	case []string:
-		collections = append(collections, t...)
+		collectionNames = append(collectionNames, t...)
 	}
 
-	for _, collection := range collections {
-		files, _ := c.groups[collection]
+	for _, collectionName := range collectionNames {
+		files, _ := plugin.groups[collectionName]
 		files = append(files, inputFile)
-		c.groups[collection] = files
+		plugin.groups[collectionName] = files
 	}
 
 	return nil
 }
 
-func (c *Collection) Finalize(context *goldsmith.Context) error {
-	for _, files := range c.groups {
-		fg := &fileSorter{files, c.comparer}
+func (plugin *Collection) Finalize(context *goldsmith.Context) error {
+	for _, files := range plugin.groups {
+		fg := &fileSorter{files, plugin.comparer}
 		sort.Sort(fg)
 	}
 
-	for _, file := range c.files {
+	for _, file := range plugin.files {
 		context.DispatchFile(file)
 	}
 
@@ -109,18 +114,18 @@ type fileSorter struct {
 	comparer Comparer
 }
 
-func (f fileSorter) Len() int {
-	return len(f.files)
+func (fs fileSorter) Len() int {
+	return len(fs.files)
 }
 
-func (f fileSorter) Swap(i, j int) {
-	f.files[i], f.files[j] = f.files[j], f.files[i]
+func (fs fileSorter) Swap(i, j int) {
+	fs.files[i], fs.files[j] = fs.files[j], fs.files[i]
 }
 
-func (f fileSorter) Less(i, j int) bool {
-	if f.comparer == nil {
-		return strings.Compare(f.files[i].Path(), f.files[j].Path()) < 0
+func (fs fileSorter) Less(i, j int) bool {
+	if fs.comparer == nil {
+		return strings.Compare(fs.files[i].Path(), fs.files[j].Path()) < 0
 	}
 
-	return f.comparer(f.files[i], f.files[j])
+	return fs.comparer(fs.files[i], fs.files[j])
 }

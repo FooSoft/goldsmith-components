@@ -6,9 +6,6 @@
 </html>
 {{end}}
 
-{{define "item"}}
-{{end}}
-
 {{define "collection"}}
 <ul>
     {{range .}}
@@ -23,12 +20,12 @@
 <html>
     <body>
         <div>
-            <h1>group_1</h1>
+            <h1>Group 1</h1>
             {{template "collection" .Meta.Groups.group_1}}
         </div>
 
         <div>
-            <h1>group_2</h1>
+            <h1>Group 2</h1>
             {{template "collection" .Meta.Groups.group_2}}
         </div>
     </body>
