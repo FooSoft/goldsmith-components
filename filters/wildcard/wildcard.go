@@ -17,7 +17,7 @@ func (*Wildcard) Name() string {
 	return "wildcard"
 }
 
-func (filter *Wildcard) Accept(ctx *goldsmith.Context, file *goldsmith.File) (bool, error) {
+func (filter *Wildcard) Accept(file *goldsmith.File) (bool, error) {
 	filePath := file.Path()
 
 	for _, wildcard := range filter.wildcards {

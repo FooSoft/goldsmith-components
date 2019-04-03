@@ -18,7 +18,7 @@ func (*Extension) Name() string {
 	return "extension"
 }
 
-func (filter *Extension) Accept(ctx *goldsmith.Context, file *goldsmith.File) (bool, error) {
+func (filter *Extension) Accept(file *goldsmith.File) (bool, error) {
 	fileExt := filepath.Ext(file.Path())
 
 	for _, extension := range filter.extensions {
