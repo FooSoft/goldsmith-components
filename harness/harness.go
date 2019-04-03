@@ -16,8 +16,12 @@ import (
 type Stager func(gs *goldsmith.Goldsmith)
 
 func Validate(t *testing.T, stager Stager) {
+	ValidateCase(t, "", stager)
+}
+
+func ValidateCase(t *testing.T, caseName string, stager Stager) {
 	var (
-		caseDir      = "testdata"
+		caseDir      = filepath.Join("testdata", caseName)
 		sourceDir    = filepath.Join(caseDir, "source")
 		targetDir    = filepath.Join(caseDir, "target")
 		cacheDir     = filepath.Join(caseDir, "cache")
