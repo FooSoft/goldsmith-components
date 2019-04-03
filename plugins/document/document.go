@@ -1,4 +1,7 @@
-// Package document enables simple HTML modification via callback.
+// Package document enables simple HTML modification via callback via
+// "goquery", an API similar to "jquery". This plugin is particularly useful
+// adding classes to elements and performing other cleanup tasks which are too
+// case-specific to warrant the creation of a new plugin.
 package document
 
 import (
@@ -15,8 +18,7 @@ type Document struct {
 	callback Processor
 }
 
-// New creates a new instance of the Dom plugin.
-// The provided callback will be invoked for all HTML documents.
+// New creates a new instance of the Document plugin.
 func New(callback Processor) *Document {
 	return &Document{callback}
 }
