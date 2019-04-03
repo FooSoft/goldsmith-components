@@ -10,7 +10,7 @@ import (
 func TestEnabled(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"enabled",
+		"true",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(New(true))
 		},
@@ -20,7 +20,7 @@ func TestEnabled(t *testing.T) {
 func TestDisabled(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"disabled",
+		"false",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(New(false))
 		},

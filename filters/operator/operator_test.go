@@ -11,7 +11,7 @@ import (
 func TestAndFalse(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"and_f",
+		"and_false",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(And(condition.New(false)))
 		},
@@ -21,7 +21,7 @@ func TestAndFalse(t *testing.T) {
 func TestAndFalseTrue(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"and_ft",
+		"and_false_true",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(And(condition.New(false), condition.New(true)))
 		},
@@ -31,7 +31,7 @@ func TestAndFalseTrue(t *testing.T) {
 func TestAndTrueFalse(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"and_tf",
+		"and_true_false",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(And(condition.New(true), condition.New(false)))
 		},
@@ -41,7 +41,7 @@ func TestAndTrueFalse(t *testing.T) {
 func TestAndTrue(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"and_t",
+		"and_true",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(And(condition.New(true)))
 		},
@@ -51,7 +51,7 @@ func TestAndTrue(t *testing.T) {
 func TestOrFalse(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"or_f",
+		"or_false",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(Or(condition.New(false)))
 		},
@@ -61,7 +61,7 @@ func TestOrFalse(t *testing.T) {
 func TestOrFalseTrue(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"or_ft",
+		"or_false_true",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(Or(condition.New(false), condition.New(true)))
 		},
@@ -71,7 +71,7 @@ func TestOrFalseTrue(t *testing.T) {
 func TestOrTrueFalse(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"or_tf",
+		"or_true_false",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(Or(condition.New(true), condition.New(false)))
 		},
@@ -81,7 +81,7 @@ func TestOrTrueFalse(t *testing.T) {
 func TestOrTrue(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"or_t",
+		"or_true",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(Or(condition.New(true)))
 		},
@@ -91,7 +91,7 @@ func TestOrTrue(t *testing.T) {
 func TestNotFalse(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"not_f",
+		"not_false",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(Not(condition.New(false)))
 		},
@@ -101,7 +101,7 @@ func TestNotFalse(t *testing.T) {
 func TestNotTrue(t *testing.T) {
 	harness.ValidateCase(
 		t,
-		"not_t",
+		"not_true",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(Not(condition.New(true)))
 		},
