@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 )
 
 // Layout chainable context.
@@ -56,7 +56,7 @@ func (*Layout) Name() string {
 
 func (plugin *Layout) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	plugin.template = template.New("").Funcs(plugin.helpers)
-	return extension.New(".html", ".htm", ".tmpl", ".gohtml"), nil
+	return wildcard.New("**/*.html", "**/*.htm", "**/*.tmpl", "**/*.gohtml"), nil
 }
 
 func (plugin *Layout) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 	"github.com/russross/blackfriday"
 )
 
@@ -57,7 +57,7 @@ func (*Markdown) Name() string {
 }
 
 func (plugin *Markdown) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return extension.New(".md", ".markdown"), nil
+	return wildcard.New("**/*.md", "**/*.markdown"), nil
 }
 
 func (m *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

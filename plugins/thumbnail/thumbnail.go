@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 	"github.com/nfnt/resize"
 )
 
@@ -47,7 +47,7 @@ func (*Thumbnail) Name() string {
 }
 
 func (*Thumbnail) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return extension.New(".jpg", ".jpeg", ".gif", ".png"), nil
+	return wildcard.New("**/*.jpg", "**/*.jpeg", "**/*.gif", "**/*.png"), nil
 }
 
 func (plugin *Thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

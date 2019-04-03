@@ -14,7 +14,7 @@ import (
 	"github.com/tdewolff/minify/xml"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 )
 
 // Minify chainable context.
@@ -30,7 +30,7 @@ func (*Minify) Name() string {
 }
 
 func (*Minify) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return extension.New(".css", ".html", ".htm", ".js", ".svg", ".json", ".xml"), nil
+	return wildcard.New("**/*.css", "**/*.html", "**/*.htm", "**/*.js", "**/*.svg", "**/*.json", "**/*.xml"), nil
 }
 
 func (*Minify) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

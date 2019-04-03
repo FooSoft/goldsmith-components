@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 )
 
 // A Comparer callback function is used to sort files within a collection group.
@@ -58,7 +58,7 @@ func (*Collection) Name() string {
 }
 
 func (*Collection) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return extension.New(".html", ".htm"), nil
+	return wildcard.New("**/*.html", "**/*.htm"), nil
 }
 
 func (c *Collection) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

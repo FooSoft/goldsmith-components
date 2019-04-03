@@ -9,7 +9,7 @@ import (
 	"runtime"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -42,7 +42,7 @@ func (plugin *LiveJs) Initialize(context *goldsmith.Context) (goldsmith.Filter, 
 	}
 
 	plugin.html = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", js)
-	return extension.New(".html", ".htm"), nil
+	return wildcard.New("**/*.html", "**/*.htm"), nil
 }
 
 func (plugin *LiveJs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

@@ -3,7 +3,7 @@ package document
 
 import (
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -26,7 +26,7 @@ func (*Document) Name() string {
 }
 
 func (*Document) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return extension.New(".html", ".htm"), nil
+	return wildcard.New("**/*.html", "**/*.htm"), nil
 }
 
 func (plugin *Document) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

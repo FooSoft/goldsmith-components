@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 	"github.com/naoina/toml"
 	"gopkg.in/yaml.v2"
 )
@@ -28,7 +28,7 @@ func (*FrontMatter) Name() string {
 }
 
 func (*FrontMatter) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return extension.New(".md", ".markdown", ".rst", ".html", ".htm"), nil
+	return wildcard.New("**/*.md", "**/*.markdown", "**/*.rst", "**/*.txt", "**/*.html", "**/*.htm"), nil
 }
 
 func (*FrontMatter) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

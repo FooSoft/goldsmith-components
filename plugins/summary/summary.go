@@ -4,7 +4,7 @@ import (
 	"html/template"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 	"github.com/PuerkitoBio/goquery"
 )
 
@@ -42,7 +42,7 @@ func (*Summary) Name() string {
 }
 
 func (*Summary) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return extension.New(".html", ".htm"), nil
+	return wildcard.New("**/*.html", "**/*.htm"), nil
 }
 
 func (plugin *Summary) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

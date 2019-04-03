@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 )
 
 // Crumb provides organizational information about this node and ones before it.
@@ -69,7 +69,7 @@ func (*Breadcrumbs) Name() string {
 }
 
 func (*Breadcrumbs) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return extension.New(".html", ".htm"), nil
+	return wildcard.New("**/*.html", "**/*.htm"), nil
 }
 
 func (plugin *Breadcrumbs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

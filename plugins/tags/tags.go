@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 )
 
 type tagInfo struct {
@@ -76,7 +76,7 @@ func (*Tags) Name() string {
 }
 
 func (*Tags) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return extension.New(".html", ".htm"), nil
+	return wildcard.New("**/*.html", "**/*.htm"), nil
 }
 
 func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

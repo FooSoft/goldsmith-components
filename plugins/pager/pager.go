@@ -11,7 +11,7 @@ import (
 	"sync"
 
 	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/extension"
+	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 )
 
 type Namer func(path string, index int) string
@@ -87,7 +87,7 @@ func (*Pager) Name() string {
 }
 
 func (*Pager) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return extension.New(".html", ".htm"), nil
+	return wildcard.New("**/*.html", "**/*.htm"), nil
 }
 
 func (plugin *Pager) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
