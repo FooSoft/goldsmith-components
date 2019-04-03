@@ -1,4 +1,32 @@
-// Package frontmatter extracts front matter from files and stores it as file metadata.
+// Package frontmatter extracts the metadata stored in your files. This
+// metadata can include any information you want, but typically contains the
+// page title, creation date, tags, layout template, and more. There are no
+// requirements about what fields must be present; this is entirely up to you.
+//
+// +++
+// Title = "My homepage"
+// Tags = ["best", "page", "ever"]
+// +++
+//
+// Metadata in YAML format is enclosed by three minus (-) characters:
+//
+// ---
+// Title: "My homepage"
+// Tags:
+//   - "best"
+//   - "page"
+//   - "ever"
+// ---
+//
+// Metadata in JSON format is enclosed by brace characters ({ and }):
+//
+// {
+//     "Title": "My homepage",
+//     "Tags": ["best", "page", "ever"]
+// }
+//
+// Normal page content immediately follows the metadata section. The metadata
+// section is stripped after processed by this plugin.
 package frontmatter
 
 import (
@@ -47,7 +75,7 @@ func (*FrontMatter) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 	return nil
 }
 
-func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
+func parse(reader io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 	const (
 		yamlOpener = "---"
 		yamlCloser = "---"
@@ -63,7 +91,7 @@ func parse(input io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 	)
 
 	meta := make(map[string]interface{})
-	scanner := bufio.NewScanner(input)
+	scanner := bufio.NewScanner(reader)
 	header := false
 	first := true
 
