@@ -1,4 +1,7 @@
-// Package minify removes superfluous data from a variety of web formats.
+// Package minify removes superfluous data from a variety of web formats
+// without modifying their behavior in web browsers. This plugin is useful for
+// reducing bandwidth usage, but should be disabled for development. This can
+// be accomplished by conditionally excluding it using the "condition" filter.
 package minify
 
 import (
