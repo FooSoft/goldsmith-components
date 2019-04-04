@@ -1,4 +1,9 @@
-// Package markdown renders markdown documents to HTML with the blackfriday markdown processor.
+// Package markdown renders Markdown documents to HTML with the "blackfriday"
+// processor. You can specify which Markdown extensions and HTML features to
+// use by directly passing the blackfriday flags to this plugin. Note that
+// unlike other static site generators, Markdown processing does not
+// automatically parse frontmatter; you will need to use the "frontmatter"
+// plugin to extract any metadata which may be present in your source content.
 package markdown
 
 import (
@@ -60,7 +65,7 @@ func (plugin *Markdown) Initialize(context *goldsmith.Context) (goldsmith.Filter
 	return wildcard.New("**/*.md", "**/*.markdown"), nil
 }
 
-func (m *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	outputPath := strings.TrimSuffix(inputFile.Path(), path.Ext(inputFile.Path())) + ".html"
 	if outputFile := context.RetrieveCachedFile(outputPath, inputFile); outputFile != nil {
 		outputFile.Meta = inputFile.Meta
@@ -74,8 +79,8 @@ func (m *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File
 	}
 
 	var (
-		renderer = blackfriday.HtmlRenderer(m.htmlFlags, "", "")
-		data     = blackfriday.Markdown(buff.Bytes(), renderer, m.markdownFlags)
+		renderer = blackfriday.HtmlRenderer(plugin.htmlFlags, "", "")
+		data     = blackfriday.Markdown(buff.Bytes(), renderer, plugin.markdownFlags)
 	)
 
 	outputFile := context.CreateFileFromData(outputPath, data)
