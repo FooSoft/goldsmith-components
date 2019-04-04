@@ -1,4 +1,7 @@
-// Package layout transforms content with Go templates.
+// Package layout transforms content by applying Go templates to the content
+// and metadata of HTML files. This plugin can be easily used with the
+// "frontmatter" and "markdown" plugins to generate easy to maintain
+// content-driven websites that are completely decoupled from layout details.
 package layout
 
 import (
