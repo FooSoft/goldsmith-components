@@ -1,4 +1,7 @@
-// Package livejs injects code to reload the current page when it is modified.
+// Package livejs injects code to reload the current page when it (or its
+// dependencies) are modified. This plugin is helpful for authoring web content
+// locally, but should be disabled for site deployment. This can be achieved by
+// conditionally including it using the "condition" filter.
 package livejs
 
 import (
