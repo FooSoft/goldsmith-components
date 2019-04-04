@@ -1,4 +1,6 @@
-// Package index creates pages for displaying directory listings.
+// Package index creates metadata for directory listings and generates index
+// pages for every directory which contains other files. This is useful for
+// creating static directory views for downloads, image galleries, etc.
 package index
 
 import (
@@ -9,11 +11,6 @@ import (
 
 	"github.com/FooSoft/goldsmith"
 )
-
-type directory struct {
-	entries   EntriesByName
-	indexFile *goldsmith.File
-}
 
 // Entry contains information about a directory item.
 type Entry struct {
@@ -126,25 +123,30 @@ func (plugin *Index) Finalize(context *goldsmith.Context) error {
 	return nil
 }
 
-type EntriesByName []Entry
-
-func (d EntriesByName) Len() int {
-	return len(d)
+type directory struct {
+	entries   entriesByName
+	indexFile *goldsmith.File
 }
 
-func (d EntriesByName) Less(i, j int) bool {
-	d1, d2 := d[i], d[j]
+type entriesByName []Entry
 
-	if d1.IsDir && !d2.IsDir {
+func (e entriesByName) Len() int {
+	return len(e)
+}
+
+func (e entriesByName) Less(i, j int) bool {
+	e1, e2 := e[i], e[j]
+
+	if e1.IsDir && !e2.IsDir {
 		return true
 	}
-	if !d1.IsDir && d2.IsDir {
+	if !e1.IsDir && e2.IsDir {
 		return false
 	}
 
-	return strings.Compare(d1.Name, d2.Name) == -1
+	return strings.Compare(e1.Name, e2.Name) == -1
 }
 
-func (d EntriesByName) Swap(i, j int) {
-	d[i], d[j] = d[j], d[i]
+func (e entriesByName) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
 }

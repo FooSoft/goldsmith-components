@@ -2,7 +2,6 @@
     <body>
         {{define "index"}}
         <h1>Index of /{{.Dir}}</h1>
-        <hr>
         <ul class="list-unstyled">
             {{range .Meta.Files}}
             {{if .IsDir}}
