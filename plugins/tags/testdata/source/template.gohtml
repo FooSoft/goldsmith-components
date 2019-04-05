@@ -1,13 +1,13 @@
 {{define "tag"}}
 <html>
     <body>
-        <h1>pages tagged "{{.Meta.Tags.Index}}"</h1>
+        <h1>Pages Tagged "{{.Meta.Tags.Index}}"</h1>
         <ul>
             {{range (index .Meta.Tags.Info .Meta.Tags.Index).Files}}
             <li><a href="../../{{.Path}}">{{.Meta.Title}}</a></li>
             {{end}}
         </ul>
-        <a href="../../tags.html">show all tags</a>
+        <a href="../../index.html">Show all tags</a>
     </body>
 </html>
 {{end}}
@@ -15,7 +15,7 @@
 {{define "tags"}}
 <html>
     <body>
-        <h1>global tag listing</h1>
+        <h1>Global Tag Listing</h1>
         <ul>
             {{range $key, $value := .Meta.TagState.Info}}
             <li><a href="{{(index $.Meta.TagState.Info $key).Path}}">{{$key}}</a> ({{len $value.Files}})</li>
@@ -30,13 +30,13 @@
     <body>
         <h1>{{.Meta.Title}}</h1>
         <p>
-            tagged with:
+            Tagged with:
             {{range .Meta.TagState.Tags}}
             <a href="{{(index $.Meta.TagState.Info .).Path}}">{{.}}</a>
             {{end}}
         </p>
         <p>
-            <a href="tags.html">show all tags</a>
+            <a href="index.html">Show all tags</a>
         </p>
     </body>
 </html>

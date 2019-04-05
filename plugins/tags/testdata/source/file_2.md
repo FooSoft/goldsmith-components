@@ -1,5 +1,5 @@
 +++
-Title = "page_2"
+Title = "File 2"
 Layout = "page"
 Tags = ["foo", "bar"]
 +++
