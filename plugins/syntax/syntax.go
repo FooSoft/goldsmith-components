@@ -1,3 +1,6 @@
+// Package syntax generates syntax highlighting for preformatted code blocks
+// using the "chroma" processor. All of the themes and styles from the
+// processor are directly exposed through the plugin interface.
 package syntax
 
 import (
@@ -19,6 +22,7 @@ const (
 	PlaceInline
 )
 
+// Syntax chainable context.
 type Syntax struct {
 	style     string
 	numbers   bool
@@ -26,6 +30,7 @@ type Syntax struct {
 	placement Placement
 }
 
+// New creates a new instance of the Syntax plugin.
 func New() *Syntax {
 	return &Syntax{
 		style:     "github",
@@ -35,21 +40,26 @@ func New() *Syntax {
 	}
 }
 
+// Style sets the color scheme used for syntax highlighting (default: "github").
+// Additional styles can be found at: https://github.com/alecthomas/chroma/tree/master/styles.
 func (plugin *Syntax) Style(style string) *Syntax {
 	plugin.style = style
 	return plugin
 }
 
+// LineNumbers sets the visibility of a line number gutter next to the code (default: false).
 func (plugin *Syntax) LineNumbers(numbers bool) *Syntax {
 	plugin.numbers = numbers
 	return plugin
 }
 
+// Prefix sets the CSS class name prefix for code language identification (default: "language-").
 func (plugin *Syntax) Prefix(prefix string) *Syntax {
 	plugin.prefix = prefix
 	return plugin
 }
 
+// Placement determines if code should replace the containing block or be placed inside of it (default: "PlaceInside").
 func (plugin *Syntax) Placement(placement Placement) *Syntax {
 	plugin.placement = placement
 	return plugin

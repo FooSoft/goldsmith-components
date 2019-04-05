@@ -2,7 +2,7 @@
 Layout = "page"
 +++
 
-# go #
+# Go #
 
 ```go
 func fizzbuzz(n int) {
@@ -20,7 +20,7 @@ func fizzbuzz(n int) {
 }
 ```
 
-# python #
+# Python #
 
 ```python
 def fizzbuzz(n):
@@ -35,7 +35,7 @@ def fizzbuzz(n):
             print(i)
 ```
 
-# javascript #
+# JavaScript #
 
 ```javascript
 function fizzbuzz(n) {
@@ -56,7 +56,7 @@ function fizzbuzz(n) {
 }
 ```
 
-# misc #
+# Other #
 
 ```
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum accumsan lacus sit amet tortor vehicula, in
