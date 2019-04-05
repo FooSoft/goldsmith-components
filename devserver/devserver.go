@@ -1,3 +1,6 @@
+// Package devserver makes it easy to view statically generated websites and
+// automatically rebuild them when source data changes. When combined with the
+// "livejs" plugin, it is possible to have a live preview of your site.
 package devserver
 
 import (
@@ -13,10 +16,18 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// Builder interface should be implemented by you to contain the required
+// goldsmith chain to generate your website.
 type Builder interface {
 	Build(sourceDir, targetDir, cacheDir string)
 }
 
+// DevServe should be called to start a web server using the provided builder.
+// While the source directory will be watched for changes by default, it is
+// possible to pass in additional directories to watch; modification of these
+// directories will automatically trigger a site rebuild. This function does
+// not return and will continue watching for file changes and serving your
+// website until it is terminated.
 func DevServe(builder Builder, port int, sourceDir, targetDir, cacheDir string, watchDirs ...string) {
 	dirs := append(watchDirs, sourceDir)
 	build(dirs, func() { builder.Build(sourceDir, targetDir, cacheDir) })

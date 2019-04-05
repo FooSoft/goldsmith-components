@@ -1,3 +1,6 @@
+// Package harness provides a simple way to test goldsmith plugins and filters.
+// It executes a goldsmith chain on provided "source" data and compares the
+// generated "target" resuts with the known to be good "reference" data.
 package harness
 
 import (
@@ -13,12 +16,15 @@ import (
 	"github.com/FooSoft/goldsmith"
 )
 
+// Stager callback function is used to set up a goldsmith chain.
 type Stager func(gs *goldsmith.Goldsmith)
 
+// Validate enables validation of a single, unnamed case (test data is stored in "testdata").
 func Validate(t *testing.T, stager Stager) {
 	ValidateCase(t, "", stager)
 }
 
+// ValidateCase enables enables of a single, named case (test data is stored in "testdata/caseName").
 func ValidateCase(t *testing.T, caseName string, stager Stager) {
 	var (
 		caseDir      = filepath.Join("testdata", caseName)
