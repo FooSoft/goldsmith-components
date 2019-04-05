@@ -1,4 +1,8 @@
-// Package pager splits arrays of metadata into standalone pages.
+// Package pager splits arrays of metadata into standalone pages. The plugin is
+// initialized with a lister callback which is used to segment a slice of
+// metadata contained within the provided file. While any large set of metadata
+// can be split into segments, this plugin is particularly useful when working
+// with the "collection" for paging blog entries, photos, etc.
 package pager
 
 import (
@@ -14,24 +18,30 @@ import (
 	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 )
 
+// Namer callback function builds paths for file pages based on the original file path and page index.
 type Namer func(path string, index int) string
+
+// Lister callback function is used to return a metadata slice which should be paged across several files.
 type Lister func(file *goldsmith.File) interface{}
 
-type PagerPage struct {
+// Page represents information about a given metadata segment.
+type Page struct {
 	Index int
 	Items interface{}
 	File  *goldsmith.File
 
-	Next *PagerPage
-	Prev *PagerPage
+	Next *Page
+	Prev *Page
 }
 
-type PagerIndex struct {
-	AllPages []PagerPage
-	CurrPage *PagerPage
+// Index contains paging information for the current file.
+type Index struct {
+	AllPages []Page
+	CurrPage *Page
 	Paged    bool
 }
 
+// Pager chainable context.
 type Pager struct {
 	pagerKey  string
 	enableKey string
@@ -120,7 +130,7 @@ func (plugin *Pager) Process(context *goldsmith.Context, inputFile *goldsmith.Fi
 		pageCount++
 	}
 
-	pages := make([]PagerPage, pageCount, pageCount)
+	pages := make([]Page, pageCount, pageCount)
 	for i := 0; i < pageCount; i++ {
 		page := &pages[i]
 		page.Index = i + 1
@@ -162,7 +172,7 @@ func (plugin *Pager) Process(context *goldsmith.Context, inputFile *goldsmith.Fi
 			}
 		}
 
-		page.File.Meta[plugin.pagerKey] = PagerIndex{
+		page.File.Meta[plugin.pagerKey] = Index{
 			AllPages: pages,
 			CurrPage: page,
 			Paged:    pageCount > 1,
