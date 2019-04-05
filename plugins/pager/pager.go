@@ -72,21 +72,34 @@ func New(lister Lister) *Pager {
 	}
 }
 
+// PagerKey sets the metadata key used to store paging information for each file (default: "Pager").
 func (plugin *Pager) PagerKey(key string) *Pager {
 	plugin.pagerKey = key
 	return plugin
 }
 
+// EnableKey sets the metadata key used to determine if the current file should be paged (default: false).
+func (plugin *Pager) EnableKey(key string) *Pager {
+	plugin.enableKey = key
+	return plugin
+}
+
+// ItemsPerPage sets the maximum number of items which can be included on a single page (default: 10).
 func (plugin *Pager) ItemsPerPage(limit int) *Pager {
 	plugin.itemsPerPage = limit
 	return plugin
 }
 
+// Namer sets the callback used to build paths for file pages.
+// Default naming inserts page number between file name and extension,
+// for example "file.html" becomes "file-2.html".
 func (plugin *Pager) Namer(namer Namer) *Pager {
 	plugin.namer = namer
 	return plugin
 }
 
+// InheritedKeys sets which metadata keys should be copied to generated pages from the original file (default: []).
+// When no keys are provided, all metadata is copied from the original file to generated pages.
 func (p *Pager) InheritedKeys(keys ...string) *Pager {
 	p.inheritedKeys = keys
 	return p
