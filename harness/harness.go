@@ -72,7 +72,7 @@ func validate(sourceDir, targetDir, cacheDir, referenceDir string, stager Stager
 }
 
 func execute(sourceDir, targetDir, cacheDir string, stager Stager) []error {
-	gs := goldsmith.Begin(sourceDir).Cache(cacheDir)
+	gs := goldsmith.Begin(sourceDir).Cache(cacheDir).Clean(true)
 	stager(gs)
 	return gs.End(targetDir)
 }
