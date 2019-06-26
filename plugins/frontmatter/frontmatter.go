@@ -3,27 +3,27 @@
 // page title, creation date, tags, layout template, and more. There are no
 // requirements about what fields must be present; this is entirely up to you.
 //
-// +++
-// Title = "My homepage"
-// Tags = ["best", "page", "ever"]
-// +++
+//  +++
+//  Title = "My homepage"
+//  Tags = ["best", "page", "ever"]
+//  +++
 //
 // Metadata in YAML format is enclosed by three minus (-) characters:
 //
-// ---
-// Title: "My homepage"
-// Tags:
-//   - "best"
-//   - "page"
-//   - "ever"
-// ---
+//  ---
+//  Title: "My homepage"
+//  Tags:
+//    - "best"
+//    - "page"
+//    - "ever"
+//  ---
 //
 // Metadata in JSON format is enclosed by brace characters ({ and }):
 //
-// {
-//     "Title": "My homepage",
-//     "Tags": ["best", "page", "ever"]
-// }
+//  {
+//      "Title": "My homepage",
+//      "Tags": ["best", "page", "ever"]
+//  }
 //
 // Normal page content immediately follows the metadata section. The metadata
 // section is stripped after processed by this plugin.
