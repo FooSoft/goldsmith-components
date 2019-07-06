@@ -1,0 +1,35 @@
+{{define "index"}}
+<html>
+    <body>
+        <ul>
+            {{range .Meta.Files}}
+            <li>
+                <p><a href="{{.Name}}">{{.Name}}</a></p>
+                {{if .File.Meta.Exif}}
+                <dl>
+                    <dt>Latitude</dt>
+                    <dd>{{.File.Meta.Exif.Latitude}}</dd>
+                    <dt>Longitude</dt>
+                    <dd>{{.File.Meta.Exif.Longitude}}</dd>
+                    <dt>Elevation</dt>
+                    <dd>{{.File.Meta.Exif.Altitude}}</dd>
+                    <dt>Timestamp</dt>
+                    <dd>{{.File.Meta.Exif.Timestamp}}</dd>
+                    {{if .File.Meta.Exif.Lookup}}
+                    <dt>City</dt>
+                    <dd>{{.File.Meta.Exif.Lookup.City}}
+                    <dt>Country</dt>
+                    <dd>{{.File.Meta.Exif.Lookup.Country}}
+                    {{else}}
+                    <dt>GPS coordinate lookup failed</dt>
+                    {{end}}
+                </dl>
+                {{else}}
+                <p>No GPS information available</p>
+                {{end}}
+            </li>
+            {{end}}
+        </ul>
+    </body>
+</html>
+{{end}}

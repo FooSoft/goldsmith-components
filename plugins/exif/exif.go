@@ -2,12 +2,13 @@ package exif
 
 import (
 	"io"
+	"io/ioutil"
 	"time"
 
 	"github.com/FooSoft/geolookup"
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/wildcard"
-	goexif "github.com/rwcarlsen/goexif/exif"
+	"github.com/dsoprea/go-exif"
 )
 
 // Exif chainable plugin context.
@@ -17,12 +18,17 @@ type Exif struct {
 	geoLookup *geolookup.Lookup
 }
 
-type data struct {
-	Time      *time.Time
-	Latitude  *float64
-	Longitude *float64
-	City      *string
-	Country   *string
+type geoLookup struct {
+	City    *string
+	Country *string
+}
+
+type geoData struct {
+	Latitude  float64
+	Longitude float64
+	Altitude  int
+	Timestamp time.Time
+	Lookup    *geoLookup
 }
 
 // New creates new instance of the Exif plugin.
@@ -31,7 +37,7 @@ func New() *Exif {
 }
 
 // Sets a reader to the geodata used to do geoip lookups.
-func (plugin *Exif) GeoData(geoData io.Reader) *Exif {
+func (plugin *Exif) Lookup(geoData io.Reader) *Exif {
 	plugin.geoData = geoData
 	return plugin
 }
@@ -52,30 +58,58 @@ func (plugin *Exif) Initialize(context *goldsmith.Context) (goldsmith.Filter, er
 }
 
 func (plugin *Exif) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	data := new(data)
-	inputFile.Meta[plugin.exifKey] = data
 	defer context.DispatchFile(inputFile)
+	inputFile.Meta[plugin.exifKey], _ = plugin.extractGeoData(inputFile)
+	return nil
+}
 
-	x, err := goexif.Decode(inputFile)
+// Based on https://godoc.org/github.com/dsoprea/go-exif#example-Ifd-GpsInfo
+func (plugin *Exif) extractGeoData(file *goldsmith.File) (*geoData, error) {
+	rawFile, err := ioutil.ReadAll(file)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	if time, err := x.DateTime(); err == nil {
-		data.Time = &time
+	rawExif, err := exif.SearchAndExtractExif(rawFile)
+	if err != nil {
+		return nil, err
 	}
 
-	if latitude, longitude, err := x.LatLong(); err == nil {
-		data.Latitude = &latitude
-		data.Longitude = &longitude
+	im := exif.NewIfdMapping()
+	if err := exif.LoadStandardIfds(im); err != nil {
+		return nil, err
+	}
 
-		if plugin.geoLookup != nil {
-			if location := plugin.geoLookup.Find(latitude, longitude); location != nil {
-				data.City = &location.City
-				data.Country = &location.Country
-			}
+	ti := exif.NewTagIndex()
+	_, index, err := exif.Collect(im, ti, rawExif)
+	if err != nil {
+		return nil, err
+	}
+
+	ifd, err := index.RootIfd.ChildWithIfdPath(exif.IfdPathStandardGps)
+	if err != nil {
+		return nil, err
+	}
+
+	gi, err := ifd.GpsInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	var lookup *geoLookup
+	if plugin.geoLookup != nil {
+		if location := plugin.geoLookup.Find(gi.Latitude.Decimal(), gi.Longitude.Decimal()); location != nil {
+			lookup = &geoLookup{&location.City, &location.Country}
 		}
 	}
 
-	return nil
+	data := &geoData{
+		gi.Latitude.Decimal(),
+		gi.Longitude.Decimal(),
+		gi.Altitude,
+		gi.Timestamp,
+		lookup,
+	}
+
+	return data, nil
 }
