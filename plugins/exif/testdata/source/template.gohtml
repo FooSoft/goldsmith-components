@@ -5,21 +5,21 @@
             {{range .Meta.Files}}
             <li>
                 <p><a href="{{.Name}}">{{.Name}}</a></p>
-                {{if .File.Meta.GeoTag}}
+                {{if .File.Meta.Exif.Geo}}
                 <dl>
                     <dt>Latitude</dt>
-                    <dd>{{.File.Meta.GeoTag.Latitude}}</dd>
+                    <dd>{{.File.Meta.Exif.Geo.Latitude}}</dd>
                     <dt>Longitude</dt>
-                    <dd>{{.File.Meta.GeoTag.Longitude}}</dd>
+                    <dd>{{.File.Meta.Exif.Geo.Longitude}}</dd>
                     <dt>Elevation</dt>
-                    <dd>{{.File.Meta.GeoTag.Altitude}}</dd>
+                    <dd>{{.File.Meta.Exif.Geo.Altitude}}</dd>
                     <dt>Timestamp</dt>
-                    <dd>{{.File.Meta.GeoTag.Timestamp}}</dd>
-                    {{if .File.Meta.GeoTag.Lookup}}
+                    <dd>{{.File.Meta.Exif.Geo.Timestamp}}</dd>
+                    {{if .File.Meta.Exif.Geo.Lookup}}
                     <dt>City</dt>
-                    <dd>{{.File.Meta.GeoTag.Lookup.City}}</dd>
+                    <dd>{{.File.Meta.Exif.Geo.Lookup.City}}</dd>
                     <dt>Country</dt>
-                    <dd>{{.File.Meta.GeoTag.Lookup.Country}}</dd>
+                    <dd>{{.File.Meta.Exif.Geo.Lookup.Country}}</dd>
                     {{else}}
                     <dt>GPS coordinate lookup failed</dt>
                     {{end}}

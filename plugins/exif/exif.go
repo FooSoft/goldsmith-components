@@ -1,9 +1,9 @@
-// Package geotag extracts geographical EXIF metadata stored in JPG and PNG
-// files. In addition to extracting the raw GPS parameters (such as latitude
-// and longitude), it is also able of optionally performing city and country
-// lookups using a geographical "lookuper" provider. The provider for GeoNames,
-// an open geolocation database is provided in this package.
-package geotag
+// Package exif extracts EXIF metadata stored in JPG and PNG files. In addition
+// to extracting the raw GPS parameters (such as latitude and longitude), it is
+// also able of optionally performing city and country lookups using a
+// geographical "lookuper" provider. The provider for GeoNames, an open
+// geolocation database is provided in this package.
+package exif
 
 import (
 	"io/ioutil"
@@ -14,8 +14,8 @@ import (
 	"github.com/dsoprea/go-exif"
 )
 
-// GeoTag chainable plugin context.
-type GeoTag struct {
+// Exif chainable plugin context.
+type Exif struct {
 	dataKey  string
 	lookuper Lookuper
 }
@@ -38,32 +38,41 @@ type geoData struct {
 	Lookup *LookupData
 }
 
-// New creates new instance of the GeoTag plugin.
-func New() *GeoTag {
-	return &GeoTag{dataKey: "GeoTag"}
+type exifData struct {
+	Geo *geoData
 }
 
-func (plugin *GeoTag) Lookuper(lookuper Lookuper) *GeoTag {
+// New creates new instance of the Exif plugin.
+func New() *Exif {
+	return &Exif{dataKey: "Exif"}
+}
+
+func (plugin *Exif) Lookuper(lookuper Lookuper) *Exif {
 	plugin.lookuper = lookuper
 	return plugin
 }
 
-func (*GeoTag) Name() string {
-	return "geotag"
+func (*Exif) Name() string {
+	return "exif"
 }
 
-func (plugin *GeoTag) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (plugin *Exif) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	return wildcard.New("**/*.jpg", "**/*.jpeg", "**/*.png"), nil
 }
 
-func (plugin *GeoTag) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	defer context.DispatchFile(inputFile)
-	inputFile.Meta[plugin.dataKey], _ = plugin.extractExif(inputFile)
+func (plugin *Exif) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	var exifData exifData
+	if geoData, err := plugin.extractGeo(inputFile); err == nil {
+		exifData.Geo = geoData
+	}
+
+	inputFile.Meta[plugin.dataKey] = exifData
+	context.DispatchFile(inputFile)
 	return nil
 }
 
 // Based on https://godoc.org/github.com/dsoprea/go-exif#example-Ifd-GpsInfo
-func (plugin *GeoTag) extractExif(file *goldsmith.File) (*geoData, error) {
+func (plugin *Exif) extractGeo(file *goldsmith.File) (*geoData, error) {
 	rawFile, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, err

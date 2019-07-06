@@ -1,4 +1,4 @@
-package geotag
+package exif
 
 import (
 	"testing"
