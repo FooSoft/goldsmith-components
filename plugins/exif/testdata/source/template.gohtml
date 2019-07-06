@@ -5,28 +5,43 @@
             {{range .Meta.Files}}
             <li>
                 <p><a href="{{.Name}}">{{.Name}}</a></p>
-                {{if .File.Meta.Exif.Geo}}
-                <dl>
-                    <dt>Latitude</dt>
-                    <dd>{{.File.Meta.Exif.Geo.Latitude}}</dd>
-                    <dt>Longitude</dt>
-                    <dd>{{.File.Meta.Exif.Geo.Longitude}}</dd>
-                    <dt>Elevation</dt>
-                    <dd>{{.File.Meta.Exif.Geo.Altitude}}</dd>
-                    <dt>Timestamp</dt>
-                    <dd>{{.File.Meta.Exif.Geo.Timestamp}}</dd>
-                    {{if .File.Meta.Exif.Geo.Lookup}}
-                    <dt>City</dt>
-                    <dd>{{.File.Meta.Exif.Geo.Lookup.City}}</dd>
-                    <dt>Country</dt>
-                    <dd>{{.File.Meta.Exif.Geo.Lookup.Country}}</dd>
+
+                <p>
+                    <strong>Time</strong>
+                    <dl>
+                    {{if .File.Meta.Exif.Time}}
+                        <dt>{{.File.Meta.Exif.Time}}</dt>
                     {{else}}
-                    <dt>GPS coordinate lookup failed</dt>
+                        <dt>[No timestamp available]</dt>
                     {{end}}
-                </dl>
-                {{else}}
-                <p>No GPS information available</p>
-                {{end}}
+                    </dl>
+                </p>
+
+                <p>
+                    <strong>Geo</strong>
+                    <dl>
+                    {{if .File.Meta.Exif.Geo}}
+                        <dt>Geo.Latitude</dt>
+                        <dd>{{.File.Meta.Exif.Geo.Latitude}}</dd>
+                        <dt>Geo.Longitude</dt>
+                        <dd>{{.File.Meta.Exif.Geo.Longitude}}</dd>
+                        <dt>Elevation</dt>
+                        <dd>{{.File.Meta.Exif.Geo.Altitude}}</dd>
+                        <dt>Timestamp</dt>
+                        <dd>{{.File.Meta.Exif.Geo.Timestamp}}</dd>
+                        {{if .File.Meta.Exif.Geo.Lookup}}
+                            <dt>City</dt>
+                            <dd>{{.File.Meta.Exif.Geo.Lookup.City}}</dd>
+                            <dt>Country</dt>
+                            <dd>{{.File.Meta.Exif.Geo.Lookup.Country}}</dd>
+                        {{else}}
+                            <dt>[No GPS lookup available]</dt>
+                        {{end}}
+                    {{else}}
+                        <p>[No GPS info available]</p>
+                    {{end}}
+                    </dl>
+                </p>
             </li>
             {{end}}
         </ul>
