@@ -11,8 +11,8 @@ import (
 	"github.com/dsoprea/go-exif"
 )
 
-// Exif chainable plugin context.
-type Exif struct {
+// GeoTag chainable plugin context.
+type GeoTag struct {
 	exifKey   string
 	geoData   io.Reader
 	geoLookup *geolookup.Lookup
@@ -32,21 +32,21 @@ type geoData struct {
 }
 
 // New creates new instance of the Exif plugin.
-func New() *Exif {
-	return &Exif{exifKey: "Exif"}
+func New() *GeoTag {
+	return &GeoTag{exifKey: "Exif"}
 }
 
 // Sets a reader to the geodata used to do geoip lookups.
-func (plugin *Exif) Lookup(geoData io.Reader) *Exif {
+func (plugin *GeoTag) Lookup(geoData io.Reader) *GeoTag {
 	plugin.geoData = geoData
 	return plugin
 }
 
-func (*Exif) Name() string {
+func (*GeoTag) Name() string {
 	return "exif"
 }
 
-func (plugin *Exif) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (plugin *GeoTag) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 	if plugin.geoData != nil {
 		plugin.geoLookup = geolookup.New()
 		if err := plugin.geoLookup.Load(plugin.geoData); err != nil {
@@ -57,14 +57,14 @@ func (plugin *Exif) Initialize(context *goldsmith.Context) (goldsmith.Filter, er
 	return wildcard.New("**/*.jpg", "**/*.jpeg"), nil
 }
 
-func (plugin *Exif) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (plugin *GeoTag) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	defer context.DispatchFile(inputFile)
 	inputFile.Meta[plugin.exifKey], _ = plugin.extractGeoData(inputFile)
 	return nil
 }
 
 // Based on https://godoc.org/github.com/dsoprea/go-exif#example-Ifd-GpsInfo
-func (plugin *Exif) extractGeoData(file *goldsmith.File) (*geoData, error) {
+func (plugin *GeoTag) extractGeoData(file *goldsmith.File) (*geoData, error) {
 	rawFile, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, err
