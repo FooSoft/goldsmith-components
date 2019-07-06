@@ -64,10 +64,6 @@ func validate(sourceDir, targetDir, cacheDir, referenceDir string, stager Stager
 		}
 	}
 
-	if err := os.RemoveAll(targetDir); err != nil {
-		return []error{err}
-	}
-
 	return nil
 }
 
