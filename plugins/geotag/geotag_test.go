@@ -1,7 +1,6 @@
-package exif
+package geotag
 
 import (
-	"os"
 	"testing"
 
 	"github.com/FooSoft/goldsmith"
@@ -13,25 +12,20 @@ import (
 )
 
 func Test(t *testing.T) {
-	fp, err := os.Open("testdata/cities500.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer fp.Close()
-
 	meta := map[string]interface{}{
 		"Layout": "index",
+	}
+
+	lookuper, err := NewLookuperGeonamesFile("testdata/cities500.txt")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	harness.Validate(
 		t,
 		func(gs *goldsmith.Goldsmith) {
-			if _, err := fp.Seek(0, os.SEEK_SET); err != nil {
-				t.Fatal(err)
-			}
-
 			gs.
-				Chain(New().Lookup(fp)).
+				Chain(New().Lookuper(lookuper)).
 				FilterPush(operator.Not(wildcard.New("*.gohtml"))).
 				Chain(index.New(meta)).
 				FilterPop().

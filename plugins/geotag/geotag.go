@@ -1,11 +1,9 @@
-package exif
+package geotag
 
 import (
-	"io"
 	"io/ioutil"
 	"time"
 
-	"github.com/FooSoft/geolookup"
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 	"github.com/dsoprea/go-exif"
@@ -13,14 +11,17 @@ import (
 
 // GeoTag chainable plugin context.
 type GeoTag struct {
-	exifKey   string
-	geoData   io.Reader
-	geoLookup *geolookup.Lookup
+	dataKey  string
+	lookuper Lookuper
 }
 
-type geoLookup struct {
-	City    *string
-	Country *string
+type LookupData struct {
+	City    string
+	Country string
+}
+
+type Lookuper interface {
+	Lookup(latitude, longitude float64) (*LookupData, error)
 }
 
 type geoData struct {
@@ -28,43 +29,36 @@ type geoData struct {
 	Longitude float64
 	Altitude  int
 	Timestamp time.Time
-	Lookup    *geoLookup
+
+	Lookup *LookupData
 }
 
-// New creates new instance of the Exif plugin.
+// New creates new instance of the GeoTag plugin.
 func New() *GeoTag {
-	return &GeoTag{exifKey: "Exif"}
+	return &GeoTag{dataKey: "GeoTag"}
 }
 
-// Sets a reader to the geodata used to do geoip lookups.
-func (plugin *GeoTag) Lookup(geoData io.Reader) *GeoTag {
-	plugin.geoData = geoData
+func (plugin *GeoTag) Lookuper(lookuper Lookuper) *GeoTag {
+	plugin.lookuper = lookuper
 	return plugin
 }
 
 func (*GeoTag) Name() string {
-	return "exif"
+	return "geotag"
 }
 
 func (plugin *GeoTag) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	if plugin.geoData != nil {
-		plugin.geoLookup = geolookup.New()
-		if err := plugin.geoLookup.Load(plugin.geoData); err != nil {
-			return nil, err
-		}
-	}
-
 	return wildcard.New("**/*.jpg", "**/*.jpeg"), nil
 }
 
 func (plugin *GeoTag) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	defer context.DispatchFile(inputFile)
-	inputFile.Meta[plugin.exifKey], _ = plugin.extractGeoData(inputFile)
+	inputFile.Meta[plugin.dataKey], _ = plugin.extractExif(inputFile)
 	return nil
 }
 
 // Based on https://godoc.org/github.com/dsoprea/go-exif#example-Ifd-GpsInfo
-func (plugin *GeoTag) extractGeoData(file *goldsmith.File) (*geoData, error) {
+func (plugin *GeoTag) extractExif(file *goldsmith.File) (*geoData, error) {
 	rawFile, err := ioutil.ReadAll(file)
 	if err != nil {
 		return nil, err
@@ -96,19 +90,20 @@ func (plugin *GeoTag) extractGeoData(file *goldsmith.File) (*geoData, error) {
 		return nil, err
 	}
 
-	var lookup *geoLookup
-	if plugin.geoLookup != nil {
-		if location := plugin.geoLookup.Find(gi.Latitude.Decimal(), gi.Longitude.Decimal()); location != nil {
-			lookup = &geoLookup{&location.City, &location.Country}
-		}
+	latitude := gi.Latitude.Decimal()
+	longitude := gi.Longitude.Decimal()
+
+	var lookupData *LookupData
+	if plugin.lookuper != nil {
+		lookupData, _ = plugin.lookuper.Lookup(latitude, longitude)
 	}
 
 	data := &geoData{
-		gi.Latitude.Decimal(),
-		gi.Longitude.Decimal(),
+		latitude,
+		longitude,
 		gi.Altitude,
 		gi.Timestamp,
-		lookup,
+		lookupData,
 	}
 
 	return data, nil
