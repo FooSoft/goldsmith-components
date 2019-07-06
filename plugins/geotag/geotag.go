@@ -1,3 +1,8 @@
+// Package geotag extracts geographical EXIF metadata stored in JPG and PNG
+// files. In addition to extracting the raw GPS parameters (such as latitude
+// and longitude), it is also able of optionally performing city and country
+// lookups using a geographical "lookuper" provider. The provider for GeoNames,
+// an open geolocation database is provided in this package.
 package geotag
 
 import (
@@ -48,7 +53,7 @@ func (*GeoTag) Name() string {
 }
 
 func (plugin *GeoTag) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return wildcard.New("**/*.jpg", "**/*.jpeg"), nil
+	return wildcard.New("**/*.jpg", "**/*.jpeg", "**/*.png"), nil
 }
 
 func (plugin *GeoTag) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
