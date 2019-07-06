@@ -3,15 +3,15 @@ package geotag
 import (
 	"io"
 
-	"github.com/FooSoft/geolookup"
+	"github.com/FooSoft/geonames"
 )
 
 type LookuperGeonames struct {
-	lookup *geolookup.Lookup
+	lookup *geonames.Lookup
 }
 
 func NewLookuperGeonames(reader io.Reader) (*LookuperGeonames, error) {
-	lookup := geolookup.New()
+	lookup := geonames.New()
 	if err := lookup.Load(reader); err != nil {
 		return nil, err
 	}
@@ -20,7 +20,7 @@ func NewLookuperGeonames(reader io.Reader) (*LookuperGeonames, error) {
 }
 
 func NewLookuperGeonamesFile(path string) (*LookuperGeonames, error) {
-	lookup := geolookup.New()
+	lookup := geonames.New()
 	if err := lookup.LoadFile(path); err != nil {
 		return nil, err
 	}
