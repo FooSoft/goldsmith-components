@@ -1,6 +1,6 @@
+{{define "index"}}
 <html>
     <body>
-        {{define "index"}}
         <h1>Index of /{{.Dir}}</h1>
         <ul class="list-unstyled">
             {{range .Meta.Files}}
@@ -12,6 +12,6 @@
             {{end}}
         </ul>
         </div>
-        {{end}}
     </body>
 </html>
+{{end}}
