@@ -107,7 +107,7 @@ func (plugin *Syntax) Process(context *goldsmith.Context, inputFile *goldsmith.F
 
 		var options []html.Option
 		if plugin.numbers {
-			options = append(options, html.WithLineNumbers())
+			options = append(options, html.WithLineNumbers(true))
 		}
 
 		formatter := html.New(options...)
