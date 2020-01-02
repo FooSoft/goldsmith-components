@@ -14,6 +14,8 @@ import (
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
 )
 
 // Markdown chainable context.
@@ -46,8 +48,13 @@ func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith
 		return err
 	}
 
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
+	)
+
 	var dataOut bytes.Buffer
-	if err := goldmark.Convert(dataIn.Bytes(), &dataOut); err != nil {
+	if err := md.Convert(dataIn.Bytes(), &dataOut); err != nil {
 		return err
 	}
 
