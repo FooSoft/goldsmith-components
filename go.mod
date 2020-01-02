@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/FooSoft/geonames v0.0.0-20190706180050-a46bc6138d45
-	github.com/FooSoft/goldsmith v0.0.0-20190727191700-37acacaa3a13
+	github.com/FooSoft/goldsmith v0.0.0-20200102021543-f410ad444d75
 	github.com/PuerkitoBio/goquery v1.5.0
 	github.com/alecthomas/chroma v0.7.0
 	github.com/bmatcuk/doublestar v1.2.2
@@ -18,6 +18,5 @@ require (
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/tdewolff/minify v2.3.6+incompatible
 	github.com/tdewolff/parse v2.3.4+incompatible // indirect
-	golang.org/x/sys v0.0.0-20191228213918-04cbcbbfeed8 // indirect
 	gopkg.in/yaml.v2 v2.2.7
 )
