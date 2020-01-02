@@ -18,41 +18,41 @@ import (
 
 // Markdown chainable context.
 type Markdown struct {
-	htmlFlags     int
-	markdownFlags int
+	htmlFlags     blackfriday.HTMLFlags
+	markdownFlags blackfriday.Extensions
 }
 
 // New creates a new instance of the Markdown plugin.
 func New() *Markdown {
-	htmlFlags := blackfriday.HTML_USE_XHTML |
-		blackfriday.HTML_USE_SMARTYPANTS |
-		blackfriday.HTML_SMARTYPANTS_FRACTIONS |
-		blackfriday.HTML_SMARTYPANTS_DASHES |
-		blackfriday.HTML_SMARTYPANTS_LATEX_DASHES
+	htmlFlags := blackfriday.UseXHTML |
+		blackfriday.Smartypants |
+		blackfriday.SmartypantsFractions |
+		blackfriday.SmartypantsDashes |
+		blackfriday.SmartypantsLatexDashes
 
-	markdownFlags := blackfriday.EXTENSION_NO_INTRA_EMPHASIS |
-		blackfriday.EXTENSION_TABLES |
-		blackfriday.EXTENSION_FENCED_CODE |
-		blackfriday.EXTENSION_AUTOLINK |
-		blackfriday.EXTENSION_STRIKETHROUGH |
-		blackfriday.EXTENSION_SPACE_HEADERS |
-		blackfriday.EXTENSION_HEADER_IDS |
-		blackfriday.EXTENSION_BACKSLASH_LINE_BREAK |
-		blackfriday.EXTENSION_DEFINITION_LISTS
+	markdownFlags := blackfriday.NoIntraEmphasis |
+		blackfriday.Tables |
+		blackfriday.FencedCode |
+		blackfriday.Autolink |
+		blackfriday.Strikethrough |
+		blackfriday.SpaceHeadings |
+		blackfriday.HeadingIDs |
+		blackfriday.BackslashLineBreak |
+		blackfriday.DefinitionLists
 
 	return &Markdown{htmlFlags: htmlFlags, markdownFlags: markdownFlags}
 }
 
 // HtmlFlags sets the HTML flags used by the blackfriday markdown processor;
 // see https://github.com/russross/blackfriday/blob/master/html.go for options.
-func (plugin *Markdown) HtmlFlags(flags int) *Markdown {
+func (plugin *Markdown) HtmlFlags(flags blackfriday.HTMLFlags) *Markdown {
 	plugin.htmlFlags = flags
 	return plugin
 }
 
 // MarkdownFlags sets the markdown flags used by the blackfriday markdown processor;
 // see https://github.com/russross/blackfriday/blob/master/markdown.go for options.
-func (plugin *Markdown) MarkdownFlags(flags int) *Markdown {
+func (plugin *Markdown) MarkdownFlags(flags blackfriday.Extensions) *Markdown {
 	plugin.markdownFlags = flags
 	return plugin
 }
@@ -79,8 +79,8 @@ func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith
 	}
 
 	var (
-		renderer = blackfriday.HtmlRenderer(plugin.htmlFlags, "", "")
-		data     = blackfriday.Markdown(buff.Bytes(), renderer, plugin.markdownFlags)
+		renderer = blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{Flags: plugin.htmlFlags})
+		data     = blackfriday.Run(buff.Bytes(), blackfriday.WithRenderer(renderer), blackfriday.WithExtensions(plugin.markdownFlags))
 	)
 
 	outputFile := context.CreateFileFromData(outputPath, data)
