@@ -16,6 +16,7 @@ import (
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 )
 
 // Markdown chainable context.
@@ -51,6 +52,7 @@ func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith
 	md := goldmark.New(
 		goldmark.WithExtensions(extension.GFM),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
+		goldmark.WithRendererOptions(html.WithUnsafe()),
 	)
 
 	var dataOut bytes.Buffer
