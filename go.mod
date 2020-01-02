@@ -18,5 +18,6 @@ require (
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/tdewolff/minify v2.3.6+incompatible
 	github.com/tdewolff/parse v2.3.4+incompatible // indirect
+	github.com/yuin/goldmark v1.1.20
 	gopkg.in/yaml.v2 v2.2.7
 )

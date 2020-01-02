@@ -13,48 +13,16 @@ import (
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/wildcard"
-	"github.com/russross/blackfriday/v2"
+	"github.com/yuin/goldmark"
 )
 
 // Markdown chainable context.
 type Markdown struct {
-	htmlFlags     blackfriday.HTMLFlags
-	markdownFlags blackfriday.Extensions
 }
 
 // New creates a new instance of the Markdown plugin.
 func New() *Markdown {
-	htmlFlags := blackfriday.UseXHTML |
-		blackfriday.Smartypants |
-		blackfriday.SmartypantsFractions |
-		blackfriday.SmartypantsDashes |
-		blackfriday.SmartypantsLatexDashes
-
-	markdownFlags := blackfriday.NoIntraEmphasis |
-		blackfriday.Tables |
-		blackfriday.FencedCode |
-		blackfriday.Autolink |
-		blackfriday.Strikethrough |
-		blackfriday.SpaceHeadings |
-		blackfriday.HeadingIDs |
-		blackfriday.BackslashLineBreak |
-		blackfriday.DefinitionLists
-
-	return &Markdown{htmlFlags: htmlFlags, markdownFlags: markdownFlags}
-}
-
-// HtmlFlags sets the HTML flags used by the blackfriday markdown processor;
-// see https://github.com/russross/blackfriday/blob/master/html.go for options.
-func (plugin *Markdown) HtmlFlags(flags blackfriday.HTMLFlags) *Markdown {
-	plugin.htmlFlags = flags
-	return plugin
-}
-
-// MarkdownFlags sets the markdown flags used by the blackfriday markdown processor;
-// see https://github.com/russross/blackfriday/blob/master/markdown.go for options.
-func (plugin *Markdown) MarkdownFlags(flags blackfriday.Extensions) *Markdown {
-	plugin.markdownFlags = flags
-	return plugin
+	return new(Markdown)
 }
 
 func (*Markdown) Name() string {
@@ -73,17 +41,17 @@ func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith
 		return nil
 	}
 
-	var buff bytes.Buffer
-	if _, err := buff.ReadFrom(inputFile); err != nil {
+	var dataIn bytes.Buffer
+	if _, err := dataIn.ReadFrom(inputFile); err != nil {
 		return err
 	}
 
-	var (
-		renderer = blackfriday.NewHTMLRenderer(blackfriday.HTMLRendererParameters{Flags: plugin.htmlFlags})
-		data     = blackfriday.Run(buff.Bytes(), blackfriday.WithRenderer(renderer), blackfriday.WithExtensions(plugin.markdownFlags))
-	)
+	var dataOut bytes.Buffer
+	if err := goldmark.Convert(dataIn.Bytes(), &dataOut); err != nil {
+		return err
+	}
 
-	outputFile := context.CreateFileFromData(outputPath, data)
+	outputFile := context.CreateFileFromData(outputPath, dataOut.Bytes())
 	outputFile.Meta = inputFile.Meta
 	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
