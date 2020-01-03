@@ -50,7 +50,7 @@ func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith
 	}
 
 	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM),
+		goldmark.WithExtensions(extension.GFM, extension.Typographer),
 		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
 		goldmark.WithRendererOptions(html.WithUnsafe()),
 	)
