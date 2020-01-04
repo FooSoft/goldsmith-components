@@ -1,8 +1,6 @@
-// Package markdown renders Markdown documents to HTML with the "blackfriday"
-// processor. You can specify which Markdown extensions and HTML features to
-// use by directly passing the blackfriday flags to this plugin. Note that
-// unlike other static site generators, Markdown processing does not
-// automatically parse frontmatter; you will need to use the "frontmatter"
+// Package markdown renders Markdown documents to HTML with the "goldmark"
+// processor. Note that unlike other static site generators, Markdown processing
+// does not automatically parse frontmatter; you will need to use the "frontmatter"
 // plugin to extract any metadata which may be present in your source content.
 package markdown
 
