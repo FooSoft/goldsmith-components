@@ -14,7 +14,7 @@ func Test(t *testing.T) {
 		func(gs *goldsmith.Goldsmith) {
 			gs.
 				Chain(frontmatter.New()).
-				Chain(New())
+				Chain(New().DefaultLayout("page"))
 		},
 	)
 }
