@@ -17,6 +17,7 @@ import (
 type Layout struct {
 	layoutKey  string
 	contentKey string
+	defaultLayout *string
 	helpers    template.FuncMap
 
 	inputFiles    []*goldsmith.File
@@ -38,6 +39,12 @@ func New() *Layout {
 // LayoutKey sets the metadata key used to access the layout identifier (default: "Layout").
 func (plugin *Layout) LayoutKey(key string) *Layout {
 	plugin.layoutKey = key
+	return plugin
+}
+
+// DefaultLayout sets the name of the layout to use if none is specified.
+func (plugin *Layout) DefaultLayout(name string) *Layout {
+	plugin.defaultLayout = &name
 	return plugin
 }
 
@@ -68,7 +75,8 @@ func (plugin *Layout) Process(context *goldsmith.Context, inputFile *goldsmith.F
 
 	switch inputFile.Ext() {
 	case ".html", ".htm":
-		if _, ok := inputFile.Meta[plugin.layoutKey]; ok {
+		_, ok := inputFile.Meta[plugin.layoutKey]
+		if plugin.defaultLayout != nil || ok {
 			var buff bytes.Buffer
 			if _, err := inputFile.WriteTo(&buff); err != nil {
 				return err
@@ -101,8 +109,11 @@ func (plugin *Layout) Finalize(context *goldsmith.Context) error {
 	for _, inputFile := range plugin.inputFiles {
 		name, ok := inputFile.Meta[plugin.layoutKey].(string)
 		if !ok {
-			context.DispatchFile(inputFile)
-			continue
+			if plugin.defaultLayout == nil {
+				context.DispatchFile(inputFile)
+				continue
+			}
+			name = *plugin.defaultLayout
 		}
 
 		var buff bytes.Buffer
