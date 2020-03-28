@@ -19,11 +19,19 @@ import (
 
 // Markdown chainable context.
 type Markdown struct {
+	md goldmark.Markdown
 }
 
 // New creates a new instance of the Markdown plugin.
 func New() *Markdown {
 	return new(Markdown)
+}
+
+// WithGoldmark allows you to provide your own instance of Goldmark with
+// a custom selection of plugins. The default includes GFM and Typographer.
+func (plugin *Markdown) WithGoldmark(md goldmark.Markdown) *Markdown {
+	plugin.md = md
+	return plugin
 }
 
 func (*Markdown) Name() string {
@@ -35,6 +43,17 @@ func (plugin *Markdown) Initialize(context *goldsmith.Context) (goldsmith.Filter
 }
 
 func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	md := plugin.md
+	if md == nil {
+		plugin.md = goldmark.New(
+			goldmark.WithExtensions(extension.GFM, extension.Typographer),
+			goldmark.WithParserOptions(parser.WithAutoHeadingID()),
+			goldmark.WithRendererOptions(html.WithUnsafe()),
+		)
+		md = plugin.md
+	}
+
+
 	outputPath := strings.TrimSuffix(inputFile.Path(), path.Ext(inputFile.Path())) + ".html"
 	if outputFile := context.RetrieveCachedFile(outputPath, inputFile); outputFile != nil {
 		outputFile.Meta = inputFile.Meta
@@ -46,12 +65,6 @@ func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith
 	if _, err := dataIn.ReadFrom(inputFile); err != nil {
 		return err
 	}
-
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, extension.Typographer),
-		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
-		goldmark.WithRendererOptions(html.WithUnsafe()),
-	)
 
 	var dataOut bytes.Buffer
 	if err := md.Convert(dataIn.Bytes(), &dataOut); err != nil {
