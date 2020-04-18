@@ -15,10 +15,10 @@ import (
 
 // Layout chainable context.
 type Layout struct {
-	layoutKey  string
-	contentKey string
+	layoutKey     string
+	contentKey    string
 	defaultLayout *string
-	helpers    template.FuncMap
+	helpers       template.FuncMap
 
 	inputFiles    []*goldsmith.File
 	templateFiles []*goldsmith.File
@@ -75,8 +75,7 @@ func (plugin *Layout) Process(context *goldsmith.Context, inputFile *goldsmith.F
 
 	switch inputFile.Ext() {
 	case ".html", ".htm":
-		_, ok := inputFile.Meta[plugin.layoutKey]
-		if plugin.defaultLayout != nil || ok {
+		if _, ok := plugin.getFileLayout(inputFile); ok {
 			var buff bytes.Buffer
 			if _, err := inputFile.WriteTo(&buff); err != nil {
 				return err
@@ -107,24 +106,31 @@ func (plugin *Layout) Finalize(context *goldsmith.Context) error {
 	}
 
 	for _, inputFile := range plugin.inputFiles {
-		name, ok := inputFile.Meta[plugin.layoutKey].(string)
-		if !ok {
-			if plugin.defaultLayout == nil {
-				context.DispatchFile(inputFile)
-				continue
+		if name, ok := plugin.getFileLayout(inputFile); ok {
+			var buff bytes.Buffer
+			if err := plugin.template.ExecuteTemplate(&buff, name, inputFile); err != nil {
+				return err
 			}
-			name = *plugin.defaultLayout
-		}
 
-		var buff bytes.Buffer
-		if err := plugin.template.ExecuteTemplate(&buff, name, inputFile); err != nil {
-			return err
+			outputFile := context.CreateFileFromData(inputFile.Path(), buff.Bytes())
+			outputFile.Meta = inputFile.Meta
+			context.DispatchFile(outputFile)
+		} else {
+			context.DispatchFile(inputFile)
 		}
-
-		outputFile := context.CreateFileFromData(inputFile.Path(), buff.Bytes())
-		outputFile.Meta = inputFile.Meta
-		context.DispatchFile(outputFile)
 	}
 
 	return nil
+}
+
+func (plugin *Layout) getFileLayout(file *goldsmith.File) (string, bool) {
+	if name, ok := file.Meta[plugin.layoutKey].(string); ok {
+		return name, true
+	}
+
+	if plugin.defaultLayout != nil {
+		return *plugin.defaultLayout, true
+	}
+
+	return "", false
 }
