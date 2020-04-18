@@ -24,7 +24,13 @@ type Markdown struct {
 
 // New creates a new instance of the Markdown plugin.
 func New() *Markdown {
-	return new(Markdown)
+	md := goldmark.New(
+		goldmark.WithExtensions(extension.GFM, extension.Typographer),
+		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
+		goldmark.WithRendererOptions(html.WithUnsafe()),
+	)
+
+	return &Markdown{md}
 }
 
 // WithGoldmark allows you to provide your own instance of Goldmark with
@@ -43,17 +49,6 @@ func (plugin *Markdown) Initialize(context *goldsmith.Context) (goldsmith.Filter
 }
 
 func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	md := plugin.md
-	if md == nil {
-		plugin.md = goldmark.New(
-			goldmark.WithExtensions(extension.GFM, extension.Typographer),
-			goldmark.WithParserOptions(parser.WithAutoHeadingID()),
-			goldmark.WithRendererOptions(html.WithUnsafe()),
-		)
-		md = plugin.md
-	}
-
-
 	outputPath := strings.TrimSuffix(inputFile.Path(), path.Ext(inputFile.Path())) + ".html"
 	if outputFile := context.RetrieveCachedFile(outputPath, inputFile); outputFile != nil {
 		outputFile.Meta = inputFile.Meta
@@ -67,7 +62,7 @@ func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith
 	}
 
 	var dataOut bytes.Buffer
-	if err := md.Convert(dataIn.Bytes(), &dataOut); err != nil {
+	if err := plugin.md.Convert(dataIn.Bytes(), &dataOut); err != nil {
 		return err
 	}
 
