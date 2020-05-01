@@ -1,7 +1,7 @@
 {{define "tag"}}
 <html>
     <body>
-        <h1>Pages Tagged "{{.Meta.TagState.Index.SafeName}}"</h1>
+        <h1>Pages Tagged "{{.Meta.TagState.Index.RawName}}"</h1>
         <ul>
             {{range .Meta.TagState.Index.Files}}
             <li><a href="../../{{.Path}}">{{.Meta.Title}}</a></li>
@@ -20,14 +20,14 @@
         <h2>By Name</h2>
         <ul>
             {{range .Meta.TagState.InfoByName}}
-            <li><a href="{{.Path}}">{{.SafeName}}</a> ({{len .Files}})</li>
+            <li><a href="{{.Path}}">{{.RawName}}</a> ({{len .Files}})</li>
             {{end}}
         </ul>
 
         <h2>By Count</h2>
         <ul>
             {{range .Meta.TagState.InfoByCount}}
-            <li><a href="{{.Path}}">{{.SafeName}}</a> ({{len .Files}})</li>
+            <li><a href="{{.Path}}">{{.RawName}}</a> ({{len .Files}})</li>
             {{end}}
         </ul>
     </body>
@@ -41,7 +41,7 @@
         <p>
             Tagged with:
             {{range .Meta.TagState.Tags}}
-            <a href="{{.Path}}">{{.SafeName}}</a>
+            <a href="{{.Path}}">{{.RawName}}</a>
             {{end}}
         </p>
         <p>
