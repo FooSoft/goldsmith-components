@@ -37,6 +37,9 @@ type Tags struct {
 	indexName string
 	indexMeta map[string]interface{}
 
+	tagsByCount []TagInfo
+	tagsByName  []TagInfo
+
 	info  map[string]TagInfo
 	files []*goldsmith.File
 	mutex sync.Mutex
@@ -92,11 +95,11 @@ func (*Tags) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 }
 
 func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	TagState := &TagState{Info: plugin.info}
+	tagState := &TagState{Info: plugin.info}
 
 	plugin.mutex.Lock()
 	defer func() {
-		inputFile.Meta[plugin.stateKey] = TagState
+		inputFile.Meta[plugin.stateKey] = tagState
 		plugin.files = append(plugin.files, inputFile)
 		plugin.mutex.Unlock()
 	}()
@@ -117,7 +120,7 @@ func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 			continue
 		}
 
-		TagState.Tags = append(TagState.Tags, tagStr)
+		tagState.Tags = append(tagState.Tags, tagStr)
 
 		info, ok := plugin.info[tagStr]
 		info.Files = append(info.Files, inputFile)
@@ -130,7 +133,7 @@ func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 		plugin.info[tagStr] = info
 	}
 
-	sort.Strings(TagState.Tags)
+	sort.Strings(tagState.Tags)
 	return nil
 }
 
@@ -155,7 +158,7 @@ func (plugin *Tags) Finalize(context *goldsmith.Context) error {
 func (plugin *Tags) buildPages(context *goldsmith.Context, info map[string]TagInfo) (files []*goldsmith.File) {
 	for tag := range info {
 		tagFile := context.CreateFileFromData(plugin.tagPagePath(tag), nil)
-		tagFile.Meta[plugin.tagsKey] = TagState{Index: tag, Info: plugin.info}
+		tagFile.Meta[plugin.stateKey] = TagState{Index: tag, Info: plugin.info}
 		for name, value := range plugin.indexMeta {
 			tagFile.Meta[name] = value
 		}

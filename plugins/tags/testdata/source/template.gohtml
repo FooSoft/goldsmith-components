@@ -1,9 +1,9 @@
 {{define "tag"}}
 <html>
     <body>
-        <h1>Pages Tagged "{{.Meta.Tags.Index}}"</h1>
+        <h1>Pages Tagged "{{.Meta.TagState.Index}}"</h1>
         <ul>
-            {{range (index .Meta.Tags.Info .Meta.Tags.Index).Files}}
+            {{range (index .Meta.TagState.Info .Meta.TagState.Index).Files}}
             <li><a href="../../{{.Path}}">{{.Meta.Title}}</a></li>
             {{end}}
         </ul>
