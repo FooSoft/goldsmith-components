@@ -210,7 +210,7 @@ func safeTag(tagRaw string) string {
 	var tagSafe string
 	for _, c := range tagRaw {
 		if unicode.IsSpace(c) {
-			tagSafe += " "
+			tagSafe += "-"
 		} else if unicode.IsLetter(c) || unicode.IsNumber(c) || c == '_' || c == '-' {
 			tagSafe += string(c)
 		}
