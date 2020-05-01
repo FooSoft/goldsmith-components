@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/wildcard"
@@ -109,31 +110,43 @@ func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 		plugin.mutex.Unlock()
 	}()
 
-	tags, ok := inputFile.Meta[plugin.tagsKey]
-	if !ok {
-		return nil
-	}
-
-	tagsArr, ok := tags.([]interface{})
+	tagsArr, ok := inputFile.Meta[plugin.tagsKey].([]interface{})
 	if !ok {
 		return nil
 	}
 
 	for _, tag := range tagsArr {
-		tagStr, ok := tag.(string)
+		tagRaw, ok := tag.(string)
 		if !ok {
 			continue
 		}
 
-		info, ok := plugin.info[tagStr]
+		tagSafe := safeTag(tagRaw)
+		if len(tagSafe) == 0 {
+			continue
+		}
+
+		var duplicate bool
+		for _, tagState := range tagState.Tags {
+			if tagState.RawName == tagRaw {
+				duplicate = true
+				break
+			}
+		}
+
+		if duplicate {
+			continue
+		}
+
+		info, ok := plugin.info[tagRaw]
 		if !ok {
 			info = &TagInfo{
-				SafeName: safeTag(tagStr),
-				RawName:  tagStr,
-				Path:     plugin.tagPagePath(tagStr),
+				SafeName: tagSafe,
+				RawName:  tagRaw,
+				Path:     plugin.tagPagePath(tagRaw),
 			}
 
-			plugin.info[tagStr] = info
+			plugin.info[tagRaw] = info
 		}
 		info.Files = append(info.Files, inputFile)
 
@@ -190,8 +203,20 @@ func (plugin *Tags) tagPagePath(tag string) string {
 	return filepath.Join(plugin.baseDir, safeTag(tag), plugin.indexName)
 }
 
-func safeTag(tag string) string {
-	return strings.ToLower(strings.Replace(tag, " ", "-", -1))
+func safeTag(tagRaw string) string {
+	tagRaw = strings.TrimSpace(tagRaw)
+	tagRaw = strings.ToLower(tagRaw)
+
+	var tagSafe string
+	for _, c := range tagRaw {
+		if unicode.IsSpace(c) {
+			tagSafe += " "
+		} else if unicode.IsLetter(c) || unicode.IsNumber(c) || c == '_' || c == '-' {
+			tagSafe += string(c)
+		}
+	}
+
+	return tagSafe
 }
 
 type tagInfoByCount []*TagInfo
