@@ -1,9 +1,9 @@
 {{define "tag"}}
 <html>
     <body>
-        <h1>Pages Tagged "{{.Meta.TagState.Index}}"</h1>
+        <h1>Pages Tagged "{{.Meta.TagState.Index.SafeName}}"</h1>
         <ul>
-            {{range (index .Meta.TagState.Info .Meta.TagState.Index).Files}}
+            {{range .Meta.TagState.Index.Files}}
             <li><a href="../../{{.Path}}">{{.Meta.Title}}</a></li>
             {{end}}
         </ul>
@@ -16,9 +16,18 @@
 <html>
     <body>
         <h1>Global Tag Listing</h1>
+
+        <h2>By Name</h2>
         <ul>
-            {{range $key, $value := .Meta.TagState.Info}}
-            <li><a href="{{(index $.Meta.TagState.Info $key).Path}}">{{$key}}</a> ({{len $value.Files}})</li>
+            {{range .Meta.TagState.InfoByName}}
+            <li><a href="{{.Path}}">{{.SafeName}}</a> ({{len .Files}})</li>
+            {{end}}
+        </ul>
+
+        <h2>By Count</h2>
+        <ul>
+            {{range .Meta.TagState.InfoByCount}}
+            <li><a href="{{.Path}}">{{.SafeName}}</a> ({{len .Files}})</li>
             {{end}}
         </ul>
     </body>
@@ -32,7 +41,7 @@
         <p>
             Tagged with:
             {{range .Meta.TagState.Tags}}
-            <a href="{{(index $.Meta.TagState.Info .).Path}}">{{.}}</a>
+            <a href="{{.Path}}">{{.SafeName}}</a>
             {{end}}
         </p>
         <p>
