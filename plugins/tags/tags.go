@@ -24,10 +24,10 @@ type TagInfo struct {
 
 // TagState contains site-wide information about tags used on a site.
 type TagState struct {
-	CurrentIndex *TagInfo
-	CurrentTags  tagInfoByName
-	TagsByName   *tagInfoByName
-	TagsByCount  *tagInfoByCount
+	CurrentTag  *TagInfo
+	CurrentTags tagInfoByName
+	TagsByName  *tagInfoByName
+	TagsByCount *tagInfoByCount
 }
 
 // Tags chainable context.
@@ -183,9 +183,9 @@ func (plugin *Tags) buildPages(context *goldsmith.Context) []*goldsmith.File {
 	for tag, info := range plugin.info {
 		info.IndexFile = context.CreateFileFromData(plugin.tagPagePath(tag), nil)
 		info.IndexFile.Meta[plugin.stateKey] = TagState{
-			CurrentIndex: info,
-			TagsByName:   &plugin.infoByName,
-			TagsByCount:  &plugin.infoByCount,
+			CurrentTag:  info,
+			TagsByName:  &plugin.infoByName,
+			TagsByCount: &plugin.infoByCount,
 		}
 		for name, value := range plugin.indexMeta {
 			info.IndexFile.Meta[name] = value
