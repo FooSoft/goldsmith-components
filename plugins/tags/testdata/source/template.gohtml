@@ -1,9 +1,9 @@
 {{define "tag"}}
 <html>
     <body>
-        <h1>Pages Tagged "{{.Meta.TagState.Index.RawName}}"</h1>
+        <h1>Pages Tagged "{{.Meta.TagState.CurrentIndex.RawName}}"</h1>
         <ul>
-            {{range .Meta.TagState.Index.Files}}
+            {{range .Meta.TagState.CurrentIndex.TaggedFiles}}
             <li><a href="../../{{.Path}}">{{.Meta.Title}}</a></li>
             {{end}}
         </ul>
@@ -19,15 +19,15 @@
 
         <h2>By Name</h2>
         <ul>
-            {{range .Meta.TagState.InfoByName}}
-            <li><a href="{{.Path}}">{{.RawName}}</a> ({{len .Files}})</li>
+            {{range .Meta.TagState.TagsByName}}
+            <li><a href="{{.IndexFile.Path}}">{{.RawName}}</a> ({{len .TaggedFiles}})</li>
             {{end}}
         </ul>
 
         <h2>By Count</h2>
         <ul>
-            {{range .Meta.TagState.InfoByCount}}
-            <li><a href="{{.Path}}">{{.RawName}}</a> ({{len .Files}})</li>
+            {{range .Meta.TagState.TagsByCount}}
+            <li><a href="{{.IndexFile.Path}}">{{.RawName}}</a> ({{len .TaggedFiles}})</li>
             {{end}}
         </ul>
     </body>
@@ -40,8 +40,8 @@
         <h1>{{.Meta.Title}}</h1>
         <p>
             Tagged with:
-            {{range .Meta.TagState.Tags}}
-            <a href="{{.Path}}">{{.RawName}}</a>
+            {{range .Meta.TagState.CurrentTags}}
+            <a href="{{.IndexFile.Path}}">{{.RawName}}</a>
             {{end}}
         </p>
         <p>

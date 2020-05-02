@@ -16,19 +16,18 @@ import (
 
 // TagInfo contains site-wide information about a particular tag.
 type TagInfo struct {
-	Files    filesByPath
-	SafeName string
-	RawName  string
-	Path     string
+	TaggedFiles filesByPath
+	IndexFile   *goldsmith.File
+	SafeName    string
+	RawName     string
 }
 
 // TagState contains site-wide information about tags used on a site.
 type TagState struct {
-	Index       *TagInfo
-	InfoByName  *tagInfoByName
-	InfoByCount *tagInfoByCount
-
-	Tags tagInfoByName
+	CurrentIndex *TagInfo
+	CurrentTags  tagInfoByName
+	TagsByName   *tagInfoByName
+	TagsByCount  *tagInfoByCount
 }
 
 // Tags chainable context.
@@ -99,8 +98,8 @@ func (*Tags) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
 
 func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	tagState := &TagState{
-		InfoByName:  &plugin.infoByName,
-		InfoByCount: &plugin.infoByCount,
+		TagsByName:  &plugin.infoByName,
+		TagsByCount: &plugin.infoByCount,
 	}
 
 	plugin.mutex.Lock()
@@ -127,7 +126,7 @@ func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 		}
 
 		var duplicate bool
-		for _, tagState := range tagState.Tags {
+		for _, tagState := range tagState.CurrentTags {
 			if tagState.RawName == tagRaw {
 				duplicate = true
 				break
@@ -143,24 +142,23 @@ func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 			info = &TagInfo{
 				SafeName: tagSafe,
 				RawName:  tagRaw,
-				Path:     plugin.tagPagePath(tagRaw),
 			}
 
 			plugin.info[tagRaw] = info
 		}
-		info.Files = append(info.Files, inputFile)
+		info.TaggedFiles = append(info.TaggedFiles, inputFile)
 
-		tagState.Tags = append(tagState.Tags, info)
+		tagState.CurrentTags = append(tagState.CurrentTags, info)
 	}
 
-	sort.Sort(tagState.Tags)
+	sort.Sort(tagState.CurrentTags)
 
 	return nil
 }
 
 func (plugin *Tags) Finalize(context *goldsmith.Context) error {
 	for _, info := range plugin.info {
-		sort.Sort(info.Files)
+		sort.Sort(info.TaggedFiles)
 
 		plugin.infoByName = append(plugin.infoByName, info)
 		plugin.infoByCount = append(plugin.infoByCount, info)
@@ -183,17 +181,17 @@ func (plugin *Tags) Finalize(context *goldsmith.Context) error {
 func (plugin *Tags) buildPages(context *goldsmith.Context) []*goldsmith.File {
 	var files []*goldsmith.File
 	for tag, info := range plugin.info {
-		tagFile := context.CreateFileFromData(plugin.tagPagePath(tag), nil)
-		tagFile.Meta[plugin.stateKey] = TagState{
-			Index:       info,
-			InfoByName:  &plugin.infoByName,
-			InfoByCount: &plugin.infoByCount,
+		info.IndexFile = context.CreateFileFromData(plugin.tagPagePath(tag), nil)
+		info.IndexFile.Meta[plugin.stateKey] = TagState{
+			CurrentIndex: info,
+			TagsByName:   &plugin.infoByName,
+			TagsByCount:  &plugin.infoByCount,
 		}
 		for name, value := range plugin.indexMeta {
-			tagFile.Meta[name] = value
+			info.IndexFile.Meta[name] = value
 		}
 
-		files = append(files, tagFile)
+		files = append(files, info.IndexFile)
 	}
 
 	return files
@@ -207,12 +205,15 @@ func safeTag(tagRaw string) string {
 	tagRaw = strings.TrimSpace(tagRaw)
 	tagRaw = strings.ToLower(tagRaw)
 
+	var valid bool
 	var tagSafe string
 	for _, c := range tagRaw {
-		if unicode.IsSpace(c) {
-			tagSafe += "-"
-		} else if unicode.IsLetter(c) || unicode.IsNumber(c) || c == '_' || c == '-' {
+		if unicode.IsLetter(c) || unicode.IsNumber(c) {
 			tagSafe += string(c)
+			valid = true
+		} else if valid {
+			tagSafe += "-"
+			valid = false
 		}
 	}
 
@@ -230,9 +231,9 @@ func (info tagInfoByCount) Swap(i, j int) {
 }
 
 func (info tagInfoByCount) Less(i, j int) bool {
-	if len(info[i].Files) > len(info[j].Files) {
+	if len(info[i].TaggedFiles) > len(info[j].TaggedFiles) {
 		return true
-	} else if len(info[i].Files) == len(info[j].Files) && strings.Compare(info[i].RawName, info[j].RawName) < 0 {
+	} else if len(info[i].TaggedFiles) == len(info[j].TaggedFiles) && strings.Compare(info[i].RawName, info[j].RawName) < 0 {
 		return true
 	}
 
@@ -252,7 +253,7 @@ func (info tagInfoByName) Swap(i, j int) {
 func (info tagInfoByName) Less(i, j int) bool {
 	if strings.Compare(info[i].RawName, info[j].RawName) < 0 {
 		return true
-	} else if info[i].RawName == info[j].RawName && len(info[i].Files) > len(info[j].Files) {
+	} else if info[i].RawName == info[j].RawName && len(info[i].TaggedFiles) > len(info[j].TaggedFiles) {
 		return true
 	}
 
