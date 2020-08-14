@@ -16,7 +16,7 @@ func Test(t *testing.T) {
 	harness.Validate(
 		t,
 		func(gs *goldsmith.Goldsmith) {
-			gs.Chain(New().WithGoldmark(goldmark.New(
+			gs.Chain(NewWithGoldmark(goldmark.New(
 				goldmark.WithExtensions(extension.GFM, extension.Typographer, extension.DefinitionList),
 				goldmark.WithParserOptions(parser.WithAutoHeadingID()),
 				goldmark.WithRendererOptions(html.WithUnsafe()),

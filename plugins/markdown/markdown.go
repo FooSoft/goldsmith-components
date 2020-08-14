@@ -24,20 +24,18 @@ type Markdown struct {
 
 // New creates a new instance of the Markdown plugin.
 func New() *Markdown {
-	md := goldmark.New(
-		goldmark.WithExtensions(extension.GFM, extension.Typographer),
-		goldmark.WithParserOptions(parser.WithAutoHeadingID()),
-		goldmark.WithRendererOptions(html.WithUnsafe()),
+	return NewWithGoldmark(
+		goldmark.New(
+			goldmark.WithExtensions(extension.GFM, extension.Typographer),
+			goldmark.WithParserOptions(parser.WithAutoHeadingID()),
+			goldmark.WithRendererOptions(html.WithUnsafe()),
+		),
 	)
-
-	return &Markdown{md}
 }
 
-// WithGoldmark allows you to provide your own instance of Goldmark with
-// a custom selection of plugins. The default includes GFM and Typographer.
-func (plugin *Markdown) WithGoldmark(md goldmark.Markdown) *Markdown {
-	plugin.md = md
-	return plugin
+// New creates a new instance of the Markdown plugin with user-provided goldmark instance.
+func NewWithGoldmark(md goldmark.Markdown) *Markdown {
+	return &Markdown{md}
 }
 
 func (*Markdown) Name() string {
