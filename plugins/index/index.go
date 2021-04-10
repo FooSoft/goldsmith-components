@@ -110,7 +110,7 @@ func (plugin *Index) Finalize(context *goldsmith.Context) error {
 
 		indexFile := list.indexFile
 		if indexFile == nil {
-			indexFile = context.CreateFileFromData(path.Join(name, plugin.indexName), make([]byte, 0))
+			indexFile = context.CreateFileFromData(path.Join(name, plugin.indexName), nil)
 			for name, value := range plugin.indexMeta {
 				indexFile.Meta[name] = value
 			}
