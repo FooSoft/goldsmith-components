@@ -42,8 +42,9 @@ func (*Markdown) Name() string {
 	return "markdown"
 }
 
-func (plugin *Markdown) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return wildcard.New("**/*.md", "**/*.markdown"), nil
+func (plugin *Markdown) Initialize(context *goldsmith.Context) error {
+	context.Filter(wildcard.New("**/*.md", "**/*.markdown"))
+	return nil
 }
 
 func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

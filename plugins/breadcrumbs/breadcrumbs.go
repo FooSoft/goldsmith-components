@@ -70,8 +70,9 @@ func (*Breadcrumbs) Name() string {
 	return "breadcrumbs"
 }
 
-func (*Breadcrumbs) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return wildcard.New("**/*.html", "**/*.htm"), nil
+func (*Breadcrumbs) Initialize(context *goldsmith.Context) error {
+	context.Filter(wildcard.New("**/*.html", "**/*.htm"))
+	return nil
 }
 
 func (plugin *Breadcrumbs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

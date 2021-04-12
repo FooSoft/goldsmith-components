@@ -36,8 +36,9 @@ func (*Absolute) Name() string {
 	return "absolute"
 }
 
-func (*Absolute) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return wildcard.New("**/*.html", "**/*.htm"), nil
+func (*Absolute) Initialize(context *goldsmith.Context) error {
+	context.Filter(wildcard.New("**/*.html", "**/*.htm"))
+	return nil
 }
 
 func (plugin *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

@@ -56,8 +56,9 @@ func (*Thumbnail) Name() string {
 	return "thumbnail"
 }
 
-func (*Thumbnail) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return wildcard.New("**/*.jpg", "**/*.jpeg", "**/*.gif", "**/*.png"), nil
+func (*Thumbnail) Initialize(context *goldsmith.Context) error {
+	context.Filter(wildcard.New("**/*.jpg", "**/*.jpeg", "**/*.gif", "**/*.png"))
+	return nil
 }
 
 func (plugin *Thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

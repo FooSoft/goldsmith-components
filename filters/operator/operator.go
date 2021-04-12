@@ -20,18 +20,14 @@ func (*operatorAnd) Name() string {
 	return "operator"
 }
 
-func (filter *operatorAnd) Accept(file *goldsmith.File) (bool, error) {
-	for _, f := range filter.filters {
-		accept, err := f.Accept(file)
-		if err != nil {
-			return false, err
-		}
-		if !accept {
-			return false, nil
+func (filter *operatorAnd) Accept(file *goldsmith.File) bool {
+	for _, filter := range filter.filters {
+		if !filter.Accept(file) {
+			return false
 		}
 	}
 
-	return true, nil
+	return true
 }
 
 func Not(filter goldsmith.Filter) Operator {
@@ -46,9 +42,8 @@ func (*operatorNot) Name() string {
 	return "operator"
 }
 
-func (filter *operatorNot) Accept(file *goldsmith.File) (bool, error) {
-	accept, err := filter.filter.Accept(file)
-	return !accept, err
+func (filter *operatorNot) Accept(file *goldsmith.File) bool {
+	return !filter.filter.Accept(file)
 }
 
 func Or(filters ...goldsmith.Filter) Operator {
@@ -63,16 +58,12 @@ func (*operatorOr) Name() string {
 	return "operator"
 }
 
-func (filter *operatorOr) Accept(file *goldsmith.File) (bool, error) {
-	for _, f := range filter.filters {
-		accept, err := f.Accept(file)
-		if err != nil {
-			return false, err
-		}
-		if accept {
-			return true, nil
+func (filter *operatorOr) Accept(file *goldsmith.File) bool {
+	for _, filter := range filter.filters {
+		if filter.Accept(file) {
+			return true
 		}
 	}
 
-	return false, nil
+	return false
 }

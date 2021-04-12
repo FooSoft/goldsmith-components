@@ -44,7 +44,7 @@ func (*Forward) Name() string {
 	return "forward"
 }
 
-func (plugin *Forward) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (plugin *Forward) Initialize(context *goldsmith.Context) error {
 	for sourcePath, targetPath := range plugin.pathMap {
 		sourceFile := context.CreateFileFromData(sourcePath, nil)
 		for name, value := range plugin.sourceMeta {
@@ -55,5 +55,5 @@ func (plugin *Forward) Initialize(context *goldsmith.Context) (goldsmith.Filter,
 		context.DispatchFile(sourceFile)
 	}
 
-	return nil, nil
+	return nil
 }

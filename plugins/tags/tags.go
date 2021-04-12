@@ -92,8 +92,9 @@ func (*Tags) Name() string {
 	return "tags"
 }
 
-func (*Tags) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return wildcard.New("**/*.html", "**/*.htm"), nil
+func (*Tags) Initialize(context *goldsmith.Context) error {
+	context.Filter(wildcard.New("**/*.html", "**/*.htm"))
+	return nil
 }
 
 func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

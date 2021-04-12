@@ -32,8 +32,9 @@ func (*Minify) Name() string {
 	return "minify"
 }
 
-func (*Minify) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return wildcard.New("**/*.css", "**/*.html", "**/*.htm", "**/*.js", "**/*.svg", "**/*.json", "**/*.xml"), nil
+func (*Minify) Initialize(context *goldsmith.Context) error {
+	context.Filter(wildcard.New("**/*.css", "**/*.html", "**/*.htm", "**/*.js", "**/*.svg", "**/*.json", "**/*.xml"))
+	return nil
 }
 
 func (*Minify) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

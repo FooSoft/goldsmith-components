@@ -27,8 +27,9 @@ func (*Document) Name() string {
 	return "document"
 }
 
-func (*Document) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return wildcard.New("**/*.html", "**/*.htm"), nil
+func (*Document) Initialize(context *goldsmith.Context) error {
+	context.Filter(wildcard.New("**/*.html", "**/*.htm"))
+	return nil
 }
 
 func (plugin *Document) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

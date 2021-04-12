@@ -17,19 +17,14 @@ func (*Wildcard) Name() string {
 	return "wildcard"
 }
 
-func (filter *Wildcard) Accept(file *goldsmith.File) (bool, error) {
+func (filter *Wildcard) Accept(file *goldsmith.File) bool {
 	filePath := file.Path()
 
 	for _, wildcard := range filter.wildcards {
-		matched, err := doublestar.PathMatch(wildcard, filePath)
-		if err != nil {
-			return false, err
-		}
-
-		if matched {
-			return true, nil
+		if matched, _ := doublestar.PathMatch(wildcard, filePath); matched {
+			return true
 		}
 	}
 
-	return false, nil
+	return false
 }

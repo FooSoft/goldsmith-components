@@ -109,8 +109,9 @@ func (*Pager) Name() string {
 	return "pager"
 }
 
-func (*Pager) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
-	return wildcard.New("**/*.html", "**/*.htm"), nil
+func (*Pager) Initialize(context *goldsmith.Context) error {
+	context.Filter(wildcard.New("**/*.html", "**/*.htm"))
+	return nil
 }
 
 func (plugin *Pager) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

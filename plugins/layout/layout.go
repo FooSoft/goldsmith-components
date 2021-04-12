@@ -64,9 +64,10 @@ func (*Layout) Name() string {
 	return "layout"
 }
 
-func (plugin *Layout) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (plugin *Layout) Initialize(context *goldsmith.Context) error {
 	plugin.template = template.New("").Funcs(plugin.helpers)
-	return wildcard.New("**/*.html", "**/*.htm", "**/*.tmpl", "**/*.gohtml"), nil
+	context.Filter(wildcard.New("**/*.html", "**/*.htm", "**/*.tmpl", "**/*.gohtml"))
+	return nil
 }
 
 func (plugin *Layout) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {

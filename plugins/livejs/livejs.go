@@ -30,10 +30,10 @@ func (*LiveJs) Name() string {
 	return "livejs"
 }
 
-func (plugin *LiveJs) Initialize(context *goldsmith.Context) (goldsmith.Filter, error) {
+func (plugin *LiveJs) Initialize(context *goldsmith.Context) error {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
-		return nil, errors.New("unable to get livejs path")
+		return errors.New("unable to get livejs path")
 	}
 
 	baseDir := path.Dir(filename)
@@ -41,11 +41,13 @@ func (plugin *LiveJs) Initialize(context *goldsmith.Context) (goldsmith.Filter, 
 
 	js, err := ioutil.ReadFile(jsPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	plugin.html = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", js)
-	return wildcard.New("**/*.html", "**/*.htm"), nil
+
+	context.Filter(wildcard.New("**/*.html", "**/*.htm"))
+	return nil
 }
 
 func (plugin *LiveJs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
