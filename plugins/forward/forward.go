@@ -1,4 +1,4 @@
-// Package forward allows to create simple redirections for pages that have moved.
+// Package forward allows to create simple redirections for pages that have moved to a new URL.
 package forward
 
 import (
