@@ -89,7 +89,7 @@ func (plugin *Syntax) Process(context *goldsmith.Context, inputFile *goldsmith.F
 	var errs []error
 	doc.Find(fmt.Sprintf("[class*=%s]", plugin.prefix)).Each(func(i int, sel *goquery.Selection) {
 		class := sel.AttrOr("class", "")
-		language := class[len(plugin.prefix):len(class)]
+		language := class[len(plugin.prefix):]
 		lexer := lexers.Get(language)
 		if lexer == nil {
 			lexer = lexers.Fallback

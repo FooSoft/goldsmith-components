@@ -78,12 +78,18 @@ func (*FrontMatter) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 
 func parse(reader io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 	const (
-		yamlOpener = "---"
-		yamlCloser = "---"
-		tomlOpener = "+++"
-		tomlCloser = "+++"
-		jsonOpener = "{"
-		jsonCloser = "}"
+		yamlOpener     = "---"
+		yamlCloser     = "---"
+		tomlOpener     = "+++"
+		tomlCloser     = "+++"
+		jsonOpener     = "{"
+		jsonCloser     = "}"
+		yamlOpenerHtml = "<!-- ---"
+		yamlCloserHtml = "--- -->"
+		tomlOpenerHtml = "<!-- +++"
+		tomlCloserHtml = "+++ -->"
+		jsonOpenerHtml = "<!-- {"
+		jsonCloserHtml = "} -->"
 	)
 
 	var (
@@ -114,6 +120,16 @@ func parse(reader io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 					header = true
 					closer = jsonCloser
 					front.WriteString(jsonOpener)
+				case tomlOpenerHtml:
+					header = true
+					closer = tomlCloserHtml
+				case yamlOpenerHtml:
+					header = true
+					closer = yamlCloserHtml
+				case jsonOpenerHtml:
+					header = true
+					closer = jsonCloserHtml
+					front.WriteString(jsonOpener)
 				}
 			}
 
@@ -123,13 +139,12 @@ func parse(reader io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 		}
 
 		if header {
-			switch strings.TrimSpace(line) {
-			case closer:
+			if strings.TrimSpace(line) == closer {
 				header = false
-				if closer == jsonCloser {
+				if closer == jsonCloser || closer == jsonCloserHtml {
 					front.WriteString(jsonCloser)
 				}
-			default:
+			} else {
 				front.Write([]byte(line + "\n"))
 			}
 		} else {
@@ -146,15 +161,15 @@ func parse(reader io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 	}
 
 	switch closer {
-	case tomlCloser:
+	case tomlCloser, tomlCloserHtml:
 		if err := toml.Unmarshal(front.Bytes(), meta); err != nil {
 			return nil, nil, err
 		}
-	case yamlCloser:
+	case yamlCloser, yamlCloserHtml:
 		if err := yaml.Unmarshal(front.Bytes(), meta); err != nil {
 			return nil, nil, err
 		}
-	case jsonCloser:
+	case jsonCloser, jsonCloserHtml:
 		if err := json.Unmarshal(front.Bytes(), &meta); err != nil {
 			return nil, nil, err
 		}
