@@ -11,7 +11,7 @@ import (
 )
 
 // Processor callback function to modify documents.
-type Processor func(*goquery.Document) error
+type Processor func(*goldsmith.File, *goquery.Document) error
 
 // Document plugin context.
 type Document struct {
@@ -38,7 +38,7 @@ func (plugin *Document) Process(context *goldsmith.Context, inputFile *goldsmith
 		return err
 	}
 
-	if err := plugin.callback(doc); err != nil {
+	if err := plugin.callback(inputFile, doc); err != nil {
 		return err
 	}
 
