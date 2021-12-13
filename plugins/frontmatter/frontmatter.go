@@ -25,6 +25,17 @@
 //      "Tags": ["best", "page", "ever"]
 //  }
 //
+// It is possible to enclose the frontmatter starting and ending delimiters in HTML
+// comments. The comment has to start and stop on the same line as the delimiter.
+//
+//  <!-- ---
+//  Title: "My homepage"
+//  Tags:
+//    - "best"
+//    - "page"
+//    - "ever"
+//  --- -->
+//
 // Normal page content immediately follows the metadata section. The metadata
 // section is stripped after processed by this plugin.
 package frontmatter
