@@ -183,7 +183,7 @@ func (plugin *Tags) buildPages(context *goldsmith.Context) []*goldsmith.File {
 	var files []*goldsmith.File
 	for tag, info := range plugin.info {
 		info.IndexFile = context.CreateFileFromData(plugin.tagPagePath(tag), nil)
-		info.IndexFile.Meta[plugin.stateKey] = TagState{
+		info.IndexFile.Meta[plugin.stateKey] = &TagState{
 			CurrentTag:  info,
 			TagsByName:  &plugin.infoByName,
 			TagsByCount: &plugin.infoByCount,
