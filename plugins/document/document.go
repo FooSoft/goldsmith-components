@@ -5,6 +5,8 @@
 package document
 
 import (
+	"sync"
+
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 	"github.com/PuerkitoBio/goquery"
@@ -16,11 +18,13 @@ type Processor func(*goldsmith.File, *goquery.Document) error
 // Document plugin context.
 type Document struct {
 	callback Processor
+	files    []*goldsmith.File
+	mutex    sync.Mutex
 }
 
 // New creates a new instance of the Document plugin.
 func New(callback Processor) *Document {
-	return &Document{callback}
+	return &Document{callback: callback}
 }
 
 func (*Document) Name() string {
@@ -49,6 +53,17 @@ func (plugin *Document) Process(context *goldsmith.Context, inputFile *goldsmith
 
 	outputFile := context.CreateFileFromData(inputFile.Path(), []byte(html))
 	outputFile.Meta = inputFile.Meta
-	context.DispatchFile(outputFile)
+
+	plugin.mutex.Lock()
+	defer plugin.mutex.Unlock()
+	plugin.files = append(plugin.files, outputFile)
+	return nil
+}
+
+func (plugin *Document) Finalize(context *goldsmith.Context) error {
+	for _, file := range plugin.files {
+		context.DispatchFile(file)
+	}
+
 	return nil
 }
