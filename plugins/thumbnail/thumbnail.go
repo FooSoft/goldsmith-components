@@ -4,43 +4,63 @@ package thumbnail
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
-	"image"
-	"image/gif"
-	"image/jpeg"
-	"image/png"
+	"image/color"
 	"path/filepath"
 	"strings"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/wildcard"
-	"github.com/nfnt/resize"
+	"github.com/disintegration/imaging"
 )
 
 // Namer callback function builds thumbnail file paths based on the original file path.
 // An empty path can be returned if a thumbnail should not be generated for the current file.
-type Namer func(string, uint) string
+type Namer func(string, int) string
+
+// Desired thumbnailing styles.
+type Style int
+
+const (
+	Fit Style = iota
+	Crop
+	Pad
+)
 
 // Thumbnail chainable context.
 type Thumbnail struct {
-	size  uint
+	size  int
+	style Style
+	color color.Color
 	namer Namer
 }
 
 // New creates a new instance of the Thumbnail plugin.
 func New() *Thumbnail {
-	namer := func(path string, dims uint) string {
+	namer := func(path string, dims int) string {
 		ext := filepath.Ext(path)
 		body := strings.TrimSuffix(path, ext)
 		return fmt.Sprintf("%s-thumb.png", body)
 	}
 
-	return &Thumbnail{128, namer}
+	return &Thumbnail{
+		128,
+		Fit,
+		color.Transparent,
+		namer,
+	}
 }
 
 // Size sets the desired maximum pixel size of generated thumbnails (default: 128).
-func (plugin *Thumbnail) Size(dims uint) *Thumbnail {
+func (plugin *Thumbnail) Size(dims int) *Thumbnail {
 	plugin.size = dims
+	return plugin
+}
+
+// Style sets the desired thumbnailing style.
+func (plugin *Thumbnail) Style(style Style) *Thumbnail {
+	plugin.style = style
 	return plugin
 }
 
@@ -85,21 +105,38 @@ func (plugin *Thumbnail) Process(context *goldsmith.Context, inputFile *goldsmit
 }
 
 func (plugin *Thumbnail) thumbnail(context *goldsmith.Context, inputFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
-	inputImage, _, err := image.Decode(inputFile)
+	var thumbFormat imaging.Format
+	switch strings.ToLower(filepath.Ext(thumbPath)) {
+	case ".jpg", ".jpeg":
+		thumbFormat = imaging.JPEG
+	case ".gif":
+		thumbFormat = imaging.GIF
+	case ".png":
+		thumbFormat = imaging.PNG
+	default:
+		return nil, errors.New("unsupported image format")
+	}
+
+	thumbImage, err := imaging.Decode(inputFile)
 	if err != nil {
 		return nil, err
 	}
 
-	var thumbBuff bytes.Buffer
-	thumbImage := resize.Thumbnail(plugin.size, plugin.size, inputImage, resize.Bicubic)
+	switch plugin.style {
+	case Fit:
+		thumbImage = imaging.Fit(thumbImage, plugin.size, plugin.size, imaging.Lanczos)
+	case Crop:
+		thumbImage = imaging.Fill(thumbImage, plugin.size, plugin.size, imaging.Center, imaging.Lanczos)
+	case Pad:
+		thumbImage = imaging.Fit(thumbImage, plugin.size, plugin.size, imaging.Lanczos)
+		thumbImage = imaging.PasteCenter(imaging.New(plugin.size, plugin.size, plugin.color), thumbImage)
+	default:
+		return nil, errors.New("unsupported thumbnailing style")
+	}
 
-	switch filepath.Ext(thumbPath) {
-	case ".jpg", ".jpeg":
-		err = jpeg.Encode(&thumbBuff, thumbImage, nil)
-	case ".gif":
-		err = gif.Encode(&thumbBuff, thumbImage, nil)
-	case ".png":
-		err = png.Encode(&thumbBuff, thumbImage)
+	var thumbBuff bytes.Buffer
+	if err := imaging.Encode(&thumbBuff, thumbImage, thumbFormat); err != nil {
+		return nil, err
 	}
 
 	return context.CreateFileFromData(thumbPath, thumbBuff.Bytes()), nil
