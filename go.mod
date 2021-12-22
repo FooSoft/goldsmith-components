@@ -8,6 +8,7 @@ require (
 	github.com/alecthomas/chroma v0.8.2
 	github.com/andybalholm/cascadia v1.2.0 // indirect
 	github.com/bmatcuk/doublestar v1.3.4
+	github.com/disintegration/imaging v1.6.2 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/kylelemons/godebug v1.1.0 // indirect
