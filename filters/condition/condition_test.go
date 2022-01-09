@@ -7,9 +7,9 @@ import (
 	"github.com/FooSoft/goldsmith-components/harness"
 )
 
-func TestEnabled(t *testing.T) {
+func TestEnabled(self *testing.T) {
 	harness.ValidateCase(
-		t,
+		self,
 		"true",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(New(true))
@@ -17,9 +17,9 @@ func TestEnabled(t *testing.T) {
 	)
 }
 
-func TestDisabled(t *testing.T) {
+func TestDisabled(self *testing.T) {
 	harness.ValidateCase(
-		t,
+		self,
 		"false",
 		func(gs *goldsmith.Goldsmith) {
 			gs.FilterPush(New(false))

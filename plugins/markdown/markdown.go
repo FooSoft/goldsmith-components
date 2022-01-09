@@ -42,15 +42,15 @@ func (*Markdown) Name() string {
 	return "markdown"
 }
 
-func (plugin *Markdown) Initialize(context *goldsmith.Context) error {
+func (self *Markdown) Initialize(context *goldsmith.Context) error {
 	context.Filter(wildcard.New("**/*.md", "**/*.markdown"))
 	return nil
 }
 
-func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (self *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	outputPath := strings.TrimSuffix(inputFile.Path(), path.Ext(inputFile.Path())) + ".html"
 	if outputFile := context.RetrieveCachedFile(outputPath, inputFile); outputFile != nil {
-		outputFile.Meta = inputFile.Meta
+		outputFile.CopyProps(inputFile)
 		context.DispatchFile(outputFile)
 		return nil
 	}
@@ -61,12 +61,16 @@ func (plugin *Markdown) Process(context *goldsmith.Context, inputFile *goldsmith
 	}
 
 	var dataOut bytes.Buffer
-	if err := plugin.md.Convert(dataIn.Bytes(), &dataOut); err != nil {
+	if err := self.md.Convert(dataIn.Bytes(), &dataOut); err != nil {
 		return err
 	}
 
-	outputFile := context.CreateFileFromData(outputPath, dataOut.Bytes())
-	outputFile.Meta = inputFile.Meta
+	outputFile, err := context.CreateFileFromReader(outputPath, &dataOut)
+	if err != nil {
+		return err
+	}
+
+	outputFile.CopyProps(inputFile)
 	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
 }

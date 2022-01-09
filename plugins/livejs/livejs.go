@@ -5,6 +5,7 @@
 package livejs
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -30,7 +31,7 @@ func (*LiveJs) Name() string {
 	return "livejs"
 }
 
-func (plugin *LiveJs) Initialize(context *goldsmith.Context) error {
+func (self *LiveJs) Initialize(context *goldsmith.Context) error {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
 		return errors.New("unable to get livejs path")
@@ -44,15 +45,15 @@ func (plugin *LiveJs) Initialize(context *goldsmith.Context) error {
 		return err
 	}
 
-	plugin.html = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", js)
+	self.html = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", js)
 
 	context.Filter(wildcard.New("**/*.html", "**/*.htm"))
 	return nil
 }
 
-func (plugin *LiveJs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (self *LiveJs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
-		outputFile.Meta = inputFile.Meta
+		outputFile.CopyProps(inputFile)
 		context.DispatchFile(outputFile)
 		return nil
 	}
@@ -62,15 +63,19 @@ func (plugin *LiveJs) Process(context *goldsmith.Context, inputFile *goldsmith.F
 		return err
 	}
 
-	doc.Find("body").AppendHtml(plugin.html)
+	doc.Find("body").AppendHtml(self.html)
 
 	html, err := doc.Html()
 	if err != nil {
 		return err
 	}
 
-	outputFile := context.CreateFileFromData(inputFile.Path(), []byte(html))
-	outputFile.Meta = inputFile.Meta
+	outputFile, err := context.CreateFileFromReader(inputFile.Path(), bytes.NewReader([]byte(html)))
+	if err != nil {
+		return err
+	}
+
+	outputFile.CopyProps(inputFile)
 	context.DispatchAndCacheFile(outputFile)
 	return nil
 }

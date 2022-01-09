@@ -1,1 +1,1 @@
-function fizzbuzz(b){for(var a=1;a<=b;a++)a%15==0?console.log("fizzbuzz"):a%3==0?console.log("fizz"):a%5==0?console.log("buzz"):console.log(a)}
+function fizzbuzz(t){for(var e=1;e<=t;e++)e%15==0?console.log("fizzbuzz"):e%3==0?console.log("fizz"):e%5==0?console.log("buzz"):console.log(e)}

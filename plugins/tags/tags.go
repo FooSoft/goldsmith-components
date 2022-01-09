@@ -4,6 +4,7 @@
 package tags
 
 import (
+	"bytes"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -59,15 +60,15 @@ func New() *Tags {
 }
 
 // TagsKey sets the metadata key used to get the tags for this file, stored as a slice of strings (default: "Tags").
-func (plugin *Tags) TagsKey(key string) *Tags {
-	plugin.tagsKey = key
-	return plugin
+func (self *Tags) TagsKey(key string) *Tags {
+	self.tagsKey = key
+	return self
 }
 
 // StateKey sets the meatadata key used to store site-wide tag information (default: "TagState").
-func (plugin *Tags) StateKey(key string) *Tags {
-	plugin.stateKey = key
-	return plugin
+func (self *Tags) StateKey(key string) *Tags {
+	self.stateKey = key
+	return self
 }
 
 // IndexName sets the filename which will be used to create tag list files (default: "index.html").
@@ -77,15 +78,15 @@ func (plugin *Tags) IndexName(name string) *Tags {
 }
 
 // IndexMeta sets the metadata which will be assigned to generated tag list files (default: {}).
-func (plugin *Tags) IndexMeta(meta map[string]interface{}) *Tags {
-	plugin.indexMeta = meta
-	return plugin
+func (self *Tags) IndexMeta(meta map[string]interface{}) *Tags {
+	self.indexMeta = meta
+	return self
 }
 
 // BaseDir sets the base directory used to generate tag list files (default: "tags").
-func (plugin *Tags) BaseDir(dir string) *Tags {
-	plugin.baseDir = dir
-	return plugin
+func (self *Tags) BaseDir(dir string) *Tags {
+	self.baseDir = dir
+	return self
 }
 
 func (*Tags) Name() string {
@@ -97,20 +98,20 @@ func (*Tags) Initialize(context *goldsmith.Context) error {
 	return nil
 }
 
-func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (self *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	tagState := &TagState{
-		TagsByName:  &plugin.infoByName,
-		TagsByCount: &plugin.infoByCount,
+		TagsByName:  &self.infoByName,
+		TagsByCount: &self.infoByCount,
 	}
 
-	plugin.mutex.Lock()
+	self.mutex.Lock()
 	defer func() {
-		inputFile.Meta[plugin.stateKey] = tagState
-		plugin.files = append(plugin.files, inputFile)
-		plugin.mutex.Unlock()
+		inputFile.SetProp(self.stateKey, tagState)
+		self.files = append(self.files, inputFile)
+		self.mutex.Unlock()
 	}()
 
-	tagsArr, ok := inputFile.Meta[plugin.tagsKey].([]interface{})
+	tagsArr, ok := inputFile.Props()[self.tagsKey].([]interface{})
 	if !ok {
 		return nil
 	}
@@ -138,14 +139,14 @@ func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 			continue
 		}
 
-		info, ok := plugin.info[tagRaw]
+		info, ok := self.info[tagRaw]
 		if !ok {
 			info = &TagInfo{
 				SafeName: tagSafe,
 				RawName:  tagRaw,
 			}
 
-			plugin.info[tagRaw] = info
+			self.info[tagRaw] = info
 		}
 		info.TaggedFiles = append(info.TaggedFiles, inputFile)
 
@@ -157,49 +158,60 @@ func (plugin *Tags) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 	return nil
 }
 
-func (plugin *Tags) Finalize(context *goldsmith.Context) error {
-	for _, info := range plugin.info {
+func (self *Tags) Finalize(context *goldsmith.Context) error {
+	for _, info := range self.info {
 		sort.Sort(info.TaggedFiles)
 
-		plugin.infoByName = append(plugin.infoByName, info)
-		plugin.infoByCount = append(plugin.infoByCount, info)
+		self.infoByName = append(self.infoByName, info)
+		self.infoByCount = append(self.infoByCount, info)
 	}
 
-	sort.Sort(plugin.infoByName)
-	sort.Sort(plugin.infoByCount)
+	sort.Sort(self.infoByName)
+	sort.Sort(self.infoByCount)
 
-	if plugin.indexMeta != nil {
-		plugin.files = append(plugin.files, plugin.buildPages(context)...)
+	if self.indexMeta != nil {
+		files, err := self.buildPages(context)
+		if err != nil {
+			return err
+		}
+
+		self.files = append(self.files, files...)
 	}
 
-	for _, file := range plugin.files {
+	for _, file := range self.files {
 		context.DispatchFile(file)
 	}
 
 	return nil
 }
 
-func (plugin *Tags) buildPages(context *goldsmith.Context) []*goldsmith.File {
+func (self *Tags) buildPages(context *goldsmith.Context) ([]*goldsmith.File, error) {
 	var files []*goldsmith.File
-	for tag, info := range plugin.info {
-		info.IndexFile = context.CreateFileFromData(plugin.tagPagePath(tag), nil)
-		info.IndexFile.Meta[plugin.stateKey] = &TagState{
-			CurrentTag:  info,
-			TagsByName:  &plugin.infoByName,
-			TagsByCount: &plugin.infoByCount,
+	for tag, info := range self.info {
+		var err error
+		info.IndexFile, err = context.CreateFileFromReader(self.tagPagePath(tag), bytes.NewReader(nil))
+		if err != nil {
+			return nil, err
 		}
-		for name, value := range plugin.indexMeta {
-			info.IndexFile.Meta[name] = value
+
+		info.IndexFile.SetProp(self.stateKey, &TagState{
+			CurrentTag:  info,
+			TagsByName:  &self.infoByName,
+			TagsByCount: &self.infoByCount,
+		})
+
+		for name, value := range self.indexMeta {
+			info.IndexFile.SetProp(name, value)
 		}
 
 		files = append(files, info.IndexFile)
 	}
 
-	return files
+	return files, nil
 }
 
-func (plugin *Tags) tagPagePath(tag string) string {
-	return filepath.Join(plugin.baseDir, safeTag(tag), plugin.indexName)
+func (self *Tags) tagPagePath(tag string) string {
+	return filepath.Join(self.baseDir, safeTag(tag), self.indexName)
 }
 
 func safeTag(tagRaw string) string {
@@ -223,18 +235,18 @@ func safeTag(tagRaw string) string {
 
 type tagInfoByCount []*TagInfo
 
-func (info tagInfoByCount) Len() int {
-	return len(info)
+func (self tagInfoByCount) Len() int {
+	return len(self)
 }
 
-func (info tagInfoByCount) Swap(i, j int) {
-	info[i], info[j] = info[j], info[i]
+func (self tagInfoByCount) Swap(i, j int) {
+	self[i], self[j] = self[j], self[i]
 }
 
-func (info tagInfoByCount) Less(i, j int) bool {
-	if len(info[i].TaggedFiles) > len(info[j].TaggedFiles) {
+func (self tagInfoByCount) Less(i, j int) bool {
+	if len(self[i].TaggedFiles) > len(self[j].TaggedFiles) {
 		return true
-	} else if len(info[i].TaggedFiles) == len(info[j].TaggedFiles) && strings.Compare(info[i].RawName, info[j].RawName) < 0 {
+	} else if len(self[i].TaggedFiles) == len(self[j].TaggedFiles) && strings.Compare(self[i].RawName, self[j].RawName) < 0 {
 		return true
 	}
 
@@ -243,18 +255,18 @@ func (info tagInfoByCount) Less(i, j int) bool {
 
 type tagInfoByName []*TagInfo
 
-func (info tagInfoByName) Len() int {
-	return len(info)
+func (self tagInfoByName) Len() int {
+	return len(self)
 }
 
-func (info tagInfoByName) Swap(i, j int) {
-	info[i], info[j] = info[j], info[i]
+func (self tagInfoByName) Swap(i, j int) {
+	self[i], self[j] = self[j], self[i]
 }
 
-func (info tagInfoByName) Less(i, j int) bool {
-	if strings.Compare(info[i].RawName, info[j].RawName) < 0 {
+func (self tagInfoByName) Less(i, j int) bool {
+	if strings.Compare(self[i].RawName, self[j].RawName) < 0 {
 		return true
-	} else if info[i].RawName == info[j].RawName && len(info[i].TaggedFiles) > len(info[j].TaggedFiles) {
+	} else if self[i].RawName == self[j].RawName && len(self[i].TaggedFiles) > len(self[j].TaggedFiles) {
 		return true
 	}
 
@@ -263,14 +275,14 @@ func (info tagInfoByName) Less(i, j int) bool {
 
 type filesByPath []*goldsmith.File
 
-func (f filesByPath) Len() int {
-	return len(f)
+func (self filesByPath) Len() int {
+	return len(self)
 }
 
-func (f filesByPath) Swap(i, j int) {
-	f[i], f[j] = f[j], f[i]
+func (self filesByPath) Swap(i, j int) {
+	self[i], self[j] = self[j], self[i]
 }
 
-func (f filesByPath) Less(i, j int) bool {
-	return strings.Compare(f[i].Path(), f[j].Path()) < 0
+func (self filesByPath) Less(i, j int) bool {
+	return strings.Compare(self[i].Path(), self[j].Path()) < 0
 }

@@ -20,8 +20,8 @@ func (*operatorAnd) Name() string {
 	return "operator"
 }
 
-func (filter *operatorAnd) Accept(file *goldsmith.File) bool {
-	for _, filter := range filter.filters {
+func (self *operatorAnd) Accept(file *goldsmith.File) bool {
+	for _, filter := range self.filters {
 		if !filter.Accept(file) {
 			return false
 		}
@@ -30,8 +30,8 @@ func (filter *operatorAnd) Accept(file *goldsmith.File) bool {
 	return true
 }
 
-func Not(filter goldsmith.Filter) Operator {
-	return &operatorNot{filter}
+func Not(self goldsmith.Filter) Operator {
+	return &operatorNot{self}
 }
 
 type operatorNot struct {
@@ -42,12 +42,12 @@ func (*operatorNot) Name() string {
 	return "operator"
 }
 
-func (filter *operatorNot) Accept(file *goldsmith.File) bool {
-	return !filter.filter.Accept(file)
+func (self *operatorNot) Accept(file *goldsmith.File) bool {
+	return !self.filter.Accept(file)
 }
 
-func Or(filters ...goldsmith.Filter) Operator {
-	return &operatorOr{filters}
+func Or(self ...goldsmith.Filter) Operator {
+	return &operatorOr{self}
 }
 
 type operatorOr struct {
@@ -58,8 +58,8 @@ func (*operatorOr) Name() string {
 	return "operator"
 }
 
-func (filter *operatorOr) Accept(file *goldsmith.File) bool {
-	for _, filter := range filter.filters {
+func (self *operatorOr) Accept(file *goldsmith.File) bool {
+	for _, filter := range self.filters {
 		if filter.Accept(file) {
 			return true
 		}

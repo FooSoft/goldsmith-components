@@ -10,9 +10,9 @@ import (
 	"github.com/FooSoft/goldsmith-components/plugins/layout"
 )
 
-func Test(t *testing.T) {
+func Test(self *testing.T) {
 	lister := func(file *goldsmith.File) interface{} {
-		if groupsRaw, ok := file.Meta["Groups"]; ok {
+		if groupsRaw, ok := file.Prop("Groups"); ok {
 			if groups, ok := groupsRaw.(map[string][]*goldsmith.File); ok {
 				if group, ok := groups["group"]; ok {
 					return group
@@ -24,7 +24,7 @@ func Test(t *testing.T) {
 	}
 
 	harness.Validate(
-		t,
+		self,
 		func(gs *goldsmith.Goldsmith) {
 			gs.
 				Chain(frontmatter.New()).

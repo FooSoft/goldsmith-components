@@ -30,27 +30,27 @@ func New() *Summary {
 }
 
 // TitleKey sets the metadata key used to store the file title (default: "Title").
-func (plugin *Summary) TitleKey(key string) *Summary {
-	plugin.titleKey = key
-	return plugin
+func (self *Summary) TitleKey(key string) *Summary {
+	self.titleKey = key
+	return self
 }
 
 // SummaryKey sets the metadata key used to store the file summary (default: "Summary").
-func (plugin *Summary) SummaryKey(key string) *Summary {
-	plugin.summaryKey = key
-	return plugin
+func (self *Summary) SummaryKey(key string) *Summary {
+	self.summaryKey = key
+	return self
 }
 
 // TitlePath sets CSS path used to retrieve the file title (default: "h1").
-func (plugin *Summary) TitlePath(path string) *Summary {
-	plugin.titlePath = path
-	return plugin
+func (self *Summary) TitlePath(path string) *Summary {
+	self.titlePath = path
+	return self
 }
 
 // SummaryPath sets the CSS path used to retrieve the file summary (default: "p").
-func (plugin *Summary) SummaryPath(path string) *Summary {
-	plugin.summaryPath = path
-	return plugin
+func (self *Summary) SummaryPath(path string) *Summary {
+	self.summaryPath = path
+	return self
 }
 
 func (*Summary) Name() string {
@@ -62,27 +62,27 @@ func (*Summary) Initialize(context *goldsmith.Context) error {
 	return nil
 }
 
-func (plugin *Summary) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (self *Summary) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	doc, err := goquery.NewDocumentFromReader(inputFile)
 	if err != nil {
 		return err
 	}
 
 	meta := make(map[string]template.HTML)
-	if match := doc.Find(plugin.titlePath); match.Length() > 0 {
+	if match := doc.Find(self.titlePath); match.Length() > 0 {
 		if html, err := match.Html(); err == nil {
-			meta[plugin.titleKey] = template.HTML(html)
+			meta[self.titleKey] = template.HTML(html)
 		}
 	}
 
-	if match := doc.Find(plugin.summaryPath); match.Length() > 0 {
+	if match := doc.Find(self.summaryPath); match.Length() > 0 {
 		if html, err := match.Html(); err == nil {
-			meta[plugin.summaryKey] = template.HTML(html)
+			meta[self.summaryKey] = template.HTML(html)
 		}
 	}
 
 	for key, value := range meta {
-		inputFile.Meta[key] = value
+		inputFile.SetProp(key, value)
 	}
 
 	context.DispatchFile(inputFile)

@@ -2,63 +2,69 @@
 package forward
 
 import (
+	"bytes"
+
 	"github.com/FooSoft/goldsmith"
 )
 
 // Forward plugin context.
 type Forward struct {
-	sourceMeta map[string]interface{}
-	pathMap    map[string]string
-	sourceKey  string
-	targetKey  string
+	sourceProps map[string]interface{}
+	pathMap     map[string]string
+	sourceKey   string
+	targetKey   string
 }
 
 // New creates a new instance of the Forward plugin.
-func New(sourceMeta map[string]interface{}) *Forward {
+func New(sourceProps map[string]interface{}) *Forward {
 	return &Forward{
-		sourceMeta: sourceMeta,
-		pathMap:    make(map[string]string),
-		sourceKey:  "PathOld",
-		targetKey:  "PathNew",
+		sourceProps: sourceProps,
+		pathMap:     make(map[string]string),
+		sourceKey:   "PathOld",
+		targetKey:   "PathNew",
 	}
 }
 
 // AddPathMapping adds a single path mapping between an old path and a new path.
-func (plugin *Forward) AddPathMapping(sourcePath, targetPath string) *Forward {
-	plugin.pathMap[sourcePath] = targetPath
-	return plugin
+func (self *Forward) AddPathMapping(sourcePath, targetPath string) *Forward {
+	self.pathMap[sourcePath] = targetPath
+	return self
 }
 
 // PathMap sets multiple path mappings between old paths and new paths.
-func (plugin *Forward) PathMap(pathMap map[string]string) *Forward {
-	plugin.pathMap = pathMap
-	return plugin
+func (self *Forward) PathMap(pathMap map[string]string) *Forward {
+	self.pathMap = pathMap
+	return self
 }
 
 // SourceKey sets the metadata key used to access the old path (default: "PathOld").
-func (plugin *Forward) SourceKey(key string) *Forward {
-	plugin.sourceKey = key
-	return plugin
+func (self *Forward) SourceKey(key string) *Forward {
+	self.sourceKey = key
+	return self
 }
 
 // SourceKey sets the metadata key used to access the new path (default: "PathNew").
-func (plugin *Forward) TargetKey(key string) *Forward {
-	plugin.targetKey = key
-	return plugin
+func (self *Forward) TargetKey(key string) *Forward {
+	self.targetKey = key
+	return self
 }
 
 func (*Forward) Name() string {
 	return "forward"
 }
 
-func (plugin *Forward) Initialize(context *goldsmith.Context) error {
-	for sourcePath, targetPath := range plugin.pathMap {
-		sourceFile := context.CreateFileFromData(sourcePath, nil)
-		for name, value := range plugin.sourceMeta {
-			sourceFile.Meta[name] = value
+func (self *Forward) Initialize(context *goldsmith.Context) error {
+	for sourcePath, targetPath := range self.pathMap {
+		sourceFile, err := context.CreateFileFromReader(sourcePath, bytes.NewReader(nil))
+		if err != nil {
+			return err
 		}
 
-		sourceFile.Meta[plugin.targetKey] = targetPath
+		for name, value := range self.sourceProps {
+			sourceFile.SetProp(name, value)
+		}
+
+		sourceFile.SetProp(self.targetKey, targetPath)
 		context.DispatchFile(sourceFile)
 	}
 

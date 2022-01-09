@@ -33,23 +33,22 @@ func New() *Collection {
 	return &Collection{
 		collectionKey: "Collection",
 		groupsKey:     "Groups",
-		comparer:      nil,
 		groups:        make(map[string][]*goldsmith.File),
 	}
 }
 
 // CollectionKey sets the metadata key used to access the collection name (default: "Collection").
 // The metadata associated with this key can be either a single string or an array of strings.
-func (plugin *Collection) CollectionKey(collectionKey string) *Collection {
-	plugin.collectionKey = collectionKey
-	return plugin
+func (self *Collection) CollectionKey(collectionKey string) *Collection {
+	self.collectionKey = collectionKey
+	return self
 }
 
 // GroupsKey sets the metadata key used to store information about collection groups (default: "Groups").
 // This information is stored as a mapping of group names to contained files.
-func (plugin *Collection) GroupsKey(groupsKey string) *Collection {
-	plugin.groupsKey = groupsKey
-	return plugin
+func (self *Collection) GroupsKey(groupsKey string) *Collection {
+	self.groupsKey = groupsKey
+	return self
 }
 
 // Comparer sets the function used to sort files in collection groups (default: sort by filenames).
@@ -67,15 +66,15 @@ func (*Collection) Initialize(context *goldsmith.Context) error {
 	return nil
 }
 
-func (plugin *Collection) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	plugin.mutex.Lock()
+func (self *Collection) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	self.mutex.Lock()
 	defer func() {
-		inputFile.Meta[plugin.groupsKey] = plugin.groups
-		plugin.files = append(plugin.files, inputFile)
-		plugin.mutex.Unlock()
+		inputFile.SetProp(self.groupsKey, self.groups)
+		self.files = append(self.files, inputFile)
+		self.mutex.Unlock()
 	}()
 
-	collectionRaw, ok := inputFile.Meta[plugin.collectionKey]
+	collectionRaw, ok := inputFile.Prop(self.collectionKey)
 	if !ok {
 		return nil
 	}
@@ -89,21 +88,21 @@ func (plugin *Collection) Process(context *goldsmith.Context, inputFile *goldsmi
 	}
 
 	for _, collectionName := range collectionNames {
-		files, _ := plugin.groups[collectionName]
+		files, _ := self.groups[collectionName]
 		files = append(files, inputFile)
-		plugin.groups[collectionName] = files
+		self.groups[collectionName] = files
 	}
 
 	return nil
 }
 
-func (plugin *Collection) Finalize(context *goldsmith.Context) error {
-	for _, files := range plugin.groups {
-		fg := &fileSorter{files, plugin.comparer}
+func (self *Collection) Finalize(context *goldsmith.Context) error {
+	for _, files := range self.groups {
+		fg := &fileSorter{files, self.comparer}
 		sort.Sort(fg)
 	}
 
-	for _, file := range plugin.files {
+	for _, file := range self.files {
 		context.DispatchFile(file)
 	}
 
@@ -115,18 +114,18 @@ type fileSorter struct {
 	comparer Comparer
 }
 
-func (fs fileSorter) Len() int {
-	return len(fs.files)
+func (self fileSorter) Len() int {
+	return len(self.files)
 }
 
-func (fs fileSorter) Swap(i, j int) {
-	fs.files[i], fs.files[j] = fs.files[j], fs.files[i]
+func (self fileSorter) Swap(i, j int) {
+	self.files[i], self.files[j] = self.files[j], self.files[i]
 }
 
-func (fs fileSorter) Less(i, j int) bool {
-	if fs.comparer == nil {
-		return strings.Compare(fs.files[i].Path(), fs.files[j].Path()) < 0
+func (self fileSorter) Less(i, j int) bool {
+	if self.comparer == nil {
+		return strings.Compare(self.files[i].Path(), self.files[j].Path()) < 0
 	}
 
-	return fs.comparer(fs.files[i], fs.files[j])
+	return self.comparer(self.files[i], self.files[j])
 }

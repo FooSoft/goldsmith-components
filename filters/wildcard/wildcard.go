@@ -17,10 +17,10 @@ func (*Wildcard) Name() string {
 	return "wildcard"
 }
 
-func (filter *Wildcard) Accept(file *goldsmith.File) bool {
+func (self *Wildcard) Accept(file *goldsmith.File) bool {
 	filePath := file.Path()
 
-	for _, wildcard := range filter.wildcards {
+	for _, wildcard := range self.wildcards {
 		if matched, _ := doublestar.PathMatch(wildcard, filePath); matched {
 			return true
 		}

@@ -77,10 +77,14 @@ func (*FrontMatter) Process(context *goldsmith.Context, inputFile *goldsmith.Fil
 		return err
 	}
 
-	outputFile := context.CreateFileFromData(inputFile.Path(), body.Bytes())
-	outputFile.Meta = inputFile.Meta
+	outputFile, err := context.CreateFileFromReader(inputFile.Path(), body)
+	if err != nil {
+		return err
+	}
+
+	outputFile.CopyProps(inputFile)
 	for name, value := range meta {
-		outputFile.Meta[name] = value
+		outputFile.SetProp(name, value)
 	}
 
 	context.DispatchFile(outputFile)

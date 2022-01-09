@@ -4,6 +4,7 @@
 package index
 
 import (
+	"bytes"
 	"path"
 	"sort"
 	"strings"
@@ -22,9 +23,9 @@ type Entry struct {
 
 // Index chainable plugin context.
 type Index struct {
-	indexName string
-	filesKey  string
-	indexMeta map[string]interface{}
+	indexName  string
+	filesKey   string
+	indexProps map[string]interface{}
 
 	dirLists    map[string]*directory
 	dirsHandled map[string]bool
@@ -33,10 +34,10 @@ type Index struct {
 
 // New creates a new instance of the Index plugin.
 // The meta parameter allows additional metadata to be provided for generated indices.
-func New(meta map[string]interface{}) *Index {
+func New(indexProps map[string]interface{}) *Index {
 	return &Index{
 		indexName:   "index.html",
-		indexMeta:   meta,
+		indexProps:  indexProps,
 		filesKey:    "Files",
 		dirsHandled: make(map[string]bool),
 		dirLists:    make(map[string]*directory),
@@ -44,46 +45,46 @@ func New(meta map[string]interface{}) *Index {
 }
 
 // IndexFilename sets the name of the file to be created as the directory index (default: "index.html").
-func (plugin *Index) IndexFilename(filename string) *Index {
-	plugin.indexName = filename
-	return plugin
+func (self *Index) IndexFilename(filename string) *Index {
+	self.indexName = filename
+	return self
 }
 
 // FilesKey sets the metadata key used to access the files in the current directory (default: "Files").
-func (plugin *Index) FilesKey(key string) *Index {
-	plugin.filesKey = key
-	return plugin
+func (self *Index) FilesKey(key string) *Index {
+	self.filesKey = key
+	return self
 }
 
 func (*Index) Name() string {
 	return "index"
 }
 
-func (plugin *Index) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	plugin.mutex.Lock()
-	defer plugin.mutex.Unlock()
+func (self *Index) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
 
 	currentPath := inputFile.Path()
 	currentIsDir := false
 
 	for {
-		if handled, _ := plugin.dirsHandled[currentPath]; handled {
+		if handled, _ := self.dirsHandled[currentPath]; handled {
 			break
 		}
 
-		plugin.dirsHandled[currentPath] = true
+		self.dirsHandled[currentPath] = true
 
 		currentDir := path.Dir(currentPath)
 		currentBase := path.Base(currentPath)
 
-		list, ok := plugin.dirLists[currentDir]
+		list, ok := self.dirLists[currentDir]
 		if !ok {
 			list = new(directory)
-			plugin.dirLists[currentDir] = list
+			self.dirLists[currentDir] = list
 		}
 
 		if !currentIsDir {
-			if currentBase == plugin.indexName {
+			if currentBase == self.indexName {
 				list.indexFile = inputFile
 			} else {
 				context.DispatchFile(inputFile)
@@ -104,19 +105,24 @@ func (plugin *Index) Process(context *goldsmith.Context, inputFile *goldsmith.Fi
 	return nil
 }
 
-func (plugin *Index) Finalize(context *goldsmith.Context) error {
-	for name, list := range plugin.dirLists {
+func (self *Index) Finalize(context *goldsmith.Context) error {
+	for name, list := range self.dirLists {
 		sort.Sort(list.entries)
 
 		indexFile := list.indexFile
 		if indexFile == nil {
-			indexFile = context.CreateFileFromData(path.Join(name, plugin.indexName), nil)
-			for name, value := range plugin.indexMeta {
-				indexFile.Meta[name] = value
+			var err error
+			indexFile, err = context.CreateFileFromReader(path.Join(name, self.indexName), bytes.NewReader(nil))
+			if err != nil {
+				return err
+			}
+
+			for name, value := range self.indexProps {
+				indexFile.SetProp(name, value)
 			}
 		}
 
-		indexFile.Meta[plugin.filesKey] = list.entries
+		indexFile.SetProp(self.filesKey, list.entries)
 		context.DispatchFile(indexFile)
 	}
 
@@ -130,12 +136,12 @@ type directory struct {
 
 type entriesByName []Entry
 
-func (e entriesByName) Len() int {
-	return len(e)
+func (self entriesByName) Len() int {
+	return len(self)
 }
 
-func (e entriesByName) Less(i, j int) bool {
-	e1, e2 := e[i], e[j]
+func (self entriesByName) Less(i, j int) bool {
+	e1, e2 := self[i], self[j]
 
 	if e1.IsDir && !e2.IsDir {
 		return true
@@ -147,6 +153,6 @@ func (e entriesByName) Less(i, j int) bool {
 	return strings.Compare(e1.Name, e2.Name) == -1
 }
 
-func (e entriesByName) Swap(i, j int) {
-	e[i], e[j] = e[j], e[i]
+func (self entriesByName) Swap(i, j int) {
+	self[i], self[j] = self[j], self[i]
 }

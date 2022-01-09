@@ -5,6 +5,7 @@
 package document
 
 import (
+	"bytes"
 	"sync"
 
 	"github.com/FooSoft/goldsmith"
@@ -36,13 +37,13 @@ func (*Document) Initialize(context *goldsmith.Context) error {
 	return nil
 }
 
-func (plugin *Document) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (self *Document) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	doc, err := goquery.NewDocumentFromReader(inputFile)
 	if err != nil {
 		return err
 	}
 
-	if err := plugin.callback(inputFile, doc); err != nil {
+	if err := self.callback(inputFile, doc); err != nil {
 		return err
 	}
 
@@ -51,17 +52,17 @@ func (plugin *Document) Process(context *goldsmith.Context, inputFile *goldsmith
 		return err
 	}
 
-	outputFile := context.CreateFileFromData(inputFile.Path(), []byte(html))
-	outputFile.Meta = inputFile.Meta
+	outputFile, err := context.CreateFileFromReader(inputFile.Path(), bytes.NewReader([]byte(html)))
+	outputFile.CopyProps(inputFile)
 
-	plugin.mutex.Lock()
-	defer plugin.mutex.Unlock()
-	plugin.files = append(plugin.files, outputFile)
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
+	self.files = append(self.files, outputFile)
 	return nil
 }
 
-func (plugin *Document) Finalize(context *goldsmith.Context) error {
-	for _, file := range plugin.files {
+func (self *Document) Finalize(context *goldsmith.Context) error {
+	for _, file := range self.files {
 		context.DispatchFile(file)
 	}
 

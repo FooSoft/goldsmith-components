@@ -49,21 +49,21 @@ func New() *Breadcrumbs {
 
 // NameKey sets the metadata key used to access the crumb name (default: "CrumbName").
 // Crumb names must be globally unique within any given website.
-func (plugin *Breadcrumbs) NameKey(key string) *Breadcrumbs {
-	plugin.nameKey = key
-	return plugin
+func (self *Breadcrumbs) NameKey(key string) *Breadcrumbs {
+	self.nameKey = key
+	return self
 }
 
 // ParentKey sets the metadata key used to access the parent name (default: "CrumbParent").
-func (plugin *Breadcrumbs) ParentKey(key string) *Breadcrumbs {
-	plugin.parentKey = key
-	return plugin
+func (self *Breadcrumbs) ParentKey(key string) *Breadcrumbs {
+	self.parentKey = key
+	return self
 }
 
 // CrumbsKey sets the metadata key used to store information about crumbs (default: "Crumbs").
-func (plugin *Breadcrumbs) CrumbsKey(key string) *Breadcrumbs {
-	plugin.crumbsKey = key
-	return plugin
+func (self *Breadcrumbs) CrumbsKey(key string) *Breadcrumbs {
+	self.crumbsKey = key
+	return self
 }
 
 func (*Breadcrumbs) Name() string {
@@ -75,41 +75,41 @@ func (*Breadcrumbs) Initialize(context *goldsmith.Context) error {
 	return nil
 }
 
-func (plugin *Breadcrumbs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (self *Breadcrumbs) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	var parentNameStr string
-	if parentName, ok := inputFile.Meta[plugin.parentKey]; ok {
+	if parentName, ok := inputFile.Prop(self.parentKey); ok {
 		parentNameStr, _ = parentName.(string)
 	}
 
 	var nodeNameStr string
-	if nodeName, ok := inputFile.Meta[plugin.nameKey]; ok {
+	if nodeName, ok := inputFile.Prop(self.nameKey); ok {
 		nodeNameStr, _ = nodeName.(string)
 	}
 
-	plugin.mutex.Lock()
-	defer plugin.mutex.Unlock()
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
 
 	node := &Node{File: inputFile, parentName: parentNameStr}
-	plugin.allNodes = append(plugin.allNodes, node)
+	self.allNodes = append(self.allNodes, node)
 
 	if len(nodeNameStr) > 0 {
-		if _, ok := plugin.namedNodes[nodeNameStr]; ok {
+		if _, ok := self.namedNodes[nodeNameStr]; ok {
 			return fmt.Errorf("duplicate node: %s", nodeNameStr)
 		}
 
-		plugin.namedNodes[nodeNameStr] = node
+		self.namedNodes[nodeNameStr] = node
 	}
 
 	return nil
 }
 
-func (plugin *Breadcrumbs) Finalize(context *goldsmith.Context) error {
-	for _, node := range plugin.allNodes {
+func (self *Breadcrumbs) Finalize(context *goldsmith.Context) error {
+	for _, node := range self.allNodes {
 		if len(node.parentName) == 0 {
 			continue
 		}
 
-		if parentNode, ok := plugin.namedNodes[node.parentName]; ok {
+		if parentNode, ok := self.namedNodes[node.parentName]; ok {
 			parentNode.Children = append(parentNode.Children, node)
 			node.Parent = parentNode
 		} else {
@@ -117,13 +117,13 @@ func (plugin *Breadcrumbs) Finalize(context *goldsmith.Context) error {
 		}
 	}
 
-	for _, node := range plugin.allNodes {
+	for _, node := range self.allNodes {
 		var ancestors []*Node
 		for currentNode := node.Parent; currentNode != nil; currentNode = currentNode.Parent {
 			ancestors = append([]*Node{currentNode}, ancestors...)
 		}
 
-		node.File.Meta[plugin.crumbsKey] = Crumb{ancestors, node}
+		node.File.SetProp(self.crumbsKey, Crumb{ancestors, node})
 		context.DispatchFile(node.File)
 	}
 

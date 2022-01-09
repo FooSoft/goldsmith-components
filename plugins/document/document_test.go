@@ -13,11 +13,11 @@ func process(file *goldsmith.File, doc *goquery.Document) error {
 	return nil
 }
 
-func Test(t *testing.T) {
+func Test(self *testing.T) {
 	type Processor func(*goquery.Document) error
 
 	harness.Validate(
-		t,
+		self,
 		func(gs *goldsmith.Goldsmith) {
 			gs.Chain(New(process))
 		},

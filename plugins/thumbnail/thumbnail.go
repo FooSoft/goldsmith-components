@@ -53,23 +53,23 @@ func New() *Thumbnail {
 }
 
 // Size sets the desired maximum pixel size of generated thumbnails (default: 128).
-func (plugin *Thumbnail) Size(dims int) *Thumbnail {
-	plugin.size = dims
-	return plugin
+func (self *Thumbnail) Size(dims int) *Thumbnail {
+	self.size = dims
+	return self
 }
 
 // Style sets the desired thumbnailing style.
-func (plugin *Thumbnail) Style(style Style) *Thumbnail {
-	plugin.style = style
-	return plugin
+func (self *Thumbnail) Style(style Style) *Thumbnail {
+	self.style = style
+	return self
 }
 
 // Namer sets the callback used to build paths for thumbnail files.
 // Default naming appends "-thumb" to the path and changes extension to PNG,
 // for example "file.jpg" becomes "file-thumb.png".
-func (plugin *Thumbnail) Namer(namer Namer) *Thumbnail {
-	plugin.namer = namer
-	return plugin
+func (self *Thumbnail) Namer(namer Namer) *Thumbnail {
+	self.namer = namer
+	return self
 }
 
 func (*Thumbnail) Name() string {
@@ -81,21 +81,21 @@ func (*Thumbnail) Initialize(context *goldsmith.Context) error {
 	return nil
 }
 
-func (plugin *Thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (self *Thumbnail) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	defer context.DispatchFile(inputFile)
 
-	thumbPath := plugin.namer(inputFile.Path(), plugin.size)
+	thumbPath := self.namer(inputFile.Path(), self.size)
 	if len(thumbPath) == 0 {
 		return nil
 	}
 
 	if outputFile := context.RetrieveCachedFile(thumbPath, inputFile); outputFile != nil {
-		outputFile.Meta = inputFile.Meta
+		outputFile.CopyProps(inputFile)
 		context.DispatchFile(outputFile)
 		return nil
 	}
 
-	outputFile, err := plugin.thumbnail(context, inputFile, thumbPath)
+	outputFile, err := self.thumbnail(context, inputFile, thumbPath)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func (plugin *Thumbnail) Process(context *goldsmith.Context, inputFile *goldsmit
 	return nil
 }
 
-func (plugin *Thumbnail) thumbnail(context *goldsmith.Context, inputFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
+func (self *Thumbnail) thumbnail(context *goldsmith.Context, inputFile *goldsmith.File, thumbPath string) (*goldsmith.File, error) {
 	var thumbFormat imaging.Format
 	switch strings.ToLower(filepath.Ext(thumbPath)) {
 	case ".jpg", ".jpeg":
@@ -122,14 +122,14 @@ func (plugin *Thumbnail) thumbnail(context *goldsmith.Context, inputFile *goldsm
 		return nil, err
 	}
 
-	switch plugin.style {
+	switch self.style {
 	case Fit:
-		thumbImage = imaging.Fit(thumbImage, plugin.size, plugin.size, imaging.Lanczos)
+		thumbImage = imaging.Fit(thumbImage, self.size, self.size, imaging.Lanczos)
 	case Crop:
-		thumbImage = imaging.Fill(thumbImage, plugin.size, plugin.size, imaging.Center, imaging.Lanczos)
+		thumbImage = imaging.Fill(thumbImage, self.size, self.size, imaging.Center, imaging.Lanczos)
 	case Pad:
-		thumbImage = imaging.Fit(thumbImage, plugin.size, plugin.size, imaging.Lanczos)
-		thumbImage = imaging.PasteCenter(imaging.New(plugin.size, plugin.size, plugin.color), thumbImage)
+		thumbImage = imaging.Fit(thumbImage, self.size, self.size, imaging.Lanczos)
+		thumbImage = imaging.PasteCenter(imaging.New(self.size, self.size, self.color), thumbImage)
 	default:
 		return nil, errors.New("unsupported thumbnailing style")
 	}
@@ -139,5 +139,5 @@ func (plugin *Thumbnail) thumbnail(context *goldsmith.Context, inputFile *goldsm
 		return nil, err
 	}
 
-	return context.CreateFileFromData(thumbPath, thumbBuff.Bytes()), nil
+	return context.CreateFileFromReader(thumbPath, &thumbBuff)
 }

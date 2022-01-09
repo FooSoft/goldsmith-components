@@ -1,7 +1,7 @@
 {{define "page"}}
 <html>
     <body>
-        <h1>{{.Meta.CrumbName}}</h1>
+        <h1>{{.Props.CrumbName}}</h1>
         <ul>
             <li><a href="child_1.html">Child 1</a></li>
             <li><a href="child_2.html">Child 2</a></li>
@@ -12,12 +12,12 @@
             <li><a href="root_1.html">Root 1</a></li>
             <li><a href="root_2.html">Root 2</a></li>
         </ul>
-        {{if .Meta.CrumbParent}}
+        {{if .Props.CrumbParent}}
         <div>
-            {{range .Meta.Crumbs.Ancestors}}
-            <a href="{{.File.Path}}" class="breadcrumb-item">{{.File.Meta.CrumbName}}</a> &gt;
+            {{range .Props.Crumbs.Ancestors}}
+            <a href="{{.File.Path}}" class="breadcrumb-item">{{.File.Props.CrumbName}}</a> &gt;
             {{end}}
-            <span class="breadcrumb-item active">{{.Meta.CrumbName}}</span>
+            <span class="breadcrumb-item active">{{.Props.CrumbName}}</span>
         </div>
         {{end}}
     </body>

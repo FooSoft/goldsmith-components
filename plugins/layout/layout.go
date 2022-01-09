@@ -37,84 +37,88 @@ func New() *Layout {
 }
 
 // LayoutKey sets the metadata key used to access the layout identifier (default: "Layout").
-func (plugin *Layout) LayoutKey(key string) *Layout {
-	plugin.layoutKey = key
-	return plugin
+func (self *Layout) LayoutKey(key string) *Layout {
+	self.layoutKey = key
+	return self
 }
 
 // DefaultLayout sets the name of the layout to use if none is specified.
-func (plugin *Layout) DefaultLayout(name string) *Layout {
-	plugin.defaultLayout = &name
-	return plugin
+func (self *Layout) DefaultLayout(name string) *Layout {
+	self.defaultLayout = &name
+	return self
 }
 
 // ContentKey sets the metadata key used to access the source content (default: "Content").
-func (layout *Layout) ContentKey(key string) *Layout {
-	layout.contentKey = key
-	return layout
+func (self *Layout) ContentKey(key string) *Layout {
+	self.contentKey = key
+	return self
 }
 
 // Helpers sets the function map used to lookup template helper functions.
-func (plugin *Layout) Helpers(helpers template.FuncMap) *Layout {
-	plugin.helpers = helpers
-	return plugin
+func (self *Layout) Helpers(helpers template.FuncMap) *Layout {
+	self.helpers = helpers
+	return self
 }
 
 func (*Layout) Name() string {
 	return "layout"
 }
 
-func (plugin *Layout) Initialize(context *goldsmith.Context) error {
-	plugin.template = template.New("").Funcs(plugin.helpers)
+func (self *Layout) Initialize(context *goldsmith.Context) error {
+	self.template = template.New("").Funcs(self.helpers)
 	context.Filter(wildcard.New("**/*.html", "**/*.htm", "**/*.tmpl", "**/*.gohtml"))
 	return nil
 }
 
-func (plugin *Layout) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	plugin.mutex.Lock()
-	defer plugin.mutex.Unlock()
+func (self *Layout) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
 
 	switch inputFile.Ext() {
 	case ".html", ".htm":
-		if _, ok := plugin.getFileLayout(inputFile); ok {
+		if _, ok := self.getFileLayout(inputFile); ok {
 			var buff bytes.Buffer
 			if _, err := inputFile.WriteTo(&buff); err != nil {
 				return err
 			}
 
-			inputFile.Meta[plugin.contentKey] = template.HTML(buff.Bytes())
-			plugin.inputFiles = append(plugin.inputFiles, inputFile)
+			inputFile.SetProp(self.contentKey, template.HTML(buff.Bytes()))
+			self.inputFiles = append(self.inputFiles, inputFile)
 		} else {
 			context.DispatchFile(inputFile)
 		}
 	case ".tmpl", ".gohtml":
-		plugin.templateFiles = append(plugin.templateFiles, inputFile)
+		self.templateFiles = append(self.templateFiles, inputFile)
 	}
 
 	return nil
 }
 
-func (plugin *Layout) Finalize(context *goldsmith.Context) error {
-	for _, templateFile := range plugin.templateFiles {
+func (self *Layout) Finalize(context *goldsmith.Context) error {
+	for _, templateFile := range self.templateFiles {
 		var buff bytes.Buffer
 		if _, err := templateFile.WriteTo(&buff); err != nil {
 			return err
 		}
 
-		if _, err := plugin.template.Parse(string(buff.Bytes())); err != nil {
+		if _, err := self.template.Parse(string(buff.Bytes())); err != nil {
 			return err
 		}
 	}
 
-	for _, inputFile := range plugin.inputFiles {
-		if name, ok := plugin.getFileLayout(inputFile); ok {
+	for _, inputFile := range self.inputFiles {
+		if name, ok := self.getFileLayout(inputFile); ok {
 			var buff bytes.Buffer
-			if err := plugin.template.ExecuteTemplate(&buff, name, inputFile); err != nil {
+			if err := self.template.ExecuteTemplate(&buff, name, inputFile); err != nil {
 				return err
 			}
 
-			outputFile := context.CreateFileFromData(inputFile.Path(), buff.Bytes())
-			outputFile.Meta = inputFile.Meta
+			outputFile, err := context.CreateFileFromReader(inputFile.Path(), &buff)
+			if err != nil {
+				return err
+			}
+
+			outputFile.CopyProps(inputFile)
 			context.DispatchFile(outputFile)
 		} else {
 			context.DispatchFile(inputFile)
@@ -124,13 +128,13 @@ func (plugin *Layout) Finalize(context *goldsmith.Context) error {
 	return nil
 }
 
-func (plugin *Layout) getFileLayout(file *goldsmith.File) (string, bool) {
-	if name, ok := file.Meta[plugin.layoutKey].(string); ok {
+func (self *Layout) getFileLayout(file *goldsmith.File) (string, bool) {
+	if name, ok := file.Props()[self.layoutKey].(string); ok {
 		return name, true
 	}
 
-	if plugin.defaultLayout != nil {
-		return *plugin.defaultLayout, true
+	if self.defaultLayout != nil {
+		return *self.defaultLayout, true
 	}
 
 	return "", false

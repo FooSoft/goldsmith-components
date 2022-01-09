@@ -42,27 +42,27 @@ func New() *Syntax {
 
 // Style sets the color scheme used for syntax highlighting (default: "github").
 // Additional styles can be found at: https://github.com/alecthomas/chroma/tree/master/styles.
-func (plugin *Syntax) Style(style string) *Syntax {
-	plugin.style = style
-	return plugin
+func (self *Syntax) Style(style string) *Syntax {
+	self.style = style
+	return self
 }
 
 // LineNumbers sets the visibility of a line number gutter next to the code (default: false).
-func (plugin *Syntax) LineNumbers(numbers bool) *Syntax {
-	plugin.numbers = numbers
-	return plugin
+func (self *Syntax) LineNumbers(numbers bool) *Syntax {
+	self.numbers = numbers
+	return self
 }
 
 // Prefix sets the CSS class name prefix for code language identification (default: "language-").
-func (plugin *Syntax) Prefix(prefix string) *Syntax {
-	plugin.prefix = prefix
-	return plugin
+func (self *Syntax) Prefix(prefix string) *Syntax {
+	self.prefix = prefix
+	return self
 }
 
 // Placement determines if code should replace the containing block or be placed inside of it (default: "PlaceInside").
-func (plugin *Syntax) Placement(placement Placement) *Syntax {
-	plugin.placement = placement
-	return plugin
+func (self *Syntax) Placement(placement Placement) *Syntax {
+	self.placement = placement
+	return self
 }
 
 func (*Syntax) Name() string {
@@ -74,9 +74,9 @@ func (*Syntax) Initialize(context *goldsmith.Context) error {
 	return nil
 }
 
-func (plugin *Syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (self *Syntax) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
-		outputFile.Meta = inputFile.Meta
+		outputFile.CopyProps(inputFile)
 		context.DispatchFile(outputFile)
 		return nil
 	}
@@ -87,9 +87,9 @@ func (plugin *Syntax) Process(context *goldsmith.Context, inputFile *goldsmith.F
 	}
 
 	var errs []error
-	doc.Find(fmt.Sprintf("[class*=%s]", plugin.prefix)).Each(func(i int, sel *goquery.Selection) {
+	doc.Find(fmt.Sprintf("[class*=%s]", self.prefix)).Each(func(i int, sel *goquery.Selection) {
 		class := sel.AttrOr("class", "")
-		language := class[len(plugin.prefix):]
+		language := class[len(self.prefix):]
 		lexer := lexers.Get(language)
 		if lexer == nil {
 			lexer = lexers.Fallback
@@ -101,13 +101,13 @@ func (plugin *Syntax) Process(context *goldsmith.Context, inputFile *goldsmith.F
 			return
 		}
 
-		style := styles.Get(plugin.style)
+		style := styles.Get(self.style)
 		if style == nil {
 			style = styles.Fallback
 		}
 
 		var options []html.Option
-		if plugin.numbers {
+		if self.numbers {
 			options = append(options, html.WithLineNumbers(true))
 		}
 
@@ -118,7 +118,7 @@ func (plugin *Syntax) Process(context *goldsmith.Context, inputFile *goldsmith.F
 			return
 		}
 
-		switch plugin.placement {
+		switch self.placement {
 		case PlaceInside:
 			sel.SetHtml(string(buff.Bytes()))
 		case PlaceInline:
@@ -144,8 +144,12 @@ func (plugin *Syntax) Process(context *goldsmith.Context, inputFile *goldsmith.F
 		return err
 	}
 
-	outputFile := context.CreateFileFromData(inputFile.Path(), []byte(html))
-	outputFile.Meta = inputFile.Meta
+	outputFile, err := context.CreateFileFromReader(inputFile.Path(), bytes.NewReader([]byte(html)))
+	if err != nil {
+		return err
+	}
+
+	outputFile.CopyProps(inputFile)
 	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
 }

@@ -10,17 +10,17 @@ import (
 	"github.com/FooSoft/goldsmith-components/plugins/layout"
 )
 
-func Test(t *testing.T) {
-	meta := map[string]interface{}{
+func Test(self *testing.T) {
+	props := map[string]interface{}{
 		"Layout": "index",
 	}
 
 	harness.Validate(
-		t,
+		self,
 		func(gs *goldsmith.Goldsmith) {
 			gs.
 				FilterPush(operator.Not(wildcard.New("*.gohtml"))).
-				Chain(New(meta)).
+				Chain(New(props)).
 				FilterPop().
 				Chain(layout.New())
 		},

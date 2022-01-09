@@ -16,6 +16,6 @@ func (*Condition) Name() string {
 	return "condition"
 }
 
-func (filter *Condition) Accept(file *goldsmith.File) bool {
-	return filter.accept
+func (self *Condition) Accept(file *goldsmith.File) bool {
+	return self.accept
 }

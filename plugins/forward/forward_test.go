@@ -10,7 +10,7 @@ import (
 	"github.com/FooSoft/goldsmith-components/plugins/layout"
 )
 
-func Test(t *testing.T) {
+func Test(self *testing.T) {
 	meta := map[string]interface{}{
 		"Layout": "forward",
 	}
@@ -20,7 +20,7 @@ func Test(t *testing.T) {
 	}
 
 	harness.Validate(
-		t,
+		self,
 		func(gs *goldsmith.Goldsmith) {
 			gs.
 				FilterPush(operator.Not(wildcard.New("*.gohtml"))).

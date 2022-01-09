@@ -10,9 +10,9 @@ import (
 	"github.com/FooSoft/goldsmith-components/plugins/markdown"
 )
 
-func Test(t *testing.T) {
+func Test(self *testing.T) {
 	harness.Validate(
-		t,
+		self,
 		func(gs *goldsmith.Goldsmith) {
 			gs.
 				Chain(frontmatter.New()).

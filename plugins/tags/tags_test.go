@@ -10,13 +10,13 @@ import (
 	"github.com/FooSoft/goldsmith-components/plugins/markdown"
 )
 
-func Test(t *testing.T) {
+func Test(self *testing.T) {
 	meta := map[string]interface{}{
 		"Layout": "tag",
 	}
 
 	harness.Validate(
-		t,
+		self,
 		func(gs *goldsmith.Goldsmith) {
 			gs.
 				Chain(frontmatter.New()).

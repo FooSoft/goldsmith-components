@@ -8,6 +8,7 @@
 package absolute
 
 import (
+	"bytes"
 	"fmt"
 	"net/url"
 
@@ -27,9 +28,9 @@ func New() *Absolute {
 }
 
 // Attributes sets the attributes which are scanned for relative URLs (default: "href", "src").
-func (absolute *Absolute) Attributes(attributes ...string) *Absolute {
-	absolute.attributes = attributes
-	return absolute
+func (self *Absolute) Attributes(attributes ...string) *Absolute {
+	self.attributes = attributes
+	return self
 }
 
 func (*Absolute) Name() string {
@@ -41,9 +42,9 @@ func (*Absolute) Initialize(context *goldsmith.Context) error {
 	return nil
 }
 
-func (plugin *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (self *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	if outputFile := context.RetrieveCachedFile(inputFile.Path(), inputFile); outputFile != nil {
-		outputFile.Meta = inputFile.Meta
+		outputFile.CopyProps(inputFile)
 		context.DispatchFile(outputFile)
 		return nil
 	}
@@ -58,7 +59,7 @@ func (plugin *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith
 		return err
 	}
 
-	for _, attribute := range plugin.attributes {
+	for _, attribute := range self.attributes {
 		cssPath := fmt.Sprintf("*[%s]", attribute)
 		doc.Find(cssPath).Each(func(index int, selection *goquery.Selection) {
 			value, exists := selection.Attr(attribute)
@@ -85,8 +86,12 @@ func (plugin *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith
 		return err
 	}
 
-	outputFile := context.CreateFileFromData(inputFile.Path(), []byte(html))
-	outputFile.Meta = inputFile.Meta
+	outputFile, err := context.CreateFileFromReader(inputFile.Path(), bytes.NewReader([]byte(html)))
+	if err != nil {
+		return err
+	}
+
+	outputFile.CopyProps(inputFile)
 	context.DispatchAndCacheFile(outputFile, inputFile)
 	return nil
 }

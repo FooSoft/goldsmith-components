@@ -73,36 +73,36 @@ func New(lister Lister) *Pager {
 }
 
 // PagerKey sets the metadata key used to store paging information for each file (default: "Pager").
-func (plugin *Pager) PagerKey(key string) *Pager {
-	plugin.pagerKey = key
-	return plugin
+func (self *Pager) PagerKey(key string) *Pager {
+	self.pagerKey = key
+	return self
 }
 
 // EnableKey sets the metadata key used to determine if the current file should be paged (default: false).
-func (plugin *Pager) EnableKey(key string) *Pager {
-	plugin.enableKey = key
-	return plugin
+func (self *Pager) EnableKey(key string) *Pager {
+	self.enableKey = key
+	return self
 }
 
 // ItemsPerPage sets the maximum number of items which can be included on a single page (default: 10).
-func (plugin *Pager) ItemsPerPage(limit int) *Pager {
-	plugin.itemsPerPage = limit
-	return plugin
+func (self *Pager) ItemsPerPage(limit int) *Pager {
+	self.itemsPerPage = limit
+	return self
 }
 
 // Namer sets the callback used to build paths for file pages.
 // Default naming inserts page number between file name and extension,
 // for example "file.html" becomes "file-2.html".
-func (plugin *Pager) Namer(namer Namer) *Pager {
-	plugin.namer = namer
-	return plugin
+func (self *Pager) Namer(namer Namer) *Pager {
+	self.namer = namer
+	return self
 }
 
 // InheritedKeys sets which metadata keys should be copied to generated pages from the original file (default: []).
 // When no keys are provided, all metadata is copied from the original file to generated pages.
-func (p *Pager) InheritedKeys(keys ...string) *Pager {
-	p.inheritedKeys = keys
-	return p
+func (self *Pager) InheritedKeys(keys ...string) *Pager {
+	self.inheritedKeys = keys
+	return self
 }
 
 func (*Pager) Name() string {
@@ -114,17 +114,17 @@ func (*Pager) Initialize(context *goldsmith.Context) error {
 	return nil
 }
 
-func (plugin *Pager) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
-	plugin.mutex.Lock()
-	defer plugin.mutex.Unlock()
+func (self *Pager) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+	self.mutex.Lock()
+	defer self.mutex.Unlock()
 
-	enabled, err := plugin.isEnabledForFile(inputFile)
+	enabled, err := self.isEnabledForFile(inputFile)
 	if err != nil {
 		return err
 	}
 
 	if !enabled {
-		plugin.files = append(plugin.files, inputFile)
+		self.files = append(self.files, inputFile)
 		return nil
 	}
 
@@ -133,14 +133,14 @@ func (plugin *Pager) Process(context *goldsmith.Context, inputFile *goldsmith.Fi
 		return err
 	}
 
-	values := plugin.lister(inputFile)
+	values := self.lister(inputFile)
 	valueCount, err := sliceLength(values)
 	if err != nil {
 		return err
 	}
 
-	pageCount := valueCount / plugin.itemsPerPage
-	if valueCount%plugin.itemsPerPage > 0 {
+	pageCount := valueCount / self.itemsPerPage
+	if valueCount%self.itemsPerPage > 0 {
 		pageCount++
 	}
 
@@ -157,8 +157,8 @@ func (plugin *Pager) Process(context *goldsmith.Context, inputFile *goldsmith.Fi
 		}
 
 		var (
-			indexStart = i * plugin.itemsPerPage
-			indexEnd   = indexStart + plugin.itemsPerPage
+			indexStart = i * self.itemsPerPage
+			indexEnd   = indexStart + self.itemsPerPage
 		)
 
 		if indexEnd > valueCount {
@@ -172,42 +172,44 @@ func (plugin *Pager) Process(context *goldsmith.Context, inputFile *goldsmith.Fi
 		if i == 0 {
 			page.File = inputFile
 		} else {
-			page.File = context.CreateFileFromData(plugin.namer(inputFile.Path(), page.Index), buff.Bytes())
-			if len(plugin.inheritedKeys) == 0 {
-				for key, value := range inputFile.Meta {
-					page.File.Meta[key] = value
-				}
+			page.File, err = context.CreateFileFromReader(self.namer(inputFile.Path(), page.Index), &buff)
+			if err != nil {
+				return err
+			}
+
+			if len(self.inheritedKeys) == 0 {
+				page.File.CopyProps(inputFile)
 			} else {
-				for _, key := range plugin.inheritedKeys {
-					if value, ok := inputFile.Meta[key]; ok {
-						page.File.Meta[key] = value
+				for _, key := range self.inheritedKeys {
+					if value, ok := inputFile.Prop(key); ok {
+						page.File.SetProp(key, value)
 					}
 				}
 			}
 		}
 
-		page.File.Meta[plugin.pagerKey] = Index{
+		page.File.SetProp(self.pagerKey, Index{
 			AllPages: pages,
 			CurrPage: page,
 			Paged:    pageCount > 1,
-		}
+		})
 
-		plugin.files = append(plugin.files, page.File)
+		self.files = append(self.files, page.File)
 	}
 
 	return nil
 }
 
-func (plugin *Pager) Finalize(ctx *goldsmith.Context) error {
-	for _, f := range plugin.files {
+func (self *Pager) Finalize(ctx *goldsmith.Context) error {
+	for _, f := range self.files {
 		ctx.DispatchFile(f)
 	}
 
 	return nil
 }
 
-func (plugin *Pager) isEnabledForFile(file *goldsmith.File) (bool, error) {
-	enableRaw, ok := file.Meta[plugin.enableKey]
+func (self *Pager) isEnabledForFile(file *goldsmith.File) (bool, error) {
+	enableRaw, ok := file.Prop(self.enableKey)
 	if !ok {
 		return false, nil
 	}
