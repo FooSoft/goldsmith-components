@@ -1,11 +1,5 @@
-github.com/FooSoft/goldsmith v0.0.0-20210822193309-7ecc01e508c0 h1:MDtA2UR8HkMtwC9cHyetMKUBeTg29V0iyfNBxhq1S9M=
-github.com/FooSoft/goldsmith v0.0.0-20210822193309-7ecc01e508c0/go.mod h1:4Xvg5yaavuqsFYPiQgc2bB3R3O+qZrWxgvfIQTZxt34=
-github.com/FooSoft/goldsmith v0.0.0-20211215010121-d7f5b3085734 h1:SvwOh1HHzA/WIex6tMav7TS9Mv/MUIfY3VFo45Z/gRc=
-github.com/FooSoft/goldsmith v0.0.0-20211215010121-d7f5b3085734/go.mod h1:4Xvg5yaavuqsFYPiQgc2bB3R3O+qZrWxgvfIQTZxt34=
-github.com/FooSoft/goldsmith v0.0.0-20220108191646-07f6033d4e86 h1:c8mxVjlKnM+bgDEZY3VyQkIUp433SZy4qsmSTr8krYY=
-github.com/FooSoft/goldsmith v0.0.0-20220108191646-07f6033d4e86/go.mod h1:4Xvg5yaavuqsFYPiQgc2bB3R3O+qZrWxgvfIQTZxt34=
-github.com/FooSoft/goldsmith v0.0.0-20220108191921-106991bfd59b h1:CO18wSd3uJObe2ZmTLou4UokGSt1FVVXNS3ZBt1PC4U=
-github.com/FooSoft/goldsmith v0.0.0-20220108191921-106991bfd59b/go.mod h1:4Xvg5yaavuqsFYPiQgc2bB3R3O+qZrWxgvfIQTZxt34=
+github.com/FooSoft/goldsmith v0.0.0-20220109020919-4adf5b9bd304 h1:DMheEwJILWsdD4uy3jFyyp3RaD7GNlj4yjlNUKBZD3I=
+github.com/FooSoft/goldsmith v0.0.0-20220109020919-4adf5b9bd304/go.mod h1:4Xvg5yaavuqsFYPiQgc2bB3R3O+qZrWxgvfIQTZxt34=
 github.com/PuerkitoBio/goquery v1.8.0 h1:PJTF7AmFCFKk1N6V6jmKfrNH9tV5pNE6lZMkG0gta/U=
 github.com/PuerkitoBio/goquery v1.8.0/go.mod h1:ypIiRMtY7COPGk+I/YbZLbxsxn9g5ejnI2HSMtkjZvI=
 github.com/alecthomas/chroma v0.9.4 h1:YL7sOAE3p8HS96T9km7RgvmsZIctqbK1qJ0b7hzed44=
