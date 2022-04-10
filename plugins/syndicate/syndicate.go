@@ -64,9 +64,9 @@ func (self itemList) Swap(i, j int) {
 }
 
 type FeedConfig struct {
-	AtomPath      string
-	JsonPath      string
-	SyndicatePath string
+	AtomPath string
+	JsonPath string
+	RssPath  string
 
 	Title       string
 	Url         string
@@ -87,7 +87,6 @@ type FeedConfig struct {
 }
 
 type ItemConfig struct {
-	BaseUrl        string
 	TitleKey       string
 	AuthorNameKey  string
 	AuthorEmailKey string
@@ -100,6 +99,7 @@ type ItemConfig struct {
 
 // Syndicate chainable context.
 type Syndicate struct {
+	baseUrl     string
 	feedNameKey string
 
 	feeds map[string]*feed
@@ -107,8 +107,9 @@ type Syndicate struct {
 }
 
 // New creates a new instance of the Syndicate plugin
-func New(feedNameKey string) *Syndicate {
+func New(baseUrl, feedNameKey string) *Syndicate {
 	return &Syndicate{
+		baseUrl:     baseUrl,
 		feedNameKey: feedNameKey,
 		feeds:       make(map[string]*feed),
 	}
@@ -184,7 +185,7 @@ func (self *Syndicate) Process(context *goldsmith.Context, inputFile *goldsmith.
 		updated:     getDate(feed.config.ItemConfig.UpdatedKey),
 		created:     getDate(feed.config.ItemConfig.CreatedKey),
 		content:     getString(feed.config.ItemConfig.ContentKey),
-		url:         path.Join(feed.config.ItemConfig.BaseUrl, inputFile.Path()),
+		url:         path.Join(self.baseUrl, inputFile.Path()),
 	}
 
 	if len(item.id) == 0 {
@@ -263,13 +264,13 @@ func (self *feed) output(context *goldsmith.Context) error {
 		context.DispatchFile(file)
 	}
 
-	if len(self.config.SyndicatePath) > 0 {
+	if len(self.config.RssPath) > 0 {
 		var buff bytes.Buffer
 		if err := feed.WriteRss(&buff); err != nil {
 			return err
 		}
 
-		file, err := context.CreateFileFromReader(self.config.SyndicatePath, bytes.NewReader(buff.Bytes()))
+		file, err := context.CreateFileFromReader(self.config.RssPath, bytes.NewReader(buff.Bytes()))
 		if err != nil {
 			return err
 		}
