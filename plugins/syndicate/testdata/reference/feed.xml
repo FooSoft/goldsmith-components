@@ -12,7 +12,7 @@
     </image>
     <item>
       <title>Page 1 Title</title>
-      <link>https:/foosoft.net/page_1.md</link>
+      <link>https://foosoft.net/page_1.md</link>
       <description>Page 1 Description</description>
       <author>Page 1 Author Name</author>
       <guid>Page 1 Id</guid>
@@ -20,7 +20,7 @@
     </item>
     <item>
       <title>Page 2 Title</title>
-      <link>https:/foosoft.net/page_2.md</link>
+      <link>https://foosoft.net/page_2.md</link>
       <description>Page 2 Description</description>
       <author>Page 2 Author Name</author>
       <guid>Page 2 Id</guid>
@@ -28,7 +28,7 @@
     </item>
     <item>
       <title>Page 3 Title</title>
-      <link>https:/foosoft.net/page_3.md</link>
+      <link>https://foosoft.net/page_3.md</link>
       <description>Page 3 Description</description>
       <author>Page 3 Author Name</author>
       <guid>Page 3 Id</guid>

@@ -3,9 +3,8 @@ package syndicate
 import (
 	"bytes"
 	"fmt"
-	"path"
+	"net/url"
 	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -40,20 +39,16 @@ func (self itemList) Len() int {
 }
 
 func (self itemList) Less(i, j int) bool {
-	if less := self[i].created.Before(self[j].created); less {
-		return true
+	if self[i].created != self[j].created {
+		return self[i].created.Before(self[j].created)
 	}
 
-	if less := self[i].updated.Before(self[j].updated); less {
-		return true
+	if self[i].updated != self[j].updated {
+		return self[i].updated.Before(self[j].updated)
 	}
 
-	if less := strings.Compare(self[i].id, self[j].id) < 0; less {
-		return true
-	}
-
-	if less := strings.Compare(self[i].title, self[j].title) < 0; less {
-		return true
+	if self[i].url != self[j].url {
+		return self[i].url < self[j].url
 	}
 
 	return false
@@ -176,6 +171,16 @@ func (self *Syndicate) Process(context *goldsmith.Context, inputFile *goldsmith.
 		return fmt.Errorf("feed %s has is not configured", feedName)
 	}
 
+	baseUrl, err := url.Parse(self.baseUrl)
+	if err != nil {
+		return err
+	}
+
+	currUrl, err := url.Parse(inputFile.Path())
+	if err != nil {
+		return err
+	}
+
 	item := item{
 		title:       getString(feed.config.ItemConfig.TitleKey),
 		authorName:  getString(feed.config.ItemConfig.AuthorNameKey),
@@ -185,7 +190,7 @@ func (self *Syndicate) Process(context *goldsmith.Context, inputFile *goldsmith.
 		updated:     getDate(feed.config.ItemConfig.UpdatedKey),
 		created:     getDate(feed.config.ItemConfig.CreatedKey),
 		content:     getString(feed.config.ItemConfig.ContentKey),
-		url:         path.Join(self.baseUrl, inputFile.Path()),
+		url:         baseUrl.ResolveReference(currUrl).String(),
 	}
 
 	if len(item.id) == 0 {
