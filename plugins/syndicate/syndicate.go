@@ -1,7 +1,8 @@
-package rss
+package syndicate
 
 import (
 	"bytes"
+	"fmt"
 	"path"
 	"sort"
 	"strings"
@@ -11,6 +12,13 @@ import (
 	"github.com/FooSoft/goldsmith"
 	"github.com/gorilla/feeds"
 )
+
+type feed struct {
+	config FeedConfig
+
+	items itemList
+	lock  sync.Mutex
+}
 
 type item struct {
 	title       string
@@ -56,6 +64,10 @@ func (self itemList) Swap(i, j int) {
 }
 
 type FeedConfig struct {
+	AtomPath      string
+	JsonPath      string
+	SyndicatePath string
+
 	Title       string
 	Url         string
 	Description string
@@ -67,11 +79,15 @@ type FeedConfig struct {
 	Subtitle    string
 	Copyright   string
 	ImageUrl    string
+	ImageTitle  string
+	ImageWidth  int
+	ImageHeight int
+
+	ItemConfig ItemConfig
 }
 
 type ItemConfig struct {
 	BaseUrl        string
-	RssEnableKey   string
 	TitleKey       string
 	AuthorNameKey  string
 	AuthorEmailKey string
@@ -82,47 +98,32 @@ type ItemConfig struct {
 	ContentKey     string
 }
 
-// Rss chainable context.
-type Rss struct {
-	feedConfig FeedConfig
-	itemConfig ItemConfig
+// Syndicate chainable context.
+type Syndicate struct {
+	feedNameKey string
 
-	atomPath string
-	jsonPath string
-	rssPath  string
-
-	items itemList
+	feeds map[string]*feed
 	lock  sync.Mutex
 }
 
-// New creates a new instance of the Rss plugin
-func New(feedConfig FeedConfig, itemConfig ItemConfig) *Rss {
-	return &Rss{
-		feedConfig: feedConfig,
-		itemConfig: itemConfig,
+// New creates a new instance of the Syndicate plugin
+func New(feedNameKey string) *Syndicate {
+	return &Syndicate{
+		feedNameKey: feedNameKey,
+		feeds:       make(map[string]*feed),
 	}
 }
 
-func (*Rss) Name() string {
-	return "rss"
+func (*Syndicate) Name() string {
+	return "syndicate"
 }
 
-func (self *Rss) AtomPath(path string) *Rss {
-	self.atomPath = path
+func (self *Syndicate) WithFeed(name string, config FeedConfig) *Syndicate {
+	self.feeds[name] = &feed{config: config}
 	return self
 }
 
-func (self *Rss) JsonPath(path string) *Rss {
-	self.jsonPath = path
-	return self
-}
-
-func (self *Rss) RssPath(path string) *Rss {
-	self.rssPath = path
-	return self
-}
-
-func (self *Rss) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
+func (self *Syndicate) Process(context *goldsmith.Context, inputFile *goldsmith.File) error {
 	defer context.DispatchFile(inputFile)
 
 	getString := func(key string) string {
@@ -161,68 +162,68 @@ func (self *Rss) Process(context *goldsmith.Context, inputFile *goldsmith.File) 
 		return result
 	}
 
-	getBool := func(key string) bool {
-		if len(key) == 0 {
-			return false
-		}
-
-		prop, ok := inputFile.Prop(key)
-		if !ok {
-			return false
-		}
-
-		result, ok := prop.(bool)
-		if !ok {
-			return false
-		}
-
-		return result
-	}
-
-	if rssEnable := getBool(self.itemConfig.RssEnableKey); !rssEnable {
+	feedName := getString(self.feedNameKey)
+	if len(feedName) == 0 {
 		return nil
 	}
 
-	item := item{
-		title:       getString(self.itemConfig.TitleKey),
-		authorName:  getString(self.itemConfig.AuthorNameKey),
-		authorEmail: getString(self.itemConfig.AuthorEmailKey),
-		description: getString(self.itemConfig.DescriptionKey),
-		id:          getString(self.itemConfig.IdKey),
-		updated:     getDate(self.itemConfig.UpdatedKey),
-		created:     getDate(self.itemConfig.CreatedKey),
-		content:     getString(self.itemConfig.ContentKey),
-		url:         path.Join(self.itemConfig.BaseUrl, inputFile.Path()),
+	self.lock.Lock()
+	feed, ok := self.feeds[feedName]
+	self.lock.Unlock()
+
+	if !ok {
+		return fmt.Errorf("feed %s has is not configured", feedName)
 	}
 
-	self.lock.Lock()
-	self.items = append(self.items, item)
-	self.lock.Unlock()
+	item := item{
+		title:       getString(feed.config.ItemConfig.TitleKey),
+		authorName:  getString(feed.config.ItemConfig.AuthorNameKey),
+		authorEmail: getString(feed.config.ItemConfig.AuthorEmailKey),
+		description: getString(feed.config.ItemConfig.DescriptionKey),
+		id:          getString(feed.config.ItemConfig.IdKey),
+		updated:     getDate(feed.config.ItemConfig.UpdatedKey),
+		created:     getDate(feed.config.ItemConfig.CreatedKey),
+		content:     getString(feed.config.ItemConfig.ContentKey),
+		url:         path.Join(feed.config.ItemConfig.BaseUrl, inputFile.Path()),
+	}
+
+	if len(item.id) == 0 {
+		item.id = item.url
+	}
+
+	feed.lock.Lock()
+	feed.items = append(feed.items, item)
+	feed.lock.Unlock()
 
 	return nil
 }
 
-func (self *Rss) Finalize(context *goldsmith.Context) error {
+func (self *feed) output(context *goldsmith.Context) error {
 	feed := feeds.Feed{
-		Title:       self.feedConfig.Title,
-		Link:        &feeds.Link{Href: self.feedConfig.Url},
-		Description: self.feedConfig.Description,
-		Updated:     self.feedConfig.Updated,
-		Created:     self.feedConfig.Created,
-		Id:          self.feedConfig.Id,
-		Subtitle:    self.feedConfig.Subtitle,
-		Copyright:   self.feedConfig.Copyright,
+		Title:       self.config.Title,
+		Link:        &feeds.Link{Href: self.config.Url},
+		Description: self.config.Description,
+		Updated:     self.config.Updated,
+		Created:     self.config.Created,
+		Id:          self.config.Id,
+		Subtitle:    self.config.Subtitle,
+		Copyright:   self.config.Copyright,
 	}
 
-	if len(self.feedConfig.AuthorName) > 0 || len(self.feedConfig.AuthorEmail) > 0 {
+	if len(self.config.AuthorName) > 0 || len(self.config.AuthorEmail) > 0 {
 		feed.Author = &feeds.Author{
-			Name:  self.feedConfig.AuthorName,
-			Email: self.feedConfig.AuthorEmail,
+			Name:  self.config.AuthorName,
+			Email: self.config.AuthorEmail,
 		}
 	}
 
-	if len(self.feedConfig.ImageUrl) > 0 {
-		feed.Image = &feeds.Image{Url: self.feedConfig.ImageUrl}
+	if len(self.config.ImageUrl) > 0 {
+		feed.Image = &feeds.Image{
+			Url:    self.config.ImageUrl,
+			Title:  self.config.ImageTitle,
+			Width:  self.config.ImageWidth,
+			Height: self.config.ImageHeight,
+		}
 	}
 
 	sort.Sort(self.items)
@@ -248,13 +249,13 @@ func (self *Rss) Finalize(context *goldsmith.Context) error {
 		feed.Items = append(feed.Items, &feedItem)
 	}
 
-	if len(self.atomPath) > 0 {
+	if len(self.config.AtomPath) > 0 {
 		var buff bytes.Buffer
 		if err := feed.WriteAtom(&buff); err != nil {
 			return err
 		}
 
-		file, err := context.CreateFileFromReader(self.atomPath, bytes.NewReader(buff.Bytes()))
+		file, err := context.CreateFileFromReader(self.config.AtomPath, bytes.NewReader(buff.Bytes()))
 		if err != nil {
 			return err
 		}
@@ -262,13 +263,13 @@ func (self *Rss) Finalize(context *goldsmith.Context) error {
 		context.DispatchFile(file)
 	}
 
-	if len(self.rssPath) > 0 {
+	if len(self.config.SyndicatePath) > 0 {
 		var buff bytes.Buffer
 		if err := feed.WriteRss(&buff); err != nil {
 			return err
 		}
 
-		file, err := context.CreateFileFromReader(self.rssPath, bytes.NewReader(buff.Bytes()))
+		file, err := context.CreateFileFromReader(self.config.SyndicatePath, bytes.NewReader(buff.Bytes()))
 		if err != nil {
 			return err
 		}
@@ -276,18 +277,26 @@ func (self *Rss) Finalize(context *goldsmith.Context) error {
 		context.DispatchFile(file)
 	}
 
-	if len(self.jsonPath) > 0 {
+	if len(self.config.JsonPath) > 0 {
 		var buff bytes.Buffer
 		if err := feed.WriteJSON(&buff); err != nil {
 			return err
 		}
 
-		file, err := context.CreateFileFromReader(self.jsonPath, bytes.NewReader(buff.Bytes()))
+		file, err := context.CreateFileFromReader(self.config.JsonPath, bytes.NewReader(buff.Bytes()))
 		if err != nil {
 			return err
 		}
 
 		context.DispatchFile(file)
+	}
+
+	return nil
+}
+
+func (self *Syndicate) Finalize(context *goldsmith.Context) error {
+	for _, feed := range self.feeds {
+		feed.output(context)
 	}
 
 	return nil

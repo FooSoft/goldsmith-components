@@ -1,4 +1,4 @@
-package rss
+package syndicate
 
 import (
 	"testing"
@@ -10,20 +10,22 @@ import (
 
 func Test(self *testing.T) {
 	feedConfig := FeedConfig{
-		Title:       "Feed Title",
-		Url:         "https://foosoft.net",
-		Description: "Feed Description",
-		AuthorName:  "Author Name",
-		AuthorEmail: "Author Email",
-		Id:          "Feed Id",
-		Subtitle:    "Feed Subtitle",
-		Copyright:   "Feed Copyright",
-		ImageUrl:    "Feed Image Url",
+		Title:         "Feed Title",
+		Url:           "https://foosoft.net",
+		Description:   "Feed Description",
+		AuthorName:    "Author Name",
+		AuthorEmail:   "Author Email",
+		Id:            "Feed Id",
+		Subtitle:      "Feed Subtitle",
+		Copyright:     "Feed Copyright",
+		ImageUrl:      "Feed Image Url",
+		AtomPath:      "feed.atom",
+		SyndicatePath: "feed.xml",
+		JsonPath:      "feed.json",
 	}
 
-	itemConfig := ItemConfig{
+	feedConfig.ItemConfig = ItemConfig{
 		BaseUrl:        "https://foosoft.net",
-		RssEnableKey:   "RssEnable",
 		TitleKey:       "Title",
 		AuthorNameKey:  "AuthorName",
 		AuthorEmailKey: "AuthorEmail",
@@ -39,7 +41,7 @@ func Test(self *testing.T) {
 		func(gs *goldsmith.Goldsmith) {
 			gs.
 				Chain(frontmatter.New()).
-				Chain(New(feedConfig, itemConfig).RssPath("feed.xml").AtomPath("feed.atom").JsonPath("feed.json"))
+				Chain(New("FeedName").WithFeed("posts", feedConfig))
 		},
 	)
 }

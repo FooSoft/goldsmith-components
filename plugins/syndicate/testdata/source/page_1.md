@@ -1,5 +1,5 @@
 +++
-RssEnable = true
+FeedName = "posts"
 Title = "Page 1 Title"
 AuthorName = "Page 1 Author Name"
 AuthorEmail = "Page 1 Author Email"
