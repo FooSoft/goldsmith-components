@@ -6,16 +6,16 @@ package livejs
 
 import (
 	"bytes"
-	"errors"
+	_ "embed"
 	"fmt"
-	"io/ioutil"
-	"path"
-	"runtime"
 
 	"github.com/FooSoft/goldsmith"
 	"github.com/FooSoft/goldsmith-components/filters/wildcard"
 	"github.com/PuerkitoBio/goquery"
 )
+
+//go:embed js/live.js
+var livejs string
 
 // LiveJs chainable context.
 type LiveJs struct {
@@ -32,21 +32,7 @@ func (*LiveJs) Name() string {
 }
 
 func (self *LiveJs) Initialize(context *goldsmith.Context) error {
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		return errors.New("unable to get livejs path")
-	}
-
-	baseDir := path.Dir(filename)
-	jsPath := path.Join(baseDir, "live.js")
-
-	js, err := ioutil.ReadFile(jsPath)
-	if err != nil {
-		return err
-	}
-
-	self.html = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", js)
-
+	self.html = fmt.Sprintf("\n<!-- begin livejs code -->\n<script>\n%s\n</script>\n<!-- end livejs code -->\n", livejs)
 	context.Filter(wildcard.New("**/*.html", "**/*.htm"))
 	return nil
 }
