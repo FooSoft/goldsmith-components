@@ -3,7 +3,7 @@ module github.com/FooSoft/goldsmith-components
 go 1.16
 
 require (
-	github.com/FooSoft/goldsmith v0.0.0-20220410034610-83530f1b2fe4
+	github.com/FooSoft/goldsmith v0.0.0-20220516003218-f635ce5da3e3
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/alecthomas/chroma v0.10.0
 	github.com/bmatcuk/doublestar v1.3.4
