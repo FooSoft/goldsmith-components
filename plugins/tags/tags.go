@@ -5,7 +5,7 @@ package tags
 
 import (
 	"bytes"
-	"path/filepath"
+	"path"
 	"sort"
 	"strings"
 	"sync"
@@ -211,7 +211,7 @@ func (self *Tags) buildPages(context *goldsmith.Context) ([]*goldsmith.File, err
 }
 
 func (self *Tags) tagPagePath(tag string) string {
-	return filepath.Join(self.baseDir, safeTag(tag), self.indexName)
+	return path.Join(self.baseDir, safeTag(tag), self.indexName)
 }
 
 func safeTag(tagRaw string) string {

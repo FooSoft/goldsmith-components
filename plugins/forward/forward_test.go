@@ -16,7 +16,7 @@ func Test(self *testing.T) {
 	}
 
 	pathMap := map[string]string{
-		"/file_old.html": "/file_new.html",
+		"file_old.html": "file_new.html",
 	}
 
 	harness.Validate(

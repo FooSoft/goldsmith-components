@@ -5,7 +5,7 @@ package index
 
 import (
 	"bytes"
-	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -74,8 +74,8 @@ func (self *Index) Process(context *goldsmith.Context, inputFile *goldsmith.File
 
 		self.dirsHandled[currentPath] = true
 
-		currentDir := path.Dir(currentPath)
-		currentBase := path.Base(currentPath)
+		currentDir := filepath.Dir(currentPath)
+		currentBase := filepath.Base(currentPath)
 
 		list, ok := self.dirLists[currentDir]
 		if !ok {
@@ -112,7 +112,7 @@ func (self *Index) Finalize(context *goldsmith.Context) error {
 		indexFile := list.indexFile
 		if indexFile == nil {
 			var err error
-			indexFile, err = context.CreateFileFromReader(path.Join(name, self.indexName), bytes.NewReader(nil))
+			indexFile, err = context.CreateFileFromReader(filepath.Join(name, self.indexName), bytes.NewReader(nil))
 			if err != nil {
 				return err
 			}
