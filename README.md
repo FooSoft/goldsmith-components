@@ -1,3 +1,8 @@
-# Goldsmith-Plugins #
+<!-- +++
+GitHub = "goldsmith-components"
+Layout = "page"
++++ -->
 
-This is a repository of [Goldsmith](https://foosoft.net/projects/goldsmith/) core plugins.
+# Goldsmith-Components
+
+This is a repository of [Goldsmith](https://foosoft.net/projects/goldsmith/) core components.
