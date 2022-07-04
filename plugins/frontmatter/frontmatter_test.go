@@ -3,9 +3,9 @@ package frontmatter
 import (
 	"testing"
 
-	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/harness"
-	"github.com/FooSoft/goldsmith-components/plugins/layout"
+	"foosoft.net/projects/goldsmith"
+	"foosoft.net/projects/goldsmith-components/harness"
+	"foosoft.net/projects/goldsmith-components/plugins/layout"
 )
 
 func Test(self *testing.T) {

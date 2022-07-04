@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/wildcard"
+	"foosoft.net/projects/goldsmith"
+	"foosoft.net/projects/goldsmith-components/filters/wildcard"
 )
 
 // Crumb provides organizational information about this node and ones before it.

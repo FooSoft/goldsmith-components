@@ -9,8 +9,8 @@ import (
 	"path"
 	"strings"
 
-	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/wildcard"
+	"foosoft.net/projects/goldsmith"
+	"foosoft.net/projects/goldsmith-components/filters/wildcard"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"

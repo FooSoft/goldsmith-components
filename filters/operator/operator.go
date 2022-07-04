@@ -1,7 +1,7 @@
 package operator
 
 import (
-	"github.com/FooSoft/goldsmith"
+	"foosoft.net/projects/goldsmith"
 )
 
 type Operator interface {

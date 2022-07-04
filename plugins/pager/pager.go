@@ -14,8 +14,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/wildcard"
+	"foosoft.net/projects/goldsmith"
+	"foosoft.net/projects/goldsmith-components/filters/wildcard"
 )
 
 // Namer callback function builds paths for file pages based on the original file path and page index.

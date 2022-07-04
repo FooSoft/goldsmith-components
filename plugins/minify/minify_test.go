@@ -3,8 +3,8 @@ package minify
 import (
 	"testing"
 
-	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/harness"
+	"foosoft.net/projects/goldsmith"
+	"foosoft.net/projects/goldsmith-components/harness"
 )
 
 func Test(self *testing.T) {

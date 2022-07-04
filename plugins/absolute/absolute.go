@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/wildcard"
+	"foosoft.net/projects/goldsmith"
+	"foosoft.net/projects/goldsmith-components/filters/wildcard"
 	"github.com/PuerkitoBio/goquery"
 )
 

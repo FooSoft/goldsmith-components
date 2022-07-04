@@ -1,7 +1,7 @@
 package condition
 
 import (
-	"github.com/FooSoft/goldsmith"
+	"foosoft.net/projects/goldsmith"
 )
 
 type Condition struct {

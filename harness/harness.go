@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/FooSoft/goldsmith"
+	"foosoft.net/projects/goldsmith"
 )
 
 // Stager callback function is used to set up a goldsmith chain.

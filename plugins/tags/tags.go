@@ -11,8 +11,8 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/FooSoft/goldsmith"
-	"github.com/FooSoft/goldsmith-components/filters/wildcard"
+	"foosoft.net/projects/goldsmith"
+	"foosoft.net/projects/goldsmith-components/filters/wildcard"
 )
 
 // TagInfo contains site-wide information about a particular tag.

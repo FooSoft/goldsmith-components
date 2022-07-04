@@ -1,7 +1,7 @@
 package wildcard
 
 import (
-	"github.com/FooSoft/goldsmith"
+	"foosoft.net/projects/goldsmith"
 	"github.com/bmatcuk/doublestar"
 )
 

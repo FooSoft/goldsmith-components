@@ -4,7 +4,7 @@ package forward
 import (
 	"bytes"
 
-	"github.com/FooSoft/goldsmith"
+	"foosoft.net/projects/goldsmith"
 )
 
 // Forward plugin context.
