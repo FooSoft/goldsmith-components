@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	foosoft.net/projects/goldsmith v0.0.0-20220704002903-b9e78fed6a2e
+	github.com/BurntSushi/toml v1.1.0
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/alecthomas/chroma v0.10.0
 	github.com/bmatcuk/doublestar v1.3.4

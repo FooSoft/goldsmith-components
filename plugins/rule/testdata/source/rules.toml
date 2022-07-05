@@ -1,0 +1,3 @@
+[[rules]]
+patterns = ['*.html', 'dir_1/*.html']
+drop = true

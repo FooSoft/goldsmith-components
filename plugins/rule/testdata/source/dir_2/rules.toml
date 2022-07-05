@@ -1,0 +1,4 @@
+[[rules]]
+patterns = ['*.html']
+props.Layout = 'page'
+props.Title = 'Override'
