@@ -11,7 +11,6 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gorilla/feeds v1.1.1
-	github.com/naoina/toml v0.1.1
 	github.com/tdewolff/minify/v2 v2.11.11
 	github.com/yuin/goldmark v1.4.12
 	gopkg.in/yaml.v2 v2.4.0
@@ -21,8 +20,6 @@ require (
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
-	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/naoina/go-stringutil v0.1.0 // indirect
 	github.com/tdewolff/parse/v2 v2.6.0 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8 // indirect

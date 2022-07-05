@@ -50,7 +50,7 @@ import (
 
 	"foosoft.net/projects/goldsmith"
 	"foosoft.net/projects/goldsmith-components/filters/wildcard"
-	"github.com/naoina/toml"
+	"github.com/BurntSushi/toml"
 	"gopkg.in/yaml.v2"
 )
 
@@ -177,11 +177,11 @@ func parse(reader io.Reader) (map[string]interface{}, *bytes.Buffer, error) {
 
 	switch closer {
 	case tomlCloser, tomlCloserHtml:
-		if err := toml.Unmarshal(front.Bytes(), meta); err != nil {
+		if err := toml.Unmarshal(front.Bytes(), &meta); err != nil {
 			return nil, nil, err
 		}
 	case yamlCloser, yamlCloserHtml:
-		if err := yaml.Unmarshal(front.Bytes(), meta); err != nil {
+		if err := yaml.Unmarshal(front.Bytes(), &meta); err != nil {
 			return nil, nil, err
 		}
 	case jsonCloser, jsonCloserHtml:
