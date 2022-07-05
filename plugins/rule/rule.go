@@ -1,7 +1,6 @@
 package rule
 
 import (
-	"errors"
 	"io/ioutil"
 	"path/filepath"
 	"sync"
@@ -12,33 +11,39 @@ import (
 )
 
 type rule struct {
-	Patterns []string
-	Props    map[string]goldsmith.Prop
-	Drop     bool
+	Match   []string
+	Unmatch []string
+	Props   map[string]goldsmith.Prop
+	Drop    bool
+
+	baseDir string
 }
 
-func (self *rule) rebase(inputFile *goldsmith.File) error {
-	for i, path := range self.Patterns {
-		if filepath.IsAbs(path) {
-			return errors.New("rule paths must be relative")
-		}
-
-		self.Patterns[i] = filepath.Join(inputFile.Dir(), path)
+func (self *rule) matches(inputFile *goldsmith.File) bool {
+	patternDir := filepath.Join(self.baseDir, "**")
+	if match, err := doublestar.PathMatch(patternDir, inputFile.Path()); !match || err != nil {
+		return false
 	}
 
-	return nil
+	for _, pattern := range self.Match {
+		patternAbs := filepath.Join(self.baseDir, pattern)
+		if match, err := doublestar.PathMatch(patternAbs, inputFile.Path()); match && err == nil {
+			return true
+		}
+	}
+
+	for _, pattern := range self.Unmatch {
+		patternAbs := filepath.Join(self.baseDir, pattern)
+		if match, err := doublestar.PathMatch(patternAbs, inputFile.Path()); !match && err == nil {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (self *rule) apply(inputFile *goldsmith.File) bool {
-	var matched bool
-	for _, pattern := range self.Patterns {
-		if match, err := doublestar.PathMatch(pattern, inputFile.Path()); match && err == nil {
-			matched = true
-			break
-		}
-	}
-
-	if matched {
+	if self.matches(inputFile) {
 		if self.Drop {
 			return false
 		}
@@ -55,16 +60,6 @@ type ruleSet struct {
 	Rules []*rule
 }
 
-func (self *ruleSet) rebase(inputFile *goldsmith.File) error {
-	for _, rule := range self.Rules {
-		if err := rule.rebase(inputFile); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 func newRuleSet(inputFile *goldsmith.File) (*ruleSet, error) {
 	data, err := ioutil.ReadAll(inputFile)
 	if err != nil {
@@ -76,8 +71,8 @@ func newRuleSet(inputFile *goldsmith.File) (*ruleSet, error) {
 		return nil, err
 	}
 
-	if err := ruleSet.rebase(inputFile); err != nil {
-		return nil, err
+	for _, rule := range ruleSet.Rules {
+		rule.baseDir = inputFile.Dir()
 	}
 
 	return &ruleSet, nil
