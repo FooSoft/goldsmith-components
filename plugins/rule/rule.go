@@ -34,12 +34,12 @@ func (self *rule) matches(inputFile *goldsmith.File) bool {
 
 	for _, pattern := range self.Unmatch {
 		patternAbs := filepath.Join(self.baseDir, pattern)
-		if match, err := doublestar.PathMatch(patternAbs, inputFile.Path()); !match && err == nil {
-			return true
+		if match, err := doublestar.PathMatch(patternAbs, inputFile.Path()); match && err == nil {
+			return false
 		}
 	}
 
-	return false
+	return len(self.Unmatch) > 0
 }
 
 func (self *rule) apply(inputFile *goldsmith.File) bool {
