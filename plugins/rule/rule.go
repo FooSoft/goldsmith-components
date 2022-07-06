@@ -6,43 +6,47 @@ import (
 	"sync"
 
 	"foosoft.net/projects/goldsmith"
+	"foosoft.net/projects/goldsmith-components/filters/operator"
+	"foosoft.net/projects/goldsmith-components/filters/wildcard"
 	"github.com/BurntSushi/toml"
-	"github.com/bmatcuk/doublestar"
 )
 
 type rule struct {
-	Match   []string
-	Unmatch []string
-	Props   map[string]goldsmith.Prop
+	Accept []string
+	Reject []string
+	Props  map[string]goldsmith.Prop
 
 	baseDir string
 }
 
-func (self *rule) matches(inputFile *goldsmith.File) bool {
-	patternDir := filepath.Join(self.baseDir, "**")
-	if match, err := doublestar.PathMatch(patternDir, inputFile.Path()); !match || err != nil {
+func (self *rule) accept(inputFile *goldsmith.File) bool {
+	if !wildcard.New(filepath.Join(self.baseDir, "**")).Accept(inputFile) {
 		return false
 	}
 
-	for _, pattern := range self.Match {
-		patternAbs := filepath.Join(self.baseDir, pattern)
-		if match, err := doublestar.PathMatch(patternAbs, inputFile.Path()); match && err == nil {
-			return true
-		}
+	var acceptPaths []string
+	for _, path := range self.Accept {
+		acceptPaths = append(acceptPaths, filepath.Join(self.baseDir, path))
 	}
 
-	for _, pattern := range self.Unmatch {
-		patternAbs := filepath.Join(self.baseDir, pattern)
-		if match, err := doublestar.PathMatch(patternAbs, inputFile.Path()); match && err == nil {
-			return false
-		}
+	if wildcard.New(acceptPaths...).Accept(inputFile) {
+		return true
 	}
 
-	return len(self.Unmatch) > 0
+	var rejectPaths []string
+	for _, path := range self.Reject {
+		rejectPaths = append(rejectPaths, filepath.Join(self.baseDir, path))
+	}
+
+	if len(rejectPaths) == 0 {
+		return false
+	}
+
+	return operator.Not(wildcard.New(rejectPaths...)).Accept(inputFile)
 }
 
 func (self *rule) apply(inputFile *goldsmith.File) bool {
-	if self.matches(inputFile) {
+	if self.accept(inputFile) {
 		if len(self.Props) == 0 {
 			return false
 		}

@@ -1,4 +1,4 @@
 [[rules]]
-match = ['*.html']
+accept = ['*.html']
 props.Layout = 'page'
 props.Title = 'Override'
