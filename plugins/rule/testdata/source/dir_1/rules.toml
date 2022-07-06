@@ -1,3 +1,2 @@
 [[rules]]
 unmatch = ['*.txt']
-drop = true

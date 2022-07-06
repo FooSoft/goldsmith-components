@@ -14,7 +14,6 @@ type rule struct {
 	Match   []string
 	Unmatch []string
 	Props   map[string]goldsmith.Prop
-	Drop    bool
 
 	baseDir string
 }
@@ -44,7 +43,7 @@ func (self *rule) matches(inputFile *goldsmith.File) bool {
 
 func (self *rule) apply(inputFile *goldsmith.File) bool {
 	if self.matches(inputFile) {
-		if self.Drop {
+		if len(self.Props) == 0 {
 			return false
 		}
 
