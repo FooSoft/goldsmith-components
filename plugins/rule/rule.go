@@ -12,11 +12,18 @@ import (
 )
 
 type rule struct {
-	Accept []string
-	Reject []string
-	Props  map[string]goldsmith.Prop
-
+	Accept  []string
+	Reject  []string
 	baseDir string
+}
+
+type ruleApply struct {
+	rule
+	Props map[string]goldsmith.Prop
+}
+
+type ruleDrop struct {
+	rule
 }
 
 func (self *rule) accept(inputFile *goldsmith.File) bool {
@@ -45,22 +52,21 @@ func (self *rule) accept(inputFile *goldsmith.File) bool {
 	return operator.Not(wildcard.New(rejectPaths...)).Accept(inputFile)
 }
 
-func (self *rule) apply(inputFile *goldsmith.File) bool {
+func (self *ruleApply) apply(inputFile *goldsmith.File) {
 	if self.accept(inputFile) {
-		if len(self.Props) == 0 {
-			return false
-		}
-
 		for name, value := range self.Props {
 			inputFile.SetProp(name, value)
 		}
 	}
+}
 
-	return true
+func (self *ruleDrop) drop(inputFile *goldsmith.File) bool {
+	return self.accept(inputFile)
 }
 
 type ruleSet struct {
-	Rules []*rule
+	Apply []*ruleApply
+	Drop  []*ruleDrop
 }
 
 func newRuleSet(inputFile *goldsmith.File) (*ruleSet, error) {
@@ -74,16 +80,24 @@ func newRuleSet(inputFile *goldsmith.File) (*ruleSet, error) {
 		return nil, err
 	}
 
-	for _, rule := range ruleSet.Rules {
+	for _, rule := range ruleSet.Apply {
+		rule.baseDir = inputFile.Dir()
+	}
+
+	for _, rule := range ruleSet.Drop {
 		rule.baseDir = inputFile.Dir()
 	}
 
 	return &ruleSet, nil
 }
 
-func (self *ruleSet) apply(inputFile *goldsmith.File) bool {
-	for _, rule := range self.Rules {
-		if !rule.apply(inputFile) {
+func (self *ruleSet) process(inputFile *goldsmith.File) bool {
+	for _, rule := range self.Apply {
+		rule.apply(inputFile)
+	}
+
+	for _, rule := range self.Drop {
+		if rule.drop(inputFile) {
 			return false
 		}
 	}
@@ -137,7 +151,7 @@ func (self *Rule) Finalize(context *goldsmith.Context) error {
 	for _, inputFile := range self.inputFiles {
 		var block bool
 		for _, ruleSet := range self.ruleSets {
-			if !ruleSet.apply(inputFile) {
+			if !ruleSet.process(inputFile) {
 				block = true
 				break
 			}
