@@ -11,6 +11,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/url"
+	"path"
 
 	"foosoft.net/projects/goldsmith"
 	"foosoft.net/projects/goldsmith-components/filters/wildcard"
@@ -20,6 +21,7 @@ import (
 // Absolute chainable plugin context.
 type Absolute struct {
 	attributes []string
+	baseUrl    string
 }
 
 // New creates absolute new instance of the Absolute plugin.
@@ -30,6 +32,12 @@ func New() *Absolute {
 // Attributes sets the attributes which are scanned for relative URLs (default: "href", "src").
 func (self *Absolute) Attributes(attributes ...string) *Absolute {
 	self.attributes = attributes
+	return self
+}
+
+// BaseUrl sets the base URL which is prepended to absolute-converted relative paths.
+func (self *Absolute) BaseUrl(baseUrl string) *Absolute {
+	self.baseUrl = baseUrl
 	return self
 }
 
@@ -49,7 +57,7 @@ func (self *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith.F
 		return nil
 	}
 
-	baseUrl, err := url.Parse(inputFile.Path())
+	fileUrl, err := url.Parse(inputFile.Path())
 	if err != nil {
 		return err
 	}
@@ -76,8 +84,8 @@ func (self *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith.F
 				return
 			}
 
-			currUrl = baseUrl.ResolveReference(currUrl)
-			selection.SetAttr(attribute, currUrl.String())
+			currUrl = fileUrl.ResolveReference(currUrl)
+			selection.SetAttr(attribute, path.Join(self.baseUrl, currUrl.String()))
 		})
 	}
 

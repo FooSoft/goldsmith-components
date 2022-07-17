@@ -11,7 +11,7 @@ func Test(self *testing.T) {
 	harness.Validate(
 		self,
 		func(gs *goldsmith.Goldsmith) {
-			gs.Chain(New())
+			gs.Chain(New().BaseUrl("https://foosoft.net"))
 		},
 	)
 }
