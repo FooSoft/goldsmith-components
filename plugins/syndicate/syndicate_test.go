@@ -25,14 +25,15 @@ func Test(self *testing.T) {
 	}
 
 	feedConfig.ItemConfig = ItemConfig{
-		TitleKey:       "Title",
-		AuthorNameKey:  "AuthorName",
-		AuthorEmailKey: "AuthorEmail",
-		DescriptionKey: "Description",
-		IdKey:          "Id",
-		UpdatedKey:     "Updated",
-		CreatedKey:     "Created",
-		ContentKey:     "Content",
+		TitleKey:        "Title",
+		AuthorNameKey:   "AuthorName",
+		AuthorEmailKey:  "AuthorEmail",
+		DescriptionKey:  "Description",
+		IdKey:           "Id",
+		UpdatedKey:      "Updated",
+		CreatedKey:      "Created",
+		ContentKey:      "Content",
+		ContentFromFile: true,
 	}
 
 	harness.Validate(

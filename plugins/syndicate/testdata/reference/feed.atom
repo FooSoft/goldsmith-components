@@ -13,6 +13,7 @@
     <title>Page 1 Title</title>
     <updated>2016-04-29T00:00:00-07:00</updated>
     <id>Page 1 Id</id>
+    <content type="html">Page 1 Content</content>
     <link href="https://foosoft.net/page_1.md" rel="alternate"></link>
     <summary type="html">Page 1 Description</summary>
     <author>
@@ -24,6 +25,7 @@
     <title>Page 2 Title</title>
     <updated>2017-04-29T00:00:00-07:00</updated>
     <id>Page 2 Id</id>
+    <content type="html">Page 2&#xA;</content>
     <link href="https://foosoft.net/page_2.md" rel="alternate"></link>
     <summary type="html">Page 2 Description</summary>
     <author>
@@ -35,6 +37,7 @@
     <title>Page 3 Title</title>
     <updated>2018-04-29T00:00:00-07:00</updated>
     <id>Page 3 Id</id>
+    <content type="html">Page 3 Content</content>
     <link href="https://foosoft.net/page_3.md" rel="alternate"></link>
     <summary type="html">Page 3 Description</summary>
     <author>

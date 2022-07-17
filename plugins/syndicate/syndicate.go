@@ -82,14 +82,15 @@ type FeedConfig struct {
 }
 
 type ItemConfig struct {
-	TitleKey       string
-	AuthorNameKey  string
-	AuthorEmailKey string
-	DescriptionKey string
-	IdKey          string
-	UpdatedKey     string
-	CreatedKey     string
-	ContentKey     string
+	TitleKey        string
+	AuthorNameKey   string
+	AuthorEmailKey  string
+	DescriptionKey  string
+	IdKey           string
+	UpdatedKey      string
+	CreatedKey      string
+	ContentKey      string
+	ContentFromFile bool
 }
 
 // Syndicate chainable context.
@@ -191,6 +192,15 @@ func (self *Syndicate) Process(context *goldsmith.Context, inputFile *goldsmith.
 		created:     getDate(feed.config.ItemConfig.CreatedKey),
 		content:     getString(feed.config.ItemConfig.ContentKey),
 		url:         baseUrl.ResolveReference(currUrl).String(),
+	}
+
+	if len(item.content) == 0 && feed.config.ItemConfig.ContentFromFile {
+		var buff bytes.Buffer
+		if _, err := inputFile.WriteTo(&buff); err != nil {
+			return err
+		}
+
+		item.content = string(buff.Bytes())
 	}
 
 	if len(item.id) == 0 {

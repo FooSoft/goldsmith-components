@@ -7,6 +7,6 @@ Description = "Page 1 Description"
 Id = "Page 1 Id"
 Updated = 2016-04-29
 Created = 2016-04-28
-ContentKey = "Page 1 Content"
+Content = "Page 1 Content"
 +++
 Page 1
