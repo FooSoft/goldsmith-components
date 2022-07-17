@@ -21,7 +21,7 @@ import (
 // Absolute chainable plugin context.
 type Absolute struct {
 	attributes []string
-	baseUrl    string
+	baseUrl    *url.URL
 }
 
 // New creates absolute new instance of the Absolute plugin.
@@ -37,7 +37,7 @@ func (self *Absolute) Attributes(attributes ...string) *Absolute {
 
 // BaseUrl sets the base URL which is prepended to absolute-converted relative paths.
 func (self *Absolute) BaseUrl(baseUrl string) *Absolute {
-	self.baseUrl = baseUrl
+	self.baseUrl, _ = url.Parse(baseUrl)
 	return self
 }
 
@@ -85,7 +85,13 @@ func (self *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith.F
 			}
 
 			currUrl = fileUrl.ResolveReference(currUrl)
-			selection.SetAttr(attribute, path.Join(self.baseUrl, currUrl.String()))
+			if self.baseUrl != nil {
+				rebasedUrl := *self.baseUrl
+				rebasedUrl.Path = path.Join(rebasedUrl.Path, currUrl.Path)
+				currUrl = &rebasedUrl
+			}
+
+			selection.SetAttr(attribute, currUrl.String())
 		})
 	}
 
