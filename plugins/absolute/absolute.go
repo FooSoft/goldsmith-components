@@ -88,6 +88,9 @@ func (self *Absolute) Process(context *goldsmith.Context, inputFile *goldsmith.F
 			if self.baseUrl != nil {
 				rebasedUrl := *self.baseUrl
 				rebasedUrl.Path = path.Join(rebasedUrl.Path, currUrl.Path)
+				rebasedUrl.Fragment = currUrl.Fragment
+				rebasedUrl.RawFragment = currUrl.RawFragment
+				rebasedUrl.RawQuery = currUrl.RawQuery
 				currUrl = &rebasedUrl
 			}
 
