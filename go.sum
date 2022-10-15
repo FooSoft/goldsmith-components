@@ -1,5 +1,7 @@
 foosoft.net/projects/goldsmith v0.0.0-20220707035413-5f2f2141f84d h1:AohMqoM3S9WMETMQzXBvadNQzPdkRM4NsBV67XrgbNY=
 foosoft.net/projects/goldsmith v0.0.0-20220707035413-5f2f2141f84d/go.mod h1:/wzELI7txdHxRKr/koeTN9PlulwIB4Mtw9kzU4JRfUA=
+foosoft.net/projects/goldsmith v0.0.0-20221015201244-4456f3b206ed h1:PZ4qy7G2y1z6qxc9yOYA5PFaVx8q0FM210iQCPlIp/8=
+foosoft.net/projects/goldsmith v0.0.0-20221015201244-4456f3b206ed/go.mod h1:/wzELI7txdHxRKr/koeTN9PlulwIB4Mtw9kzU4JRfUA=
 github.com/BurntSushi/toml v1.2.0 h1:Rt8g24XnyGTyglgET/PRUNlrUeu9F5L+7FilkXfZgs0=
 github.com/BurntSushi/toml v1.2.0/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
 github.com/PuerkitoBio/goquery v1.8.0 h1:PJTF7AmFCFKk1N6V6jmKfrNH9tV5pNE6lZMkG0gta/U=

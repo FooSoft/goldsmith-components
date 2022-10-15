@@ -3,7 +3,7 @@ module foosoft.net/projects/goldsmith-components
 go 1.18
 
 require (
-	foosoft.net/projects/goldsmith v0.0.0-20220707035413-5f2f2141f84d
+	foosoft.net/projects/goldsmith v0.0.0-20221015201244-4456f3b206ed
 	github.com/BurntSushi/toml v1.2.0
 	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/alecthomas/chroma v0.10.0
