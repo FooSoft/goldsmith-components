@@ -1,16 +1,24 @@
 package wildcard
 
 import (
+	"strings"
+
 	"foosoft.net/projects/goldsmith"
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 type Wildcard struct {
-	wildcards []string
+	wildcards     []string
+	caseSensitive bool
 }
 
 func New(wildcards ...string) *Wildcard {
-	return &Wildcard{wildcards}
+	return &Wildcard{wildcards: wildcards}
+}
+
+func (self *Wildcard) CaseSensitive(caseSensitive bool) *Wildcard {
+	self.caseSensitive = caseSensitive
+	return self
 }
 
 func (*Wildcard) Name() string {
@@ -18,13 +26,22 @@ func (*Wildcard) Name() string {
 }
 
 func (self *Wildcard) Accept(file *goldsmith.File) bool {
-	filePath := file.Path()
+	filePath := self.adjustCase(file.Path())
 
 	for _, wildcard := range self.wildcards {
+		wildcard = self.adjustCase(wildcard)
 		if matched, _ := doublestar.PathMatch(wildcard, filePath); matched {
 			return true
 		}
 	}
 
 	return false
+}
+
+func (self *Wildcard) adjustCase(str string) string {
+	if self.caseSensitive {
+		return str
+	}
+
+	return strings.ToLower(str)
 }
