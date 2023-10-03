@@ -17,7 +17,7 @@
       <content:encoded><![CDATA[Page 1 Content]]></content:encoded>
       <author>Page 1 Author Name</author>
       <guid>Page 1 Id</guid>
-      <pubDate>Thu, 28 Apr 2016 00:00:00 -0800</pubDate>
+      <pubDate>Thu, 28 Apr 2016 00:00:00 -0700</pubDate>
     </item>
     <item>
       <title>Page 2 Title</title>
@@ -27,7 +27,7 @@
 ]]></content:encoded>
       <author>Page 2 Author Name</author>
       <guid>Page 2 Id</guid>
-      <pubDate>Fri, 28 Apr 2017 00:00:00 -0800</pubDate>
+      <pubDate>Fri, 28 Apr 2017 00:00:00 -0700</pubDate>
     </item>
     <item>
       <title>Page 3 Title</title>
@@ -36,7 +36,7 @@
       <content:encoded><![CDATA[Page 3 Content]]></content:encoded>
       <author>Page 3 Author Name</author>
       <guid>Page 3 Id</guid>
-      <pubDate>Sat, 28 Apr 2018 00:00:00 -0800</pubDate>
+      <pubDate>Sat, 28 Apr 2018 00:00:00 -0700</pubDate>
     </item>
   </channel>
 </rss>
