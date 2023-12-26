@@ -1,8 +1,3 @@
-<!-- +++
-GitHub = "goldsmith-components"
-Layout = "page"
-+++ -->
-
 # Goldsmith-Components
 
-This is a repository of [Goldsmith](https://foosoft.net/projects/goldsmith/) core components.
+This repository has permanently moved to [git.foosoft.net](https://git.foosoft.net/alex/goldsmith-components).
