@@ -1,3 +1,3 @@
 # Goldsmith-Components
 
-This repository has permanently moved to [git.foosoft.net](https://git.foosoft.net/alex/goldsmith-components).
+This repository has permanently moved to https://git.sr.ht/~foosoft/goldsmith.
